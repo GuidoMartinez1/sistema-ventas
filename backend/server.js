@@ -91,6 +91,7 @@ function initDatabase() {
     total REAL NOT NULL,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado TEXT DEFAULT 'completada',
+    metodo_pago TEXT DEFAULT 'efectivo',
     FOREIGN KEY (cliente_id) REFERENCES clientes (id)
   )`);
 
@@ -134,6 +135,15 @@ function initDatabase() {
     FOREIGN KEY (producto_id) REFERENCES productos (id)
   )`);
 
+  // Tabla de bolsas abiertas
+  db.run(`CREATE TABLE IF NOT EXISTS bolsas_abiertas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    producto_id INTEGER NOT NULL,
+    fecha_apertura DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estado TEXT DEFAULT 'abierta',
+    FOREIGN KEY (producto_id) REFERENCES productos (id)
+  )`);
+
   console.log('Base de datos inicializada');
 }
 
@@ -170,11 +180,13 @@ app.post('/api/productos', (req, res) => {
   // Calcular porcentaje de ganancia automáticamente si no se proporciona
   let porcentajeCalculado = porcentaje_ganancia;
   if (precio_costo && precio_costo > 0 && !porcentaje_ganancia) {
-    porcentajeCalculado = ((precio - precio_costo) / precio_costo) * 100;
+    porcentajeCalculado = Math.round(((precio - precio_costo) / precio_costo) * 100 * 100) / 100;
     console.log(`🧮 Porcentaje de ganancia calculado automáticamente: ${porcentajeCalculado.toFixed(2)}%`);
   } else if (!porcentaje_ganancia) {
     porcentajeCalculado = 30; // Valor por defecto
     console.log(`📊 Usando porcentaje de ganancia por defecto: ${porcentajeCalculado}%`);
+  } else {
+    porcentajeCalculado = Math.round(porcentaje_ganancia * 100) / 100;
   }
 
   db.run(
@@ -207,11 +219,13 @@ app.put('/api/productos/:id', (req, res) => {
   // Calcular porcentaje de ganancia automáticamente si no se proporciona
   let porcentajeCalculado = porcentaje_ganancia;
   if (precio_costo && precio_costo > 0 && !porcentaje_ganancia) {
-    porcentajeCalculado = ((precio - precio_costo) / precio_costo) * 100;
+    porcentajeCalculado = Math.round(((precio - precio_costo) / precio_costo) * 100 * 100) / 100;
     console.log(`🧮 Porcentaje de ganancia calculado automáticamente: ${porcentajeCalculado.toFixed(2)}%`);
   } else if (!porcentaje_ganancia) {
     porcentajeCalculado = 30; // Valor por defecto
     console.log(`📊 Usando porcentaje de ganancia por defecto: ${porcentajeCalculado}%`);
+  } else {
+    porcentajeCalculado = Math.round(porcentaje_ganancia * 100) / 100;
   }
 
   db.run(
@@ -567,23 +581,125 @@ app.post('/api/productos/:id/abrir-bolsa', (req, res) => {
       return res.status(400).json({ error: 'No hay stock disponible para abrir' });
     }
     
-    db.run(
-      'UPDATE productos SET stock = stock - 1 WHERE id = ?',
-      [id],
-      function(err) {
-        if (err) {
-          console.error('❌ Error al abrir bolsa:', err.message);
-          return res.status(500).json({ error: err.message });
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      // Actualizar stock del producto
+      db.run(
+        'UPDATE productos SET stock = stock - 1 WHERE id = ?',
+        [id],
+        function(err) {
+          if (err) {
+            console.error('❌ Error al actualizar stock:', err.message);
+            db.run('ROLLBACK');
+            return res.status(500).json({ error: err.message });
+          }
+          
+          // Registrar la bolsa abierta
+          db.run(
+            'INSERT INTO bolsas_abiertas (producto_id) VALUES (?)',
+            [id],
+            function(err) {
+              if (err) {
+                console.error('❌ Error al registrar bolsa abierta:', err.message);
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: err.message });
+              }
+              
+              db.run('COMMIT', (commitErr) => {
+                if (commitErr) {
+                  console.error('❌ Error al hacer COMMIT:', commitErr.message);
+                  return res.status(500).json({ error: 'Error al confirmar la operación' });
+                }
+                
+                console.log(`✅ Bolsa abierta exitosamente para ${producto.nombre}. Stock restante: ${producto.stock - 1}`);
+                res.json({ 
+                  message: 'Bolsa abierta exitosamente',
+                  producto: producto.nombre,
+                  stock_restante: producto.stock - 1,
+                  bolsa_id: this.lastID
+                });
+              });
+            }
+          );
         }
-        
-        console.log(`✅ Bolsa abierta exitosamente para ${producto.nombre}. Stock restante: ${producto.stock - 1}`);
-        res.json({ 
-          message: 'Bolsa abierta exitosamente',
-          producto: producto.nombre,
-          stock_restante: producto.stock - 1
-        });
-      }
-    );
+      );
+    });
+  });
+});
+
+// Rutas de bolsas abiertas
+app.get('/api/bolsas-abiertas', (req, res) => {
+  console.log('📦 Obteniendo lista de bolsas abiertas...');
+  
+  db.all(`
+    SELECT ba.*, p.nombre as producto_nombre, p.stock as stock_actual
+    FROM bolsas_abiertas ba 
+    JOIN productos p ON ba.producto_id = p.id 
+    WHERE ba.estado = 'abierta'
+    ORDER BY ba.fecha_apertura DESC
+  `, (err, rows) => {
+    if (err) {
+      console.error('❌ Error al obtener bolsas abiertas:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    
+    console.log(`✅ Bolsas abiertas obtenidas: ${rows.length} bolsas encontradas`);
+    res.json(rows);
+  });
+});
+
+app.delete('/api/bolsas-abiertas/:id', (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`🗑️ Eliminando bolsa abierta con ID: ${id}...`);
+  
+  db.get('SELECT producto_id FROM bolsas_abiertas WHERE id = ? AND estado = "abierta"', [id], (err, bolsa) => {
+    if (err) {
+      console.error('❌ Error al obtener bolsa:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    
+    if (!bolsa) {
+      console.error('❌ Bolsa no encontrada o ya cerrada');
+      return res.status(404).json({ error: 'Bolsa no encontrada o ya cerrada' });
+    }
+    
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      // Marcar la bolsa como cerrada
+      db.run(
+        'UPDATE bolsas_abiertas SET estado = "cerrada" WHERE id = ?',
+        [id],
+        function(err) {
+          if (err) {
+            console.error('❌ Error al cerrar bolsa:', err.message);
+            db.run('ROLLBACK');
+            return res.status(500).json({ error: err.message });
+          }
+          
+          if (this.changes === 0) {
+            console.error('❌ No se pudo cerrar la bolsa');
+            db.run('ROLLBACK');
+            return res.status(404).json({ error: 'Bolsa no encontrada' });
+          }
+          
+          db.run('COMMIT', (commitErr) => {
+            if (commitErr) {
+              console.error('❌ Error al hacer COMMIT:', commitErr.message);
+              return res.status(500).json({ error: 'Error al confirmar la operación' });
+            }
+            
+            console.log(`✅ Bolsa cerrada exitosamente. ID: ${id}`);
+            res.json({ 
+              message: 'Bolsa cerrada exitosamente',
+              bolsa_id: id
+            });
+          });
+        }
+      );
+    });
   });
 });
 
@@ -635,33 +751,42 @@ app.get('/api/ventas', (req, res) => {
 });
 
 app.post('/api/ventas', (req, res) => {
-  const { cliente_id, productos, total, estado = 'completada' } = req.body;
+  const { cliente_id, productos, total, estado = 'completada', metodo_pago = 'efectivo' } = req.body;
   
   console.log('💰 Procesando nueva venta...');
   console.log(`👤 Cliente ID: ${cliente_id}`);
-  console.log(`📦 Productos: ${productos.length} items`);
+  console.log(`📦 Productos: ${productos ? productos.length : 0} items`);
   console.log(`💵 Total: $${total}`);
   console.log(`📊 Estado: ${estado}`);
-  console.log('📋 Detalle de productos:');
-  productos.forEach((prod, index) => {
-    console.log(`   ${index + 1}. ${prod.producto_nombre || 'Sin nombre'} - Cantidad: ${prod.cantidad} - Precio: $${prod.precio_unitario} - Subtotal: $${prod.subtotal}`);
-  });
+  console.log(`💳 Método de pago: ${metodo_pago}`);
   
-  // Validaciones mejoradas
-  if (!productos || productos.length === 0) {
-    console.error('❌ Validación fallida: Productos son requeridos');
-    return res.status(400).json({ error: 'Productos son requeridos' });
+  if (productos && productos.length > 0) {
+    console.log('📋 Detalle de productos:');
+    productos.forEach((prod, index) => {
+      console.log(`   ${index + 1}. ${prod.producto_nombre || 'Sin nombre'} - Cantidad: ${prod.cantidad} - Precio: $${prod.precio_unitario} - Subtotal: $${prod.subtotal}`);
+    });
+  } else {
+    console.log('📋 Venta sin productos - Solo importe directo');
   }
-
-  // Validar que todos los productos tengan datos válidos
-  for (let i = 0; i < productos.length; i++) {
-    const producto = productos[i];
-    if (!producto.producto_id || !producto.cantidad || !producto.precio_unitario || !producto.subtotal) {
-      console.error(`❌ Validación fallida: Producto ${i + 1} tiene datos incompletos`);
-      console.error(`   ID: ${producto.producto_id}, Cantidad: ${producto.cantidad}, Precio: ${producto.precio_unitario}, Subtotal: ${producto.subtotal}`);
-      return res.status(400).json({ 
-        error: `Producto ${i + 1} tiene datos incompletos. Verifique ID, cantidad, precio y subtotal.` 
-      });
+  
+  // Validaciones mejoradas - Permitir ventas sin productos
+  if (!productos || productos.length === 0) {
+    // Venta sin productos - solo validar que haya un total
+    if (!total || total <= 0) {
+      console.error('❌ Validación fallida: Total es requerido para ventas sin productos');
+      return res.status(400).json({ error: 'Total es requerido para ventas sin productos' });
+    }
+  } else {
+    // Venta con productos - validar que todos los productos tengan datos válidos
+    for (let i = 0; i < productos.length; i++) {
+      const producto = productos[i];
+      if (!producto.producto_id || !producto.cantidad || !producto.precio_unitario || !producto.subtotal) {
+        console.error(`❌ Validación fallida: Producto ${i + 1} tiene datos incompletos`);
+        console.error(`   ID: ${producto.producto_id}, Cantidad: ${producto.cantidad}, Precio: ${producto.precio_unitario}, Subtotal: ${producto.subtotal}`);
+        return res.status(400).json({ 
+          error: `Producto ${i + 1} tiene datos incompletos. Verifique ID, cantidad, precio y subtotal.` 
+        });
+      }
     }
   }
 
@@ -670,8 +795,8 @@ app.post('/api/ventas', (req, res) => {
     db.run('BEGIN TRANSACTION');
     
     db.run(
-      'INSERT INTO ventas (cliente_id, total, estado) VALUES (?, ?, ?)',
-      [cliente_id, total, estado],
+      'INSERT INTO ventas (cliente_id, total, estado, metodo_pago) VALUES (?, ?, ?, ?)',
+      [cliente_id, total, estado, metodo_pago],
       function(err) {
         if (err) {
           console.error('❌ Error al crear venta:', err.message);
@@ -686,7 +811,23 @@ app.post('/api/ventas', (req, res) => {
         }
         
         const venta_id = this.lastID;
-        console.log(`✅ Venta creada con ID: ${venta_id} y estado: ${estado}`);
+        console.log(`✅ Venta creada con ID: ${venta_id}, estado: ${estado}, método: ${metodo_pago}`);
+        
+        // Si no hay productos, solo confirmar la venta
+        if (!productos || productos.length === 0) {
+          db.run('COMMIT', (commitErr) => {
+            if (commitErr) {
+              console.error('❌ Error al hacer COMMIT:', commitErr.message);
+              return res.status(500).json({ error: 'Error al confirmar la venta' });
+            } else {
+              console.log(`🎉 Venta sin productos completada exitosamente! ID: ${venta_id}, Total: $${total}, Estado: ${estado}, Método: ${metodo_pago}`);
+              res.json({ id: venta_id, message: 'Venta creada exitosamente', estado: estado, metodo_pago: metodo_pago });
+            }
+          });
+          return;
+        }
+        
+        // Procesar productos si los hay
         let completed = 0;
         let hasError = false;
 
@@ -726,8 +867,8 @@ app.post('/api/ventas', (req, res) => {
                     console.error('❌ Error al hacer COMMIT:', commitErr.message);
                     return res.status(500).json({ error: 'Error al confirmar la venta' });
                   } else {
-                    console.log(`🎉 Venta completada exitosamente! ID: ${venta_id}, Total: $${total}, Estado: ${estado}`);
-                    res.json({ id: venta_id, message: 'Venta creada exitosamente', estado: estado });
+                    console.log(`🎉 Venta completada exitosamente! ID: ${venta_id}, Total: $${total}, Estado: ${estado}, Método: ${metodo_pago}`);
+                    res.json({ id: venta_id, message: 'Venta creada exitosamente', estado: estado, metodo_pago: metodo_pago });
                   }
                 });
               }
@@ -860,32 +1001,82 @@ app.get('/api/stats', (req, res) => {
         return res.status(500).json({ error: err.message });
       }
 
-      db.get('SELECT COUNT(*) as total_ventas FROM ventas', (err, ventas) => {
+      db.get('SELECT COUNT(*) as total_ventas FROM ventas WHERE estado != "adeuda"', (err, ventas) => {
         if (err) {
           console.error('❌ Error al obtener estadísticas de ventas:', err.message);
           return res.status(500).json({ error: err.message });
         }
 
-        db.get('SELECT SUM(total) as total_ventas_monto FROM ventas', (err, ventas_monto) => {
+        db.get('SELECT SUM(total) as total_ventas_monto FROM ventas WHERE estado != "adeuda"', (err, ventas_monto) => {
           if (err) {
             console.error('❌ Error al obtener monto total de ventas:', err.message);
             return res.status(500).json({ error: err.message });
           }
 
-          const stats = {
-            total_productos: productos.total_productos,
-            total_clientes: clientes.total_clientes,
-            total_ventas: ventas.total_ventas,
-            total_ventas_monto: ventas_monto.total_ventas_monto || 0
-          };
-          
-          console.log('📈 Estadísticas obtenidas:');
-          console.log(`   - Productos: ${stats.total_productos}`);
-          console.log(`   - Clientes: ${stats.total_clientes}`);
-          console.log(`   - Ventas: ${stats.total_ventas}`);
-          console.log(`   - Monto total: $${stats.total_ventas_monto}`);
-          
-          res.json(stats);
+          db.get('SELECT COUNT(*) as total_compras FROM compras', (err, compras) => {
+            if (err) {
+              console.error('❌ Error al obtener estadísticas de compras:', err.message);
+              return res.status(500).json({ error: err.message });
+            }
+
+            db.get('SELECT SUM(total) as total_compras_monto FROM compras', (err, compras_monto) => {
+              if (err) {
+                console.error('❌ Error al obtener monto total de compras:', err.message);
+                return res.status(500).json({ error: err.message });
+              }
+
+              db.get('SELECT COUNT(*) as total_deudas FROM ventas WHERE estado = "adeuda"', (err, deudas) => {
+                if (err) {
+                  console.error('❌ Error al obtener estadísticas de deudas:', err.message);
+                  return res.status(500).json({ error: err.message });
+                }
+
+                db.get('SELECT SUM(total) as total_deudas_monto FROM ventas WHERE estado = "adeuda"', (err, deudas_monto) => {
+                  if (err) {
+                    console.error('❌ Error al obtener monto total de deudas:', err.message);
+                    return res.status(500).json({ error: err.message });
+                  }
+
+                  db.get('SELECT COUNT(*) as total_ventas_con_deudas FROM ventas', (err, ventas_con_deudas) => {
+                    if (err) {
+                      console.error('❌ Error al obtener estadísticas de ventas totales:', err.message);
+                      return res.status(500).json({ error: err.message });
+                    }
+
+                    db.get('SELECT SUM(total) as total_ventas_con_deudas_monto FROM ventas', (err, ventas_con_deudas_monto) => {
+                      if (err) {
+                        console.error('❌ Error al obtener monto total de ventas incluyendo deudas:', err.message);
+                        return res.status(500).json({ error: err.message });
+                      }
+
+                      const stats = {
+                        total_productos: productos.total_productos,
+                        total_clientes: clientes.total_clientes,
+                        total_ventas: ventas.total_ventas,
+                        total_ventas_monto: ventas_monto.total_ventas_monto || 0,
+                        total_compras: compras.total_compras,
+                        total_compras_monto: compras_monto.total_compras_monto || 0,
+                        total_deudas: deudas.total_deudas,
+                        total_deudas_monto: deudas_monto.total_deudas_monto || 0,
+                        total_ventas_con_deudas: ventas_con_deudas.total_ventas_con_deudas,
+                        total_ventas_con_deudas_monto: ventas_con_deudas_monto.total_ventas_con_deudas_monto || 0
+                      };
+                      
+                      console.log('📈 Estadísticas obtenidas:');
+                      console.log(`   - Productos: ${stats.total_productos}`);
+                      console.log(`   - Clientes: ${stats.total_clientes}`);
+                      console.log(`   - Ventas (sin deudas): ${stats.total_ventas} ($${stats.total_ventas_monto})`);
+                      console.log(`   - Ventas (con deudas): ${stats.total_ventas_con_deudas} ($${stats.total_ventas_con_deudas_monto})`);
+                      console.log(`   - Compras: ${stats.total_compras} ($${stats.total_compras_monto})`);
+                      console.log(`   - Deudas: ${stats.total_deudas} ($${stats.total_deudas_monto})`);
+                      
+                      res.json(stats);
+                    });
+                  });
+                });
+              });
+            });
+          });
         });
       });
     });

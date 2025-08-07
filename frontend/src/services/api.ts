@@ -49,6 +49,7 @@ export interface Venta {
   fecha?: string
   estado?: string
   cliente_nombre?: string
+  metodo_pago?: string
 }
 
 export interface DetalleVenta {
@@ -77,6 +78,12 @@ export interface Stats {
   total_clientes: number
   total_ventas: number
   total_ventas_monto: number
+  total_compras: number
+  total_compras_monto: number
+  total_deudas: number
+  total_deudas_monto: number
+  total_ventas_con_deudas: number
+  total_ventas_con_deudas_monto: number
 }
 
 export interface Categoria {
@@ -114,6 +121,15 @@ export interface CompraCompleta extends Compra {
   detalles: DetalleCompra[]
 }
 
+export interface BolsaAbierta {
+  id?: number
+  producto_id: number
+  fecha_apertura?: string
+  estado?: string
+  producto_nombre?: string
+  stock_actual?: number
+}
+
 // API calls
 export const productosAPI = {
   getAll: () => api.get<Producto[]>('/productos'),
@@ -143,6 +159,11 @@ export const comprasAPI = {
   create: (compra: { proveedor_id: number; productos: DetalleCompra[]; total: number }) => 
     api.post('/compras', compra),
   getById: (id: number) => api.get<CompraCompleta>(`/compras/${id}`),
+}
+
+export const bolsasAbiertasAPI = {
+  getAll: () => api.get<BolsaAbierta[]>('/bolsas-abiertas'),
+  delete: (id: number) => api.delete(`/bolsas-abiertas/${id}`),
 }
 
 export const clientesAPI = {

@@ -11,6 +11,8 @@ import Deudas from './pages/Deudas'
 import Proveedores from './pages/Proveedores'
 import Compras from './pages/Compras'
 import NuevaCompra from './pages/NuevaCompra'
+import Reportes from './pages/Reportes'
+import BolsasAbiertas from './pages/BolsasAbiertas'
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
             <Route path="/proveedores" element={<Proveedores />} />
             <Route path="/compras" element={<Compras />} />
             <Route path="/nueva-compra" element={<NuevaCompra />} />
+            <Route path="/reportes" element={<Reportes />} />
+            <Route path="/bolsas-abiertas" element={<BolsasAbiertas />} />
           </Routes>
         </Layout>
         <Toaster position="top-right" />

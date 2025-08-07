@@ -73,6 +73,7 @@ function initDatabase() {
     total REAL NOT NULL,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado TEXT DEFAULT 'completada',
+    metodo_pago TEXT DEFAULT 'efectivo',
     FOREIGN KEY (cliente_id) REFERENCES clientes (id)
   )`, (err) => {
     if (err) {
@@ -97,6 +98,39 @@ function initDatabase() {
       console.error('Error al crear tabla detalles_venta:', err);
     } else {
       console.log('✅ Tabla detalles_venta creada');
+    }
+  });
+
+  // Tabla de detalles de compra
+  db.run(`CREATE TABLE IF NOT EXISTS detalles_compra (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    compra_id INTEGER,
+    producto_id INTEGER,
+    cantidad INTEGER NOT NULL,
+    precio_unitario REAL NOT NULL,
+    subtotal REAL NOT NULL,
+    FOREIGN KEY (compra_id) REFERENCES compras (id),
+    FOREIGN KEY (producto_id) REFERENCES productos (id)
+  )`, (err) => {
+    if (err) {
+      console.error('Error al crear tabla detalles_compra:', err);
+    } else {
+      console.log('✅ Tabla detalles_compra creada');
+    }
+  });
+
+  // Tabla de bolsas abiertas
+  db.run(`CREATE TABLE IF NOT EXISTS bolsas_abiertas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    producto_id INTEGER NOT NULL,
+    fecha_apertura DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estado TEXT DEFAULT 'abierta',
+    FOREIGN KEY (producto_id) REFERENCES productos (id)
+  )`, (err) => {
+    if (err) {
+      console.error('Error al crear tabla bolsas_abiertas:', err);
+    } else {
+      console.log('✅ Tabla bolsas_abiertas creada');
     }
   });
 

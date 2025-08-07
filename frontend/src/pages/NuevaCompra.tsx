@@ -290,30 +290,42 @@ const NuevaCompra = () => {
                 {cartItems.map((item) => {
                   const producto = productos.find(p => p.id === item.producto_id)
                   return (
-                    <div key={item.producto_id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{producto?.nombre}</h4>
-                          <p className="text-sm text-gray-500">Stock actual: {producto?.stock}</p>
+                    <div key={item.producto_id} className="border rounded-lg p-3 bg-gray-50">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-lg">{producto?.nombre}</h4>
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className="text-sm text-gray-600">
+                              <span className="font-medium">Stock actual:</span> {producto?.stock || 0}
+                            </span>
+                            {producto?.categoria_nombre && (
+                              <span className="text-sm text-gray-600">
+                                <span className="font-medium">Categoría:</span> {producto.categoria_nombre}
+                              </span>
+                            )}
+                          </div>
+                          {producto?.descripcion && (
+                            <p className="text-sm text-gray-500 mt-1">{producto.descripcion}</p>
+                          )}
                         </div>
                         <button
                           onClick={() => removeFromCart(item.producto_id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 ml-2"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Cantidad:</span>
-                          <div className="flex items-center space-x-2">
+                      <div className="grid grid-cols-3 gap-4 bg-white p-3 rounded border">
+                        <div className="text-center">
+                          <span className="text-sm text-gray-600 block">Cantidad</span>
+                          <div className="flex items-center justify-center space-x-2 mt-1">
                             <button
                               onClick={() => updateQuantity(item.producto_id, item.cantidad - 1)}
                               className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
                             >
                               <Minus className="h-3 w-3" />
                             </button>
-                            <span className="w-8 text-center">{item.cantidad}</span>
+                            <span className="w-8 text-center font-medium">{item.cantidad}</span>
                             <button
                               onClick={() => updateQuantity(item.producto_id, item.cantidad + 1)}
                               className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
@@ -322,19 +334,19 @@ const NuevaCompra = () => {
                             </button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Precio unitario:</span>
+                        <div className="text-center">
+                          <span className="text-sm text-gray-600 block">Precio unitario</span>
                           <input
                             type="number"
                             step="0.01"
                             value={item.precio_unitario}
                             onChange={(e) => updatePrecioUnitario(item.producto_id, parseFloat(e.target.value) || 0)}
-                            className="w-20 text-right border rounded px-1 py-1 text-sm"
+                            className="w-full text-center border rounded px-2 py-1 text-sm mt-1"
                           />
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Subtotal:</span>
-                          <span className="font-medium">${item.subtotal.toFixed(2)}</span>
+                        <div className="text-center">
+                          <span className="text-sm text-gray-600 block">Subtotal</span>
+                          <span className="font-bold text-lg text-green-600">${item.subtotal.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

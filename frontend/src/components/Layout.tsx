@@ -9,7 +9,9 @@ import {
   Tag,
   DollarSign,
   Building,
-  Truck
+  Truck,
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -30,6 +32,8 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Compras', href: '/compras', icon: Truck },
     { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
     { name: 'Deudas', href: '/deudas', icon: DollarSign },
+    { name: 'Reportes', href: '/reportes', icon: BarChart3 },
+    { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
   ]
 
   return (

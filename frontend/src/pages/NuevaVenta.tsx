@@ -17,6 +17,7 @@ const NuevaVenta = () => {
   const [loading, setLoading] = useState(true)
   const [esDeuda, setEsDeuda] = useState(false)
   const [importeDirecto, setImporteDirecto] = useState<number>(0)
+  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'mercadopago' | 'tarjeta'>('efectivo')
 
   useEffect(() => {
     fetchData()
@@ -75,8 +76,39 @@ const NuevaVenta = () => {
     }
   }
 
+  const addCustomItem = () => {
+    const customItem: DetalleVenta = {
+      producto_id: -1, // ID especial para items sin producto
+      cantidad: 1,
+      precio_unitario: 0,
+      subtotal: 0,
+      producto_nombre: 'Sin producto'
+    }
+    setCartItems([...cartItems, customItem])
+  }
+
   const updateQuantity = (productoId: number, newQuantity: number) => {
     const producto = productos.find(p => p.id === productoId)
+    
+    // Si es un item sin producto (productoId === -1)
+    if (productoId === -1) {
+      if (newQuantity <= 0) {
+        removeFromCart(productoId)
+        return
+      }
+      
+      setCartItems(cartItems.map(item => 
+        item.producto_id === productoId 
+          ? { 
+              ...item, 
+              cantidad: newQuantity, 
+              subtotal: newQuantity * item.precio_unitario
+            }
+          : item
+      ))
+      return
+    }
+    
     if (!producto) return
 
     if (newQuantity > producto.stock) {
@@ -96,6 +128,21 @@ const NuevaVenta = () => {
             cantidad: newQuantity, 
             subtotal: newQuantity * item.precio_unitario,
             producto_nombre: producto.nombre
+          }
+        : item
+    ))
+  }
+
+  const updatePrecioUnitario = (productoId: number, newPrecio: number) => {
+    const item = cartItems.find(item => item.producto_id === productoId)
+    if (!item) return
+
+    setCartItems(cartItems.map(item => 
+      item.producto_id === productoId 
+        ? { 
+            ...item, 
+            precio_unitario: newPrecio,
+            subtotal: item.cantidad * newPrecio
           }
         : item
     ))
@@ -130,7 +177,8 @@ const NuevaVenta = () => {
         cliente_id: selectedCliente || undefined,
         productos: cartItems,
         total: cartItems.length > 0 ? getTotal() : importeDirecto,
-        estado: esDeuda ? 'adeuda' : 'completada'
+        estado: esDeuda ? 'adeuda' : 'completada',
+        metodo_pago: metodoPago
       }
       
       await ventasAPI.create(ventaData)
@@ -217,6 +265,23 @@ const NuevaVenta = () => {
                     </div>
                   </div>
                 ))}
+              
+              {/* Item "Sin producto" */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-medium text-gray-900">Sin producto</h3>
+                  <span className="text-sm font-medium text-gray-500">Importe directo</span>
+                </div>
+                <p className="text-sm text-gray-500 mb-2">Agregar un item con importe personalizado</p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => addCustomItem()}
+                    className="btn-primary text-sm py-1 px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -268,6 +333,22 @@ const NuevaVenta = () => {
               )}
             </div>
 
+            {/* Método de Pago */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Método de Pago
+              </label>
+              <select
+                value={metodoPago}
+                onChange={(e) => setMetodoPago(e.target.value as 'efectivo' | 'mercadopago' | 'tarjeta')}
+                className="input-field"
+              >
+                <option value="efectivo">Efectivo</option>
+                <option value="mercadopago">Mercado Pago</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+            </div>
+
             {/* Importe directo (para ventas sin productos) */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -293,12 +374,30 @@ const NuevaVenta = () => {
               <div className="space-y-3">
                 {cartItems.map((item) => {
                   const producto = productos.find(p => p.id === item.producto_id)
+                  const isCustomItem = item.producto_id === -1
+                  
                   return (
                     <div key={item.producto_id} className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h4 className="font-medium text-gray-900">{producto?.nombre}</h4>
-                          <p className="text-sm text-gray-500">${item.precio_unitario} c/u</p>
+                          <h4 className="font-medium text-gray-900">
+                            {isCustomItem ? 'Sin producto' : producto?.nombre}
+                          </h4>
+                          {isCustomItem ? (
+                            <div className="flex items-center space-x-2 mt-1">
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={item.precio_unitario}
+                                onChange={(e) => updatePrecioUnitario(item.producto_id, parseFloat(e.target.value) || 0)}
+                                className="w-20 text-sm border rounded px-2 py-1"
+                              />
+                              <span className="text-sm text-gray-500">c/u</span>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">${item.precio_unitario} c/u</p>
+                          )}
                         </div>
                         <button
                           onClick={() => removeFromCart(item.producto_id)}
