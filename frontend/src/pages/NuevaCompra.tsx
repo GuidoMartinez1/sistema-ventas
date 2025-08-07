@@ -37,10 +37,11 @@ const NuevaCompra = () => {
         proveedoresAPI.getAll(),
         categoriasAPI.getAll()
       ])
-      setProductos(productosResponse.data)
-      setProveedores(proveedoresResponse.data)
-      setCategorias(categoriasResponse.data)
+      setProductos(productosResponse.data || [])
+      setProveedores(proveedoresResponse.data || [])
+      setCategorias(categoriasResponse.data || [])
     } catch (error) {
+      console.error('Error fetching data:', error)
       toast.error('Error al cargar datos')
     } finally {
       setLoading(false)
@@ -75,28 +76,42 @@ const NuevaCompra = () => {
   }
 
   const addToCart = (producto: Producto) => {
-    const existingItem = cartItems.find(item => item.producto_id === producto.id)
-    
-    if (existingItem) {
-      setCartItems(cartItems.map(item => 
-        item.producto_id === producto.id 
-          ? { 
-              ...item, 
-              cantidad: item.cantidad + 1, 
-              subtotal: (item.cantidad + 1) * item.precio_unitario,
-              producto_nombre: producto.nombre
-            }
-          : item
-      ))
-    } else {
-      const newItem: DetalleCompra = {
-        producto_id: producto.id!,
-        cantidad: 1,
-        precio_unitario: producto.precio_costo || 0,
-        subtotal: producto.precio_costo || 0,
-        producto_nombre: producto.nombre
+    try {
+      if (!producto || !producto.id) {
+        console.error('Producto inválido:', producto)
+        toast.error('Producto inválido')
+        return
       }
-      setCartItems([...cartItems, newItem])
+
+      const existingItem = cartItems.find(item => item.producto_id === producto.id)
+      
+      if (existingItem) {
+        const newQuantity = existingItem.cantidad + 1
+        const newSubtotal = newQuantity * existingItem.precio_unitario
+        
+        setCartItems(prevItems => prevItems.map(item => 
+          item.producto_id === producto.id 
+            ? { 
+                ...item, 
+                cantidad: newQuantity, 
+                subtotal: newSubtotal,
+                producto_nombre: producto.nombre || 'Sin nombre'
+              }
+            : item
+        ))
+      } else {
+        const newItem: DetalleCompra = {
+          producto_id: producto.id,
+          cantidad: 1,
+          precio_unitario: producto.precio_costo || 0,
+          subtotal: producto.precio_costo || 0,
+          producto_nombre: producto.nombre || 'Sin nombre'
+        }
+        setCartItems(prevItems => [...prevItems, newItem])
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Error al agregar producto al carrito')
     }
   }
 
@@ -109,7 +124,7 @@ const NuevaCompra = () => {
       return
     }
 
-    setCartItems(cartItems.map(item => 
+    setCartItems(prevItems => prevItems.map(item => 
       item.producto_id === productoId 
         ? { 
             ...item, 
@@ -125,7 +140,7 @@ const NuevaCompra = () => {
     const item = cartItems.find(item => item.producto_id === productoId)
     if (!item) return
 
-    setCartItems(cartItems.map(item => 
+    setCartItems(prevItems => prevItems.map(item => 
       item.producto_id === productoId 
         ? { 
             ...item, 
@@ -137,7 +152,7 @@ const NuevaCompra = () => {
   }
 
   const removeFromCart = (productoId: number) => {
-    setCartItems(cartItems.filter(item => item.producto_id !== productoId))
+    setCartItems(prevItems => prevItems.filter(item => item.producto_id !== productoId))
   }
 
   const getTotal = () => {
@@ -207,7 +222,7 @@ const NuevaCompra = () => {
                 className="input-field w-full md:w-1/3"
               >
                 <option value="">Todas las categorías</option>
-                {Array.from(new Set(productos.map(p => p.categoria_nombre).filter(Boolean))).map((cat) => (
+                {Array.from(new Set(productos.map(p => p.categoria_nombre || '').filter(Boolean))).map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -222,24 +237,24 @@ const NuevaCompra = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {productos
                 .filter(producto =>
-                  (!selectedCategoria || producto.categoria_nombre === selectedCategoria) &&
+                  (!selectedCategoria || (producto.categoria_nombre || '') === selectedCategoria) &&
                   (
-                    producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-                    (producto.codigo ? producto.codigo.toLowerCase().includes(busqueda.toLowerCase()) : false)
+                    (producto.nombre && producto.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
+                    (producto.codigo && producto.codigo.toLowerCase().includes(busqueda.toLowerCase()))
                   )
                 )
                 .map((producto) => (
                   <div key={producto.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
-                      <span className="text-sm font-medium text-gray-900">Stock: {producto.stock}</span>
+                      <h3 className="font-medium text-gray-900">{producto.nombre || 'Sin nombre'}</h3>
+                      <span className="text-sm font-medium text-gray-900">Stock: {producto.stock || 0}</span>
                     </div>
                     {producto.descripcion && (
                       <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>
                     )}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">
-                        Costo actual: ${producto.precio_costo || 0}
+                        Costo actual: ${(producto.precio_costo || 0).toFixed(2)}
                       </span>
                       <button
                         onClick={() => addToCart(producto)}
@@ -293,7 +308,7 @@ const NuevaCompra = () => {
                     <div key={item.producto_id} className="border rounded-lg p-3 bg-gray-50">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 text-lg">{producto?.nombre}</h4>
+                          <h4 className="font-medium text-gray-900 text-lg">{producto?.nombre || item.producto_nombre || 'Sin nombre'}</h4>
                           <div className="flex items-center space-x-4 mt-1">
                             <span className="text-sm text-gray-600">
                               <span className="font-medium">Stock actual:</span> {producto?.stock || 0}

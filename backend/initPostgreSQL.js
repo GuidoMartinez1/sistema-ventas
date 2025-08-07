@@ -24,6 +24,8 @@ const initDatabase = async () => {
         nombre VARCHAR(255) NOT NULL,
         descripcion TEXT,
         precio DECIMAL(10,2) NOT NULL,
+        precio_costo DECIMAL(10,2) DEFAULT 0,
+        porcentaje_ganancia DECIMAL(5,2) DEFAULT 30,
         stock INTEGER DEFAULT 0,
         categoria_id INTEGER REFERENCES categorias(id) ON DELETE SET NULL,
         codigo VARCHAR(100) UNIQUE,
@@ -123,14 +125,19 @@ const initDatabase = async () => {
 
     // Crear índices para mejorar performance
     await client.query('CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_productos_codigo ON productos(codigo)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_ventas_cliente ON ventas(cliente_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON ventas(fecha)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_ventas_estado ON ventas(estado)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_detalles_venta_venta ON detalles_venta(venta_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_detalles_venta_producto ON detalles_venta(producto_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_compras_proveedor ON compras(proveedor_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_compras_fecha ON compras(fecha)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_detalles_compra_compra ON detalles_compra(compra_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_detalles_compra_producto ON detalles_compra(producto_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_bolsas_abiertas_producto ON bolsas_abiertas(producto_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_bolsas_abiertas_estado ON bolsas_abiertas(estado)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bolsas_abiertas_fecha ON bolsas_abiertas(fecha_apertura)');
     
     console.log('✅ Índices creados para optimizar consultas');
 

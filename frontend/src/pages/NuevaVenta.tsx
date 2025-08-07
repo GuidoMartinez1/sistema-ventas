@@ -30,10 +30,11 @@ const NuevaVenta = () => {
         clientesAPI.getAll(),
         categoriasAPI.getAll()
       ])
-      setProductos(productosResponse.data)
-      setClientes(clientesResponse.data)
-      setCategorias(categoriasResponse.data)
+      setProductos(productosResponse.data || [])
+      setClientes(clientesResponse.data || [])
+      setCategorias(categoriasResponse.data || [])
     } catch (error) {
+      console.error('Error fetching data:', error)
       toast.error('Error al cargar datos')
     } finally {
       setLoading(false)
@@ -41,38 +42,52 @@ const NuevaVenta = () => {
   }
 
   const addToCart = (producto: Producto) => {
-    const existingItem = cartItems.find(item => item.producto_id === producto.id)
-    
-    if (existingItem) {
-      if (existingItem.cantidad >= producto.stock) {
-        toast.error('No hay suficiente stock disponible')
+    try {
+      if (!producto || !producto.id) {
+        console.error('Producto inválido:', producto)
+        toast.error('Producto inválido')
         return
       }
+
+      const existingItem = cartItems.find(item => item.producto_id === producto.id)
       
-      setCartItems(cartItems.map(item => 
-        item.producto_id === producto.id 
-          ? { 
-              ...item, 
-              cantidad: item.cantidad + 1, 
-              subtotal: (item.cantidad + 1) * item.precio_unitario,
-              producto_nombre: producto.nombre
-            }
-          : item
-      ))
-    } else {
-      if (producto.stock <= 0) {
-        toast.error('Producto sin stock disponible')
-        return
+      if (existingItem) {
+        if (existingItem.cantidad >= (producto.stock || 0)) {
+          toast.error('No hay suficiente stock disponible')
+          return
+        }
+        
+        const newQuantity = existingItem.cantidad + 1
+        const newSubtotal = newQuantity * existingItem.precio_unitario
+        
+        setCartItems(prevItems => prevItems.map(item => 
+          item.producto_id === producto.id 
+            ? { 
+                ...item, 
+                cantidad: newQuantity, 
+                subtotal: newSubtotal,
+                producto_nombre: producto.nombre || 'Sin nombre'
+              }
+            : item
+        ))
+      } else {
+        if ((producto.stock || 0) <= 0) {
+          toast.error('Producto sin stock disponible')
+          return
+        }
+        
+        const newItem: DetalleVenta = {
+          producto_id: producto.id,
+          cantidad: 1,
+          precio_unitario: producto.precio || 0,
+          subtotal: producto.precio || 0,
+          producto_nombre: producto.nombre || 'Sin nombre'
+        }
+        setCartItems(prevItems => [...prevItems, newItem])
       }
-      
-      const newItem: DetalleVenta = {
-        producto_id: producto.id!,
-        cantidad: 1,
-        precio_unitario: producto.precio,
-        subtotal: producto.precio,
-        producto_nombre: producto.nombre
-      }
-      setCartItems([...cartItems, newItem])
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      toast.error('Error al agregar producto al carrito')
     }
   }
 
@@ -84,7 +99,7 @@ const NuevaVenta = () => {
       subtotal: 0,
       producto_nombre: 'Sin producto'
     }
-    setCartItems([...cartItems, customItem])
+    setCartItems(prevItems => [...prevItems, customItem])
   }
 
   const updateQuantity = (productoId: number, newQuantity: number) => {
@@ -97,7 +112,7 @@ const NuevaVenta = () => {
         return
       }
       
-      setCartItems(cartItems.map(item => 
+      setCartItems(prevItems => prevItems.map(item => 
         item.producto_id === productoId 
           ? { 
               ...item, 
@@ -121,7 +136,7 @@ const NuevaVenta = () => {
       return
     }
 
-    setCartItems(cartItems.map(item => 
+    setCartItems(prevItems => prevItems.map(item => 
       item.producto_id === productoId 
         ? { 
             ...item, 
@@ -137,7 +152,7 @@ const NuevaVenta = () => {
     const item = cartItems.find(item => item.producto_id === productoId)
     if (!item) return
 
-    setCartItems(cartItems.map(item => 
+    setCartItems(prevItems => prevItems.map(item => 
       item.producto_id === productoId 
         ? { 
             ...item, 
@@ -149,11 +164,12 @@ const NuevaVenta = () => {
   }
 
   const removeFromCart = (productoId: number) => {
-    setCartItems(cartItems.filter(item => item.producto_id !== productoId))
+    setCartItems(prevItems => prevItems.filter(item => item.producto_id !== productoId))
   }
 
   const getTotal = () => {
-    return cartItems.reduce((total, item) => total + item.subtotal, 0)
+    const cartTotal = cartItems.reduce((total, item) => total + item.subtotal, 0)
+    return cartTotal + importeDirecto
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -232,34 +248,34 @@ const NuevaVenta = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {productos
                 .filter(producto =>
-                  (!selectedCategoria || producto.categoria_id === Number(selectedCategoria)) &&
+                  (!selectedCategoria || (producto.categoria_id && producto.categoria_id === Number(selectedCategoria))) &&
                   (
-                    producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-                    (producto.codigo ? producto.codigo.toLowerCase().includes(busqueda.toLowerCase()) : false)
+                    (producto.nombre && producto.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
+                    (producto.codigo && producto.codigo.toLowerCase().includes(busqueda.toLowerCase()))
                   )
                 )
                 .map((producto) => (
                   <div key={producto.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
-                      <span className="text-sm font-medium text-gray-900">${producto.precio}</span>
+                      <h3 className="font-medium text-gray-900">{producto.nombre || 'Sin nombre'}</h3>
+                      <span className="text-sm font-medium text-gray-900">${(producto.precio || 0).toFixed(2)}</span>
                     </div>
                     {producto.descripcion && (
                       <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>
                     )}
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        producto.stock > 10 
+                        (producto.stock || 0) > 10 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        Stock: {producto.stock}
+                        Stock: {producto.stock || 0}
                       </span>
-                      <button
-                        onClick={() => addToCart(producto)}
-                        disabled={producto.stock <= 0}
-                        className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
+                                              <button
+                          onClick={() => addToCart(producto)}
+                          disabled={(producto.stock || 0) <= 0}
+                          className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
@@ -381,7 +397,7 @@ const NuevaVenta = () => {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-medium text-gray-900">
-                            {isCustomItem ? 'Sin producto' : producto?.nombre}
+                            {isCustomItem ? 'Sin producto' : (producto?.nombre || item.producto_nombre || 'Sin nombre')}
                           </h4>
                           {isCustomItem ? (
                             <div className="flex items-center space-x-2 mt-1">
@@ -396,7 +412,7 @@ const NuevaVenta = () => {
                               <span className="text-sm text-gray-500">c/u</span>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">${item.precio_unitario} c/u</p>
+                            <p className="text-sm text-gray-500">${item.precio_unitario.toFixed(2)} c/u</p>
                           )}
                         </div>
                         <button
@@ -422,7 +438,7 @@ const NuevaVenta = () => {
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
-                        <span className="font-medium">${item.subtotal}</span>
+                        <span className="font-medium">${item.subtotal.toFixed(2)}</span>
                       </div>
                     </div>
                   )
@@ -431,31 +447,11 @@ const NuevaVenta = () => {
             )}
 
             {/* Total */}
-            {cartItems.length > 0 && (
+            {(cartItems.length > 0 || importeDirecto > 0) && (
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total:</span>
-                  <span>${getTotal().toLocaleString()}</span>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  className={`w-full mt-4 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    esDeuda 
-                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                      : 'btn-primary'
-                  }`}
-                >
-                  {esDeuda ? 'Registrar Deuda' : 'Completar Venta'}
-                </button>
-              </div>
-            )}
-
-            {/* Total con importe directo */}
-            {cartItems.length === 0 && importeDirecto > 0 && (
-              <div className="border-t pt-4 mt-4">
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total:</span>
-                  <span>${importeDirecto.toLocaleString()}</span>
+                  <span>${getTotal().toFixed(2)}</span>
                 </div>
                 <button
                   onClick={handleSubmit}
