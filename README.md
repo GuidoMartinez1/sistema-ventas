@@ -206,7 +206,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 👨‍💻 Autor
 
-**Guido Martinez** - [guimartinez@frba.utn.edu.ar]## 
+**Guido Martinez** - guimartinez@frba.utn.edu.ar
 
 🙏 Agradecimientos
 
