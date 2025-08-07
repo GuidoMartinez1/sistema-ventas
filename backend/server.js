@@ -79,7 +79,6 @@ function initDatabase() {
   db.run(`CREATE TABLE IF NOT EXISTS clientes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
-    email TEXT,
     telefono TEXT,
     direccion TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -104,6 +103,34 @@ function initDatabase() {
     precio_unitario REAL NOT NULL,
     subtotal REAL NOT NULL,
     FOREIGN KEY (venta_id) REFERENCES ventas (id),
+    FOREIGN KEY (producto_id) REFERENCES productos (id)
+  )`);
+
+  // Tabla de proveedores
+  db.run(`CREATE TABLE IF NOT EXISTS proveedores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL UNIQUE
+  )`);
+
+  // Tabla de compras
+  db.run(`CREATE TABLE IF NOT EXISTS compras (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    proveedor_id INTEGER,
+    total REAL NOT NULL,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estado TEXT DEFAULT 'completada',
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores (id)
+  )`);
+
+  // Tabla de detalles de compra
+  db.run(`CREATE TABLE IF NOT EXISTS detalles_compra (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    compra_id INTEGER,
+    producto_id INTEGER,
+    cantidad INTEGER NOT NULL,
+    precio_unitario REAL NOT NULL,
+    subtotal REAL NOT NULL,
+    FOREIGN KEY (compra_id) REFERENCES compras (id),
     FOREIGN KEY (producto_id) REFERENCES productos (id)
   )`);
 
@@ -264,6 +291,10 @@ app.post('/api/categorias', (req, res) => {
 app.put('/api/categorias/:id', (req, res) => {
   const { id } = req.params;
   const { nombre, descripcion } = req.body;
+  
+  if (!nombre) {
+    return res.status(400).json({ error: 'Nombre es requerido' });
+  }
 
   db.run(
     'UPDATE categorias SET nombre = ?, descripcion = ? WHERE id = ?',
@@ -283,7 +314,7 @@ app.put('/api/categorias/:id', (req, res) => {
 
 app.delete('/api/categorias/:id', (req, res) => {
   const { id } = req.params;
-
+  
   db.run('DELETE FROM categorias WHERE id = ?', [id], function(err) {
     if (err) {
       res.status(500).json({ error: err.message });
@@ -293,6 +324,266 @@ app.delete('/api/categorias/:id', (req, res) => {
       return res.status(404).json({ error: 'Categoría no encontrada' });
     }
     res.json({ message: 'Categoría eliminada exitosamente' });
+  });
+});
+
+// Rutas de proveedores
+app.get('/api/proveedores', (req, res) => {
+  db.all('SELECT * FROM proveedores ORDER BY nombre', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/proveedores', (req, res) => {
+  const { nombre } = req.body;
+  
+  if (!nombre) {
+    return res.status(400).json({ error: 'Nombre es requerido' });
+  }
+
+  db.run(
+    'INSERT INTO proveedores (nombre) VALUES (?)',
+    [nombre],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ id: this.lastID, message: 'Proveedor creado exitosamente' });
+    }
+  );
+});
+
+app.put('/api/proveedores/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre } = req.body;
+  
+  if (!nombre) {
+    return res.status(400).json({ error: 'Nombre es requerido' });
+  }
+
+  db.run(
+    'UPDATE proveedores SET nombre = ? WHERE id = ?',
+    [nombre, id],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Proveedor no encontrado' });
+      }
+      res.json({ message: 'Proveedor actualizado exitosamente' });
+    }
+  );
+});
+
+app.delete('/api/proveedores/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM proveedores WHERE id = ?', [id], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Proveedor no encontrado' });
+    }
+    res.json({ message: 'Proveedor eliminado exitosamente' });
+  });
+});
+
+// Rutas de compras
+app.get('/api/compras', (req, res) => {
+  db.all(`
+    SELECT c.*, p.nombre as proveedor_nombre 
+    FROM compras c 
+    LEFT JOIN proveedores p ON c.proveedor_id = p.id 
+    ORDER BY c.fecha DESC
+  `, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+app.post('/api/compras', (req, res) => {
+  const { proveedor_id, productos, total } = req.body;
+  
+  console.log('📦 Procesando nueva compra...');
+  console.log(`🏢 Proveedor ID: ${proveedor_id}`);
+  console.log(`📦 Productos: ${productos.length} items`);
+  console.log(`💵 Total: $${total}`);
+  
+  if (!proveedor_id) {
+    console.error('❌ Validación fallida: Proveedor es requerido');
+    return res.status(400).json({ error: 'Proveedor es requerido' });
+  }
+
+  if (!productos || productos.length === 0) {
+    console.error('❌ Validación fallida: Productos son requeridos');
+    return res.status(400).json({ error: 'Productos son requeridos' });
+  }
+
+  db.serialize(() => {
+    console.log('🔄 Iniciando transacción de compra...');
+    db.run('BEGIN TRANSACTION');
+    
+    db.run(
+      'INSERT INTO compras (proveedor_id, total) VALUES (?, ?)',
+      [proveedor_id, total],
+      function(err) {
+        if (err) {
+          console.error('❌ Error al crear compra:', err.message);
+          db.run('ROLLBACK');
+          return res.status(500).json({ error: err.message });
+        }
+        
+        const compra_id = this.lastID;
+        console.log(`✅ Compra creada con ID: ${compra_id}`);
+        let completed = 0;
+        let hasError = false;
+
+        productos.forEach((producto, index) => {
+          db.run(
+            'INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)',
+            [compra_id, producto.producto_id, producto.cantidad, producto.precio_unitario, producto.subtotal],
+            function(err) {
+              if (err) {
+                console.error(`❌ Error al insertar detalle ${index + 1}:`, err.message);
+                hasError = true;
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: err.message });
+              }
+              
+              // Actualizar stock y precio de costo del producto
+              db.run(
+                'UPDATE productos SET stock = stock + ?, precio_costo = ? WHERE id = ?',
+                [producto.cantidad, producto.precio_unitario, producto.producto_id],
+                function(err) {
+                  if (err) {
+                    console.error(`❌ Error al actualizar producto ${producto.producto_id}:`, err.message);
+                  } else {
+                    console.log(`✅ Producto ${producto.producto_id} actualizado: +${producto.cantidad} stock, precio_costo: $${producto.precio_unitario}`);
+                    
+                    // Recalcular margen de ganancia automáticamente
+                    db.get('SELECT precio FROM productos WHERE id = ?', [producto.producto_id], (err, row) => {
+                      if (!err && row && row.precio > 0 && producto.precio_unitario > 0) {
+                        const nuevoMargen = ((row.precio - producto.precio_unitario) / producto.precio_unitario) * 100;
+                        db.run(
+                          'UPDATE productos SET porcentaje_ganancia = ? WHERE id = ?',
+                          [nuevoMargen, producto.producto_id],
+                          function(err) {
+                            if (err) {
+                              console.error(`❌ Error al actualizar margen de ganancia:`, err.message);
+                            } else {
+                              console.log(`✅ Margen de ganancia actualizado: ${nuevoMargen.toFixed(2)}%`);
+                            }
+                          }
+                        );
+                      }
+                    });
+                  }
+                }
+              );
+              
+              completed++;
+              console.log(`✅ Producto ${index + 1} procesado (${completed}/${productos.length})`);
+              
+              if (completed === productos.length && !hasError) {
+                db.run('COMMIT', (commitErr) => {
+                  if (commitErr) {
+                    console.error('❌ Error al hacer COMMIT:', commitErr.message);
+                    return res.status(500).json({ error: 'Error al confirmar la compra' });
+                  } else {
+                    console.log(`🎉 Compra completada exitosamente! ID: ${compra_id}, Total: $${total}`);
+                    res.json({ id: compra_id, message: 'Compra creada exitosamente' });
+                  }
+                });
+              }
+            }
+          );
+        });
+      }
+    );
+  });
+});
+
+app.get('/api/compras/:id', (req, res) => {
+  const { id } = req.params;
+  
+  db.get(`
+    SELECT c.*, p.nombre as proveedor_nombre 
+    FROM compras c 
+    LEFT JOIN proveedores p ON c.proveedor_id = p.id 
+    WHERE c.id = ?
+  `, [id], (err, compra) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!compra) {
+      return res.status(404).json({ error: 'Compra no encontrada' });
+    }
+
+    db.all(`
+      SELECT dc.*, p.nombre as producto_nombre 
+      FROM detalles_compra dc 
+      JOIN productos p ON dc.producto_id = p.id 
+      WHERE dc.compra_id = ?
+    `, [id], (err, detalles) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ ...compra, detalles });
+    });
+  });
+});
+
+// Ruta para abrir bolsa (restar 1 unidad de stock)
+app.post('/api/productos/:id/abrir-bolsa', (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`📦 Abriendo bolsa del producto ${id}...`);
+  
+  db.get('SELECT nombre, stock FROM productos WHERE id = ?', [id], (err, producto) => {
+    if (err) {
+      console.error('❌ Error al obtener producto:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    
+    if (!producto) {
+      console.error('❌ Producto no encontrado');
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    
+    if (producto.stock <= 0) {
+      console.error('❌ No hay stock disponible para abrir');
+      return res.status(400).json({ error: 'No hay stock disponible para abrir' });
+    }
+    
+    db.run(
+      'UPDATE productos SET stock = stock - 1 WHERE id = ?',
+      [id],
+      function(err) {
+        if (err) {
+          console.error('❌ Error al abrir bolsa:', err.message);
+          return res.status(500).json({ error: err.message });
+        }
+        
+        console.log(`✅ Bolsa abierta exitosamente para ${producto.nombre}. Stock restante: ${producto.stock - 1}`);
+        res.json({ 
+          message: 'Bolsa abierta exitosamente',
+          producto: producto.nombre,
+          stock_restante: producto.stock - 1
+        });
+      }
+    );
   });
 });
 
@@ -344,12 +635,13 @@ app.get('/api/ventas', (req, res) => {
 });
 
 app.post('/api/ventas', (req, res) => {
-  const { cliente_id, productos, total } = req.body;
+  const { cliente_id, productos, total, estado = 'completada' } = req.body;
   
   console.log('💰 Procesando nueva venta...');
   console.log(`👤 Cliente ID: ${cliente_id}`);
   console.log(`📦 Productos: ${productos.length} items`);
   console.log(`💵 Total: $${total}`);
+  console.log(`📊 Estado: ${estado}`);
   console.log('📋 Detalle de productos:');
   productos.forEach((prod, index) => {
     console.log(`   ${index + 1}. ${prod.producto_nombre || 'Sin nombre'} - Cantidad: ${prod.cantidad} - Precio: $${prod.precio_unitario} - Subtotal: $${prod.subtotal}`);
@@ -374,12 +666,12 @@ app.post('/api/ventas', (req, res) => {
   }
 
   db.serialize(() => {
-    console.log('🔄 Iniciando transacción de venta...');
+    console.log('🔄 Iniciando transacción...');
     db.run('BEGIN TRANSACTION');
     
     db.run(
-      'INSERT INTO ventas (cliente_id, total) VALUES (?, ?)',
-      [cliente_id, total],
+      'INSERT INTO ventas (cliente_id, total, estado) VALUES (?, ?, ?)',
+      [cliente_id, total, estado],
       function(err) {
         if (err) {
           console.error('❌ Error al crear venta:', err.message);
@@ -394,59 +686,48 @@ app.post('/api/ventas', (req, res) => {
         }
         
         const venta_id = this.lastID;
-        console.log(`✅ Venta creada con ID: ${venta_id}`);
+        console.log(`✅ Venta creada con ID: ${venta_id} y estado: ${estado}`);
         let completed = 0;
         let hasError = false;
 
         productos.forEach((producto, index) => {
-          console.log(`📝 Procesando producto ${index + 1}/${productos.length}: ${producto.producto_nombre || 'Sin nombre'}`);
-          
           db.run(
             'INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)',
             [venta_id, producto.producto_id, producto.cantidad, producto.precio_unitario, producto.subtotal],
             function(err) {
-              if (err && !hasError) {
+              if (err) {
+                console.error(`❌ Error al insertar detalle ${index + 1}:`, err.message);
                 hasError = true;
-                console.error('❌ Error al insertar detalle de venta:', err.message);
-                console.log('🔄 Ejecutando ROLLBACK...');
                 db.run('ROLLBACK', (rollbackErr) => {
                   if (rollbackErr) {
                     console.error('❌ Error al hacer ROLLBACK:', rollbackErr.message);
                   } else {
-                    console.log('✅ ROLLBACK ejecutado correctamente - Venta cancelada');
+                    console.log('✅ ROLLBACK ejecutado correctamente');
                   }
                 });
-                return res.status(500).json({ 
-                  error: `Error al procesar producto ${producto.producto_nombre || 'Sin nombre'}: ${err.message}` 
-                });
+                return res.status(500).json({ error: err.message });
               }
-              
-              // Actualizar stock solo si no hay error
-              if (!hasError) {
-                db.run(
-                  'UPDATE productos SET stock = stock - ? WHERE id = ?',
-                  [producto.cantidad, producto.producto_id],
-                  function(err) {
-                    if (err) {
-                      console.error(`❌ Error al actualizar stock del producto ${producto.producto_id}:`, err.message);
-                    } else {
-                      console.log(`✅ Stock actualizado para producto ${producto.producto_id}: -${producto.cantidad} unidades`);
-                    }
+              // Descontar stock SIEMPRE
+              db.run(
+                'UPDATE productos SET stock = stock - ? WHERE id = ?',
+                [producto.cantidad, producto.producto_id],
+                function(err) {
+                  if (err) {
+                    console.error(`❌ Error al actualizar stock del producto ${producto.producto_id}:`, err.message);
+                  } else {
+                    console.log(`✅ Stock actualizado para producto ${producto.producto_id}: -${producto.cantidad} unidades`);
                   }
-                );
-              }
-              
+                }
+              );
               completed++;
-              console.log(`✅ Producto ${index + 1} procesado (${completed}/${productos.length})`);
-              
               if (completed === productos.length && !hasError) {
                 db.run('COMMIT', (commitErr) => {
                   if (commitErr) {
                     console.error('❌ Error al hacer COMMIT:', commitErr.message);
                     return res.status(500).json({ error: 'Error al confirmar la venta' });
                   } else {
-                    console.log(`🎉 Venta completada exitosamente! ID: ${venta_id}, Total: $${total}`);
-                    res.json({ id: venta_id, message: 'Venta creada exitosamente' });
+                    console.log(`🎉 Venta completada exitosamente! ID: ${venta_id}, Total: $${total}, Estado: ${estado}`);
+                    res.json({ id: venta_id, message: 'Venta creada exitosamente', estado: estado });
                   }
                 });
               }
@@ -487,6 +768,80 @@ app.get('/api/ventas/:id', (req, res) => {
       res.json({ ...venta, detalles });
     });
   });
+});
+
+// Ruta para obtener deudas (ventas con estado 'adeuda')
+app.get('/api/deudas', (req, res) => {
+  console.log('💰 Obteniendo lista de deudas...');
+  
+  db.all(`
+    SELECT v.*, c.nombre as cliente_nombre, c.telefono, c.direccion
+    FROM ventas v 
+    LEFT JOIN clientes c ON v.cliente_id = c.id 
+    WHERE v.estado = 'adeuda'
+    ORDER BY v.fecha DESC
+  `, (err, deudas) => {
+    if (err) {
+      console.error('❌ Error al obtener deudas:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    
+    console.log(`✅ Deudas obtenidas: ${deudas.length} deudas encontradas`);
+    
+    // Para cada deuda, obtener los detalles de productos
+    const deudasConDetalles = deudas.map(deuda => {
+      return new Promise((resolve, reject) => {
+        db.all(`
+          SELECT dv.*, p.nombre as producto_nombre 
+          FROM detalles_venta dv 
+          JOIN productos p ON dv.producto_id = p.id 
+          WHERE dv.venta_id = ?
+        `, [deuda.id], (err, detalles) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ ...deuda, detalles });
+          }
+        });
+      });
+    });
+    
+    Promise.all(deudasConDetalles)
+      .then(resultado => {
+        console.log(`📋 Detalles de productos cargados para ${resultado.length} deudas`);
+        res.json(resultado);
+      })
+      .catch(error => {
+        console.error('❌ Error al cargar detalles de deudas:', error.message);
+        res.status(500).json({ error: error.message });
+      });
+  });
+});
+
+// Ruta para marcar una deuda como pagada
+app.put('/api/deudas/:id/pagar', (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`💰 Marcando deuda ${id} como pagada...`);
+  
+  db.run(
+    'UPDATE ventas SET estado = ? WHERE id = ? AND estado = ?',
+    ['completada', id, 'adeuda'],
+    function(err) {
+      if (err) {
+        console.error('❌ Error al marcar deuda como pagada:', err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      if (this.changes === 0) {
+        console.log(`⚠️ Deuda ${id} no encontrada o ya no está en estado 'adeuda'`);
+        return res.status(404).json({ error: 'Deuda no encontrada o ya pagada' });
+      }
+      
+      console.log(`✅ Deuda ${id} marcada como pagada exitosamente`);
+      res.json({ message: 'Deuda marcada como pagada exitosamente' });
+    }
+  );
 });
 
 // Ruta para obtener estadísticas

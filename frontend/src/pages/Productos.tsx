@@ -86,13 +86,25 @@ const Productos = () => {
   }
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+    if (window.confirm('¿Está seguro de que desea eliminar este producto?')) {
       try {
         await productosAPI.delete(id)
         toast.success('Producto eliminado exitosamente')
         fetchData()
       } catch (error) {
         toast.error('Error al eliminar producto')
+      }
+    }
+  }
+
+  const handleAbrirBolsa = async (id: number) => {
+    if (window.confirm('¿Está seguro de que desea abrir una bolsa de este producto? Se restará 1 unidad del stock.')) {
+      try {
+        await productosAPI.abrirBolsa(id)
+        toast.success('Bolsa abierta exitosamente')
+        fetchData()
+      } catch (error) {
+        toast.error('Error al abrir bolsa')
       }
     }
   }
@@ -265,7 +277,7 @@ const Productos = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEdit(producto)}
-                        className="text-orange-600 hover:text-orange-900"
+                        className="text-indigo-600 hover:text-indigo-900"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
@@ -275,6 +287,15 @@ const Productos = () => {
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                      {producto.stock > 0 && (
+                        <button
+                          onClick={() => handleAbrirBolsa(producto.id!)}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Abrir bolsa (restar 1 unidad)"
+                        >
+                          📦
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -1,85 +1,73 @@
-# 🛒 Sistema de Ventas
+# 🐾 Sistema de AliMar
 
-Un sistema completo de gestión de ventas desarrollado con **React + TypeScript** en el frontend y **Node.js + Express + SQLite** en el backend.
+Un sistema completo de gestión de ventas para tu negocio de mascotas con interfaz moderna y funcionalidades avanzadas.
 
 ## ✨ Características
 
-### 🎯 **Funcionalidades Principales**
-- **Gestión de Productos**: Crear, editar, eliminar productos con cálculo automático de ganancia
-- **Gestión de Clientes**: Administrar base de datos de clientes
-- **Gestión de Categorías**: Organizar productos por categorías
-- **Sistema de Ventas**: Crear ventas con múltiples productos y transacciones seguras
-- **Dashboard**: Estadísticas en tiempo real del negocio
-- **Stock Management**: Control automático de inventario
+### 📦 Gestión de Productos
+- **Crear productos** con nombre, descripción, precio, stock y código
+- **Categorizar productos** para mejor organización
+- **Editar y eliminar** productos existentes
+- **Control de stock** con alertas de bajo inventario
+- **Búsqueda y filtrado** de productos
 
-### 🔧 **Características Técnicas**
-- **Cálculo Automático de Ganancia**: El sistema calcula automáticamente el porcentaje de ganancia basado en precio de venta y costo
-- **Transacciones Seguras**: Todas las ventas se procesan en transacciones para garantizar integridad de datos
-- **Logging Completo**: Sistema de logs detallado para monitorear todas las operaciones
-- **Validaciones Robustas**: Validación tanto en frontend como backend
-- **UI Moderna**: Interfaz moderna y responsive con Tailwind CSS
+### 📂 Gestión de Categorías
+- **Crear categorías** para organizar productos
+- **Editar y eliminar** categorías
+- **Vista en grid** con diseño moderno
+- **Descripción opcional** para cada categoría
 
-## 🚀 Tecnologías Utilizadas
+### 👥 Gestión de Clientes
+- **Registro de clientes** con información completa
+- **Historial de compras** por cliente
+- **Datos de contacto** (email, teléfono, dirección)
 
-### **Frontend**
-- **React 18** con TypeScript
-- **Vite** para build y desarrollo
-- **Tailwind CSS** para estilos
-- **React Router** para navegación
-- **Axios** para llamadas API
-- **React Hot Toast** para notificaciones
-- **Lucide React** para iconos
+### 💰 Gestión de Ventas
+- **Crear ventas** con múltiples productos
+- **Cálculo automático** de totales y subtotales
+- **Actualización automática** del stock
+- **Historial completo** de ventas
+- **Detalles de venta** con productos y cantidades
 
-### **Backend**
-- **Node.js** con Express.js
-- **SQLite3** como base de datos
-- **CORS** para comunicación cross-origin
-- **Middleware personalizado** para logging
+### 📊 Dashboard
+- **Estadísticas en tiempo real**
+- **Productos con bajo stock**
+- **Ventas recientes**
+- **Gráficos y métricas**
 
-## 📦 Instalación
+## 🚀 Instalación
 
-### **Prerrequisitos**
-- Node.js (versión 16 o superior)
+### Requisitos
+- Node.js (versión 14 o superior)
 - npm o yarn
 
-### **Pasos de Instalación**
+### Pasos de instalación
 
 1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/tu-usuario/sistema-ventas.git
-   cd sistema-ventas
-   ```
-
-2. **Instalar dependencias del backend**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-3. **Instalar dependencias del frontend**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. **Inicializar la base de datos**
-   ```bash
-   cd ../backend
-   node seed.js
-   ```
-
-## 🏃‍♂️ Ejecución
-
-### **Opción 1: Scripts Automáticos (Recomendado)**
 ```bash
-# Instalar todo e iniciar
-./install.bat
-
-# O solo iniciar si ya está instalado
-./start.bat
+git clone <url-del-repositorio>
+cd sistema-ventas
 ```
 
-### **Opción 2: Manual**
+2. **Instalar dependencias**
+```bash
+# Instalar dependencias del backend
+cd backend
+npm install
+
+# Instalar dependencias del frontend
+cd ../frontend
+npm install
+```
+
+3. **Configurar la base de datos**
+```bash
+# Desde la carpeta backend
+cd backend
+node seed.js
+```
+
+4. **Ejecutar el sistema**
 ```bash
 # Terminal 1 - Backend
 cd backend
@@ -90,107 +78,190 @@ cd frontend
 npm run dev
 ```
 
-## 🌐 Acceso
+5. **Acceder al sistema**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
+## 📖 Guía de Uso
 
-## 📊 Estructura del Proyecto
+### 🛍️ Crear Productos
+
+1. **Navegar a Productos**
+   - Ve a la sección "Productos" en el menú lateral
+
+2. **Crear nuevo producto**
+   - Haz clic en "Nuevo Producto"
+   - Completa el formulario:
+     - **Nombre** (obligatorio): Nombre del producto
+     - **Descripción** (opcional): Descripción detallada
+     - **Precio** (obligatorio): Precio de venta
+     - **Stock** (opcional): Cantidad disponible
+     - **Categoría** (opcional): Selecciona una categoría
+     - **Código** (opcional): Código único del producto
+
+3. **Guardar producto**
+   - Haz clic en "Crear"
+   - El producto aparecerá en la lista
+
+### 📂 Crear Categorías
+
+1. **Navegar a Categorías**
+   - Ve a la sección "Categorías" en el menú lateral
+
+2. **Crear nueva categoría**
+   - Haz clic en "Nueva Categoría"
+   - Completa el formulario:
+     - **Nombre** (obligatorio): Nombre de la categoría
+     - **Descripción** (opcional): Descripción de la categoría
+
+3. **Guardar categoría**
+   - Haz clic en "Crear"
+   - La categoría aparecerá en el grid
+
+### 👥 Crear Clientes
+
+1. **Navegar a Clientes**
+   - Ve a la sección "Clientes" en el menú lateral
+
+2. **Crear nuevo cliente**
+   - Haz clic en "Nuevo Cliente"
+   - Completa el formulario:
+     - **Nombre** (obligatorio): Nombre completo
+     - **Email** (opcional): Correo electrónico
+     - **Teléfono** (opcional): Número de teléfono
+     - **Dirección** (opcional): Dirección completa
+
+3. **Guardar cliente**
+   - Haz clic en "Crear"
+   - El cliente aparecerá en la lista
+
+### 💰 Crear Ventas
+
+1. **Navegar a Nueva Venta**
+   - Ve a la sección "Nueva Venta" en el menú lateral
+
+2. **Seleccionar cliente** (opcional)
+   - Puedes seleccionar un cliente existente o crear uno nuevo
+
+3. **Agregar productos**
+   - Busca productos por nombre o código
+   - Selecciona la cantidad
+   - El sistema calcula automáticamente el subtotal
+
+4. **Completar la venta**
+   - Revisa el total
+   - Haz clic en "Finalizar Venta"
+   - El stock se actualiza automáticamente
+
+## 🗂️ Estructura del Proyecto
 
 ```
 sistema-ventas/
-├── backend/
-│   ├── server.js          # Servidor principal
-│   ├── seed.js            # Inicialización de BD
-│   ├── database.sqlite    # Base de datos SQLite
-│   └── package.json
-├── frontend/
+├── backend/                 # Servidor Node.js + Express
+│   ├── server.js           # Servidor principal
+│   ├── seed.js             # Script para poblar BD
+│   ├── database.sqlite     # Base de datos SQLite
+│   └── package.json        # Dependencias del backend
+├── frontend/               # Aplicación React + TypeScript
 │   ├── src/
-│   │   ├── components/    # Componentes React
-│   │   ├── pages/         # Páginas de la aplicación
-│   │   ├── services/      # Servicios API
-│   │   └── main.tsx       # Punto de entrada
-│   ├── index.html
-│   └── package.json
-├── install.bat            # Script de instalación
-├── start.bat              # Script de inicio
-└── README.md
+│   │   ├── components/     # Componentes reutilizables
+│   │   ├── pages/          # Páginas principales
+│   │   ├── services/       # Servicios de API
+│   │   └── App.tsx         # Componente principal
+│   └── package.json        # Dependencias del frontend
+└── README.md              # Este archivo
 ```
 
-## 🔌 API Endpoints
+## 🛠️ Tecnologías Utilizadas
 
-### **Productos**
-- `GET /api/productos` - Obtener todos los productos
-- `POST /api/productos` - Crear nuevo producto
-- `PUT /api/productos/:id` - Actualizar producto
-- `DELETE /api/productos/:id` - Eliminar producto
+### Backend
+- **Node.js** - Runtime de JavaScript
+- **Express.js** - Framework web
+- **SQLite** - Base de datos
+- **CORS** - Middleware para CORS
 
-### **Categorías**
-- `GET /api/categorias` - Obtener todas las categorías
-- `POST /api/categorias` - Crear nueva categoría
-- `PUT /api/categorias/:id` - Actualizar categoría
-- `DELETE /api/categorias/:id` - Eliminar categoría
+### Frontend
+- **React** - Biblioteca de UI
+- **TypeScript** - Tipado estático
+- **Vite** - Build tool
+- **Tailwind CSS** - Framework de CSS
+- **React Router** - Enrutamiento
+- **Axios** - Cliente HTTP
+- **React Hot Toast** - Notificaciones
+- **Lucide React** - Iconos
 
-### **Clientes**
-- `GET /api/clientes` - Obtener todos los clientes
-- `POST /api/clientes` - Crear nuevo cliente
+## 📊 Base de Datos
 
-### **Ventas**
-- `GET /api/ventas` - Obtener todas las ventas
-- `POST /api/ventas` - Crear nueva venta
-- `GET /api/ventas/:id` - Obtener detalles de una venta
-- `DELETE /api/ventas/limpiar-huérfanas` - Limpiar ventas sin detalles
+### Tablas Principales
 
-### **Estadísticas**
-- `GET /api/stats` - Obtener estadísticas del sistema
-- `GET /api/productos/bajo-stock` - Productos con bajo stock
-- `POST /api/calcular-ganancia` - Calcular porcentaje de ganancia
+#### `categorias`
+- `id` (PRIMARY KEY)
+- `nombre` (TEXT, UNIQUE)
+- `descripcion` (TEXT)
+- `created_at` (DATETIME)
 
-## 🎯 Características Destacadas
+#### `productos`
+- `id` (PRIMARY KEY)
+- `nombre` (TEXT)
+- `descripcion` (TEXT)
+- `precio` (REAL)
+- `stock` (INTEGER)
+- `categoria_id` (FOREIGN KEY)
+- `codigo` (TEXT, UNIQUE)
+- `created_at` (DATETIME)
+- `updated_at` (DATETIME)
 
-### **Cálculo Automático de Ganancia**
-El sistema puede calcular automáticamente el porcentaje de ganancia:
-- Si proporcionas precio de venta y costo → calcula automáticamente
-- Si solo proporcionas precio de venta → usa 30% por defecto
-- Endpoint especial para cálculos en tiempo real
+#### `clientes`
+- `id` (PRIMARY KEY)
+- `nombre` (TEXT)
+- `email` (TEXT)
+- `telefono` (TEXT)
+- `direccion` (TEXT)
+- `created_at` (DATETIME)
 
-### **Sistema de Logging**
-- Logs detallados de todas las operaciones
-- Monitoreo de requests/responses
-- Tracking de transacciones de ventas
-- Logs de errores con contexto completo
+#### `ventas`
+- `id` (PRIMARY KEY)
+- `cliente_id` (FOREIGN KEY)
+- `total` (REAL)
+- `fecha` (DATETIME)
+- `estado` (TEXT)
 
-### **Transacciones Seguras**
-- Todas las ventas se procesan en transacciones
-- Rollback automático en caso de errores
-- Validación de stock antes de procesar
-- Actualización automática de inventario
+#### `detalles_venta`
+- `id` (PRIMARY KEY)
+- `venta_id` (FOREIGN KEY)
+- `producto_id` (FOREIGN KEY)
+- `cantidad` (INTEGER)
+- `precio_unitario` (REAL)
+- `subtotal` (REAL)
 
-## 🛠️ Desarrollo
+## 🔧 Comandos Útiles
 
-### **Estructura de Base de Datos**
-```sql
--- Tablas principales
-categorias (id, nombre, descripcion, created_at)
-productos (id, nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, created_at, updated_at)
-clientes (id, nombre, email, telefono, direccion, created_at)
-ventas (id, cliente_id, total, fecha, estado)
-detalles_venta (id, venta_id, producto_id, cantidad, precio_unitario, subtotal)
+```bash
+# Ejecutar el sistema completo
+npm run start
+
+# Solo backend
+cd backend && npm start
+
+# Solo frontend
+cd frontend && npm run dev
+
+# Poblar base de datos
+cd backend && node seed.js
+
+# Limpiar base de datos
+rm backend/database.sqlite
 ```
 
-### **Variables de Entorno**
-El proyecto no requiere variables de entorno por defecto, pero puedes configurar:
-- `PORT` - Puerto del servidor backend (default: 3001)
+## 🎯 Próximas Funcionalidades
 
-## 📝 Logs y Monitoreo
-
-El sistema incluye un sistema de logging completo que registra:
-- Todas las peticiones HTTP con timestamps
-- Headers y body de las requests
-- Status codes y respuestas
-- Errores detallados con stack traces
-- Operaciones de base de datos
-- Transacciones de ventas
+- [ ] **Reportes avanzados** con gráficos
+- [ ] **Exportar datos** a Excel/PDF
+- [ ] **Sistema de usuarios** y roles
+- [ ] **Notificaciones** de stock bajo
+- [ ] **Backup automático** de base de datos
+- [ ] **API REST** documentada
+- [ ] **Tests automatizados**
 
 ## 🤝 Contribuir
 
@@ -200,21 +271,17 @@ El sistema incluye un sistema de logging completo que registra:
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-## 📄 Licencia
+## 📝 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 👨‍💻 Autor
+## 📞 Soporte
 
-**Tu Nombre** - [tu-email@ejemplo.com](mailto:tu-email@ejemplo.com)
-
-## 🙏 Agradecimientos
-
-- React y la comunidad de desarrolladores
-- Tailwind CSS por el framework de estilos
-- SQLite por la base de datos ligera
-- Express.js por el framework web
+Si tienes alguna pregunta o problema:
+- Abre un issue en GitHub
+- Contacta al equipo de desarrollo
+- Revisa la documentación de la API
 
 ---
 
-⭐ **¡Si te gusta este proyecto, dale una estrella en GitHub!** 
+**¡Disfruta usando tu Sistema de AliMar! 🐾** 

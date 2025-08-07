@@ -10,10 +10,10 @@ const Clientes = () => {
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
-    email: '',
     telefono: '',
     direccion: ''
   })
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => {
     fetchClientes()
@@ -47,7 +47,6 @@ const Clientes = () => {
   const resetForm = () => {
     setFormData({
       nombre: '',
-      email: '',
       telefono: '',
       direccion: ''
     })
@@ -77,6 +76,17 @@ const Clientes = () => {
         </button>
       </div>
 
+      {/* Buscador */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar cliente por nombre, teléfono o dirección..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          className="input-field w-full md:w-1/2"
+        />
+      </div>
+
       {/* Clientes Table */}
       <div className="card">
         <div className="overflow-x-auto">
@@ -87,9 +97,6 @@ const Clientes = () => {
                   Cliente
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Teléfono
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -98,33 +105,36 @@ const Clientes = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {clientes.map((cliente) => (
-                <tr key={cliente.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <User className="h-6 w-6 text-green-600" />
+              {clientes
+                .filter(cliente =>
+                  cliente.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                  (cliente.telefono && cliente.telefono.toLowerCase().includes(busqueda.toLowerCase())) ||
+                  (cliente.direccion && cliente.direccion.toLowerCase().includes(busqueda.toLowerCase()))
+                )
+                .map((cliente) => (
+                  <tr key={cliente.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <User className="h-6 w-6 text-green-600" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {cliente.nombre}
+                          </div>
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {cliente.nombre}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {cliente.email || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {cliente.telefono || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {cliente.direccion || '-'}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.telefono || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.direccion || '-'}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -148,17 +158,6 @@ const Clientes = () => {
                     required
                     value={formData.nombre}
                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="input-field"
                   />
                 </div>

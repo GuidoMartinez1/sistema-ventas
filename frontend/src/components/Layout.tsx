@@ -6,7 +6,10 @@ import {
   ShoppingCart, 
   Plus,
   TrendingUp,
-  Tag
+  Tag,
+  DollarSign,
+  Building,
+  Truck
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -21,8 +24,12 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Productos', href: '/productos', icon: Package },
     { name: 'Categorías', href: '/categorias', icon: Tag },
     { name: 'Clientes', href: '/clientes', icon: Users },
+    { name: 'Proveedores', href: '/proveedores', icon: Building },
     { name: 'Ventas', href: '/ventas', icon: ShoppingCart },
     { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
+    { name: 'Compras', href: '/compras', icon: Truck },
+    { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
+    { name: 'Deudas', href: '/deudas', icon: DollarSign },
   ]
 
   return (

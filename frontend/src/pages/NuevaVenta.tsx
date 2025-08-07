@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Minus, Trash2, ShoppingCart } from 'lucide-react'
-import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
-import { Producto, Cliente, DetalleVenta } from '../services/api'
+import { productosAPI, clientesAPI, ventasAPI, categoriasAPI } from '../services/api'
+import { Producto, Cliente, DetalleVenta, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,9 +9,14 @@ const NuevaVenta = () => {
   const navigate = useNavigate()
   const [productos, setProductos] = useState<Producto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [selectedCategoria, setSelectedCategoria] = useState('')
+  const [busqueda, setBusqueda] = useState('')
   const [selectedCliente, setSelectedCliente] = useState<number | null>(null)
   const [cartItems, setCartItems] = useState<DetalleVenta[]>([])
   const [loading, setLoading] = useState(true)
+  const [esDeuda, setEsDeuda] = useState(false)
+  const [importeDirecto, setImporteDirecto] = useState<number>(0)
 
   useEffect(() => {
     fetchData()
@@ -19,12 +24,14 @@ const NuevaVenta = () => {
 
   const fetchData = async () => {
     try {
-      const [productosResponse, clientesResponse] = await Promise.all([
+      const [productosResponse, clientesResponse, categoriasResponse] = await Promise.all([
         productosAPI.getAll(),
-        clientesAPI.getAll()
+        clientesAPI.getAll(),
+        categoriasAPI.getAll()
       ])
       setProductos(productosResponse.data)
       setClientes(clientesResponse.data)
+      setCategorias(categoriasResponse.data)
     } catch (error) {
       toast.error('Error al cargar datos')
     } finally {
@@ -105,28 +112,32 @@ const NuevaVenta = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (cartItems.length === 0) {
-      toast.error('Debes agregar al menos un producto')
+    if (esDeuda && !selectedCliente) {
+      toast.error('Debe seleccionar un cliente para registrar una deuda')
       return
     }
-
+    
+    if (cartItems.length === 0) {
+      // Permitir venta sin productos, solo con importe
+      if (!importeDirecto || importeDirecto <= 0) {
+        toast.error('Debe agregar productos al carrito o especificar un importe')
+        return
+      }
+    }
+    
     try {
       const ventaData = {
-        cliente_id: selectedCliente,
+        cliente_id: selectedCliente || undefined,
         productos: cartItems,
-        total: getTotal()
+        total: cartItems.length > 0 ? getTotal() : importeDirecto,
+        estado: esDeuda ? 'adeuda' : 'completada'
       }
       
-      console.log('🛒 Datos de la venta a enviar:', ventaData)
-      console.log('📦 Productos en el carrito:', cartItems)
-      
       await ventasAPI.create(ventaData)
-      
-      toast.success('Venta creada exitosamente')
+      toast.success(esDeuda ? 'Venta registrada como deuda' : 'Venta completada exitosamente')
       navigate('/ventas')
     } catch (error) {
-      console.error('❌ Error al crear venta:', error)
-      toast.error('Error al crear la venta')
+      toast.error('Error al procesar la venta')
     }
   }
 
@@ -150,34 +161,62 @@ const NuevaVenta = () => {
         <div className="lg:col-span-2">
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Productos Disponibles</h2>
+            {/* Buscador y filtro */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="Buscar producto por nombre o código..."
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                className="input-field w-full md:w-1/2"
+              />
+              <select
+                value={selectedCategoria}
+                onChange={e => setSelectedCategoria(e.target.value)}
+                className="input-field w-full md:w-1/3"
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                ))}
+              </select>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {productos.map((producto) => (
-                <div key={producto.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
-                    <span className="text-sm font-medium text-gray-900">${producto.precio}</span>
+              {productos
+                .filter(producto =>
+                  (!selectedCategoria || producto.categoria_id === Number(selectedCategoria)) &&
+                  (
+                    producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                    (producto.codigo ? producto.codigo.toLowerCase().includes(busqueda.toLowerCase()) : false)
+                  )
+                )
+                .map((producto) => (
+                  <div key={producto.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
+                      <span className="text-sm font-medium text-gray-900">${producto.precio}</span>
+                    </div>
+                    {producto.descripcion && (
+                      <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        producto.stock > 10 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        Stock: {producto.stock}
+                      </span>
+                      <button
+                        onClick={() => addToCart(producto)}
+                        disabled={producto.stock <= 0}
+                        className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  {producto.descripcion && (
-                    <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      producto.stock > 10 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      Stock: {producto.stock}
-                    </span>
-                    <button
-                      onClick={() => addToCart(producto)}
-                      disabled={producto.stock <= 0}
-                      className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>
@@ -207,6 +246,44 @@ const NuevaVenta = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Opción de Deuda */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={esDeuda}
+                  onChange={(e) => setEsDeuda(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Marcar como deuda
+                </span>
+              </label>
+              {esDeuda && (
+                <p className="text-xs text-orange-600 mt-1">
+                  ⚠️ Esta venta quedará registrada como deuda pendiente
+                </p>
+              )}
+            </div>
+
+            {/* Importe directo (para ventas sin productos) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Importe directo (opcional)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={importeDirecto}
+                onChange={(e) => setImporteDirecto(parseFloat(e.target.value) || 0)}
+                className="input-field"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Use este campo para ventas sin productos específicos
+              </p>
             </div>
 
             {/* Items del carrito */}
@@ -263,9 +340,33 @@ const NuevaVenta = () => {
                 </div>
                 <button
                   onClick={handleSubmit}
-                  className="w-full btn-primary mt-4"
+                  className={`w-full mt-4 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    esDeuda 
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                      : 'btn-primary'
+                  }`}
                 >
-                  Completar Venta
+                  {esDeuda ? 'Registrar Deuda' : 'Completar Venta'}
+                </button>
+              </div>
+            )}
+
+            {/* Total con importe directo */}
+            {cartItems.length === 0 && importeDirecto > 0 && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between items-center text-lg font-bold">
+                  <span>Total:</span>
+                  <span>${importeDirecto.toLocaleString()}</span>
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  className={`w-full mt-4 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    esDeuda 
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                      : 'btn-primary'
+                  }`}
+                >
+                  {esDeuda ? 'Registrar Deuda' : 'Completar Venta'}
                 </button>
               </div>
             )}

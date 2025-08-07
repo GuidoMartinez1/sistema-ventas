@@ -37,7 +37,6 @@ export interface Producto {
 export interface Cliente {
   id?: number
   nombre: string
-  email?: string
   telefono?: string
   direccion?: string
   created_at?: string
@@ -66,6 +65,13 @@ export interface VentaCompleta extends Venta {
   detalles: DetalleVenta[]
 }
 
+export interface Deuda extends Venta {
+  detalles: DetalleVenta[]
+  cliente_nombre?: string
+  telefono?: string
+  direccion?: string
+}
+
 export interface Stats {
   total_productos: number
   total_clientes: number
@@ -80,6 +86,34 @@ export interface Categoria {
   created_at?: string
 }
 
+export interface Proveedor {
+  id?: number
+  nombre: string
+}
+
+export interface Compra {
+  id?: number
+  proveedor_id?: number
+  total: number
+  fecha?: string
+  estado?: string
+  proveedor_nombre?: string
+}
+
+export interface DetalleCompra {
+  id?: number
+  compra_id?: number
+  producto_id: number
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
+  producto_nombre?: string
+}
+
+export interface CompraCompleta extends Compra {
+  detalles: DetalleCompra[]
+}
+
 // API calls
 export const productosAPI = {
   getAll: () => api.get<Producto[]>('/productos'),
@@ -87,6 +121,7 @@ export const productosAPI = {
   update: (id: number, producto: Producto) => api.put(`/productos/${id}`, producto),
   delete: (id: number) => api.delete(`/productos/${id}`),
   getBajoStock: () => api.get<Producto[]>('/productos/bajo-stock'),
+  abrirBolsa: (id: number) => api.post(`/productos/${id}/abrir-bolsa`),
 }
 
 export const categoriasAPI = {
@@ -96,6 +131,20 @@ export const categoriasAPI = {
   delete: (id: number) => api.delete(`/categorias/${id}`),
 }
 
+export const proveedoresAPI = {
+  getAll: () => api.get<Proveedor[]>('/proveedores'),
+  create: (proveedor: Proveedor) => api.post('/proveedores', proveedor),
+  update: (id: number, proveedor: Proveedor) => api.put(`/proveedores/${id}`, proveedor),
+  delete: (id: number) => api.delete(`/proveedores/${id}`),
+}
+
+export const comprasAPI = {
+  getAll: () => api.get<Compra[]>('/compras'),
+  create: (compra: { proveedor_id: number; productos: DetalleCompra[]; total: number }) => 
+    api.post('/compras', compra),
+  getById: (id: number) => api.get<CompraCompleta>(`/compras/${id}`),
+}
+
 export const clientesAPI = {
   getAll: () => api.get<Cliente[]>('/clientes'),
   create: (cliente: Cliente) => api.post('/clientes', cliente),
@@ -103,9 +152,14 @@ export const clientesAPI = {
 
 export const ventasAPI = {
   getAll: () => api.get<Venta[]>('/ventas'),
-  create: (venta: { cliente_id?: number; productos: DetalleVenta[]; total: number }) => 
+  create: (venta: { cliente_id?: number; productos: DetalleVenta[]; total: number; estado?: string }) => 
     api.post('/ventas', venta),
   getById: (id: number) => api.get<VentaCompleta>(`/ventas/${id}`),
+}
+
+export const deudasAPI = {
+  getAll: () => api.get<Deuda[]>('/deudas'),
+  marcarComoPagada: (id: number) => api.put(`/deudas/${id}/pagar`),
 }
 
 export const statsAPI = {
