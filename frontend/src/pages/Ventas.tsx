@@ -37,6 +37,31 @@ const Ventas = () => {
     }
   }
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getEstadoBadge = (estado: string) => {
+    if (estado === 'adeuda') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+          Deuda Pendiente
+        </span>
+      )
+    }
+    return (
+      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+        Completada
+      </span>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -105,9 +130,7 @@ const Ventas = () => {
                     ${venta.total.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {venta.estado || 'Completada'}
-                    </span>
+                    {getEstadoBadge(venta.estado || 'completada')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
