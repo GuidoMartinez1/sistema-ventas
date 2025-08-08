@@ -30,9 +30,9 @@ const NuevaVenta = () => {
         clientesAPI.getAll(),
         categoriasAPI.getAll()
       ])
-      setProductos(productosResponse.data || [])
-      setClientes(clientesResponse.data || [])
-      setCategorias(categoriasResponse.data || [])
+      setProductos(Array.isArray(productosResponse.data) ? productosResponse.data : [])
+      setClientes(Array.isArray(clientesResponse.data) ? clientesResponse.data : [])
+      setCategorias(Array.isArray(categoriasResponse.data) ? categoriasResponse.data : [])
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('Error al cargar datos')
@@ -44,173 +44,136 @@ const NuevaVenta = () => {
   const addToCart = (producto: Producto) => {
     try {
       if (!producto || !producto.id) {
-        console.error('Producto inválido:', producto)
         toast.error('Producto inválido')
         return
       }
-
       const existingItem = cartItems.find(item => item.producto_id === producto.id)
-      
       if (existingItem) {
         if (existingItem.cantidad >= (producto.stock || 0)) {
           toast.error('No hay suficiente stock disponible')
           return
         }
-        
         const newQuantity = existingItem.cantidad + 1
-        const newSubtotal = newQuantity * existingItem.precio_unitario
-        
-        setCartItems(prevItems => prevItems.map(item => 
-          item.producto_id === producto.id 
-            ? { 
-                ...item, 
-                cantidad: newQuantity, 
-                subtotal: newSubtotal,
-                producto_nombre: producto.nombre || 'Sin nombre'
-              }
-            : item
-        ))
+        const newSubtotal = newQuantity * Number(existingItem.precio_unitario ?? 0)
+        setCartItems(prev =>
+          prev.map(item =>
+            item.producto_id === producto.id
+              ? { ...item, cantidad: newQuantity, subtotal: newSubtotal, producto_nombre: producto.nombre || 'Sin nombre' }
+              : item
+          )
+        )
       } else {
         if ((producto.stock || 0) <= 0) {
           toast.error('Producto sin stock disponible')
           return
         }
-        
         const newItem: DetalleVenta = {
           producto_id: producto.id,
           cantidad: 1,
-          precio_unitario: producto.precio || 0,
-          subtotal: producto.precio || 0,
+          precio_unitario: Number(producto.precio ?? 0),
+          subtotal: Number(producto.precio ?? 0),
           producto_nombre: producto.nombre || 'Sin nombre'
         }
-        setCartItems(prevItems => [...prevItems, newItem])
+        setCartItems(prev => [...prev, newItem])
       }
-    } catch (error) {
-      console.error('Error adding to cart:', error)
+    } catch {
       toast.error('Error al agregar producto al carrito')
     }
   }
 
   const addCustomItem = () => {
     const customItem: DetalleVenta = {
-      producto_id: -1, // ID especial para items sin producto
+      producto_id: -1,
       cantidad: 1,
       precio_unitario: 0,
       subtotal: 0,
       producto_nombre: 'Sin producto'
     }
-    setCartItems(prevItems => [...prevItems, customItem])
+    setCartItems(prev => [...prev, customItem])
   }
 
   const updateQuantity = (productoId: number, newQuantity: number) => {
     const producto = productos.find(p => p.id === productoId)
-    
-    // Si es un item sin producto (productoId === -1)
     if (productoId === -1) {
       if (newQuantity <= 0) {
         removeFromCart(productoId)
         return
       }
-      
-      setCartItems(prevItems => prevItems.map(item => 
-        item.producto_id === productoId 
-          ? { 
-              ...item, 
-              cantidad: newQuantity, 
-              subtotal: newQuantity * item.precio_unitario
-            }
-          : item
-      ))
+      setCartItems(prev =>
+        prev.map(item =>
+          item.producto_id === productoId
+            ? { ...item, cantidad: newQuantity, subtotal: newQuantity * Number(item.precio_unitario ?? 0) }
+            : item
+        )
+      )
       return
     }
-    
     if (!producto) return
-
-    if (newQuantity > producto.stock) {
+    if (newQuantity > (producto.stock || 0)) {
       toast.error('No hay suficiente stock disponible')
       return
     }
-
     if (newQuantity <= 0) {
       removeFromCart(productoId)
       return
     }
-
-    setCartItems(prevItems => prevItems.map(item => 
-      item.producto_id === productoId 
-        ? { 
-            ...item, 
-            cantidad: newQuantity, 
-            subtotal: newQuantity * item.precio_unitario,
-            producto_nombre: producto.nombre
-          }
-        : item
-    ))
+    setCartItems(prev =>
+      prev.map(item =>
+        item.producto_id === productoId
+          ? { ...item, cantidad: newQuantity, subtotal: newQuantity * Number(item.precio_unitario ?? 0), producto_nombre: producto.nombre }
+          : item
+      )
+    )
   }
 
   const updatePrecioUnitario = (productoId: number, newPrecio: number) => {
-    const item = cartItems.find(item => item.producto_id === productoId)
-    if (!item) return
-
-    setCartItems(prevItems => prevItems.map(item => 
-      item.producto_id === productoId 
-        ? { 
-            ...item, 
-            precio_unitario: newPrecio,
-            subtotal: item.cantidad * newPrecio
-          }
-        : item
-    ))
+    setCartItems(prev =>
+      prev.map(item =>
+        item.producto_id === productoId
+          ? { ...item, precio_unitario: newPrecio, subtotal: item.cantidad * Number(newPrecio ?? 0) }
+          : item
+      )
+    )
   }
 
   const removeFromCart = (productoId: number) => {
-    setCartItems(prevItems => prevItems.filter(item => item.producto_id !== productoId))
+    setCartItems(prev => prev.filter(item => item.producto_id !== productoId))
   }
 
   const getTotal = () => {
-    const cartTotal = cartItems.reduce((total, item) => total + item.subtotal, 0)
-    return cartTotal + importeDirecto
+    const cartTotal = cartItems.reduce((total, item) => total + Number(item.subtotal ?? 0), 0)
+    return cartTotal + Number(importeDirecto ?? 0)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (esDeuda && !selectedCliente) {
       toast.error('Debe seleccionar un cliente para registrar una deuda')
       return
     }
-    
     if (cartItems.length === 0) {
-      // Permitir venta sin productos, solo con importe
       if (!importeDirecto || importeDirecto <= 0) {
         toast.error('Debe agregar productos al carrito o especificar un importe')
         return
       }
     }
-    
     try {
-      const ventaData = {
+      await ventasAPI.create({
         cliente_id: selectedCliente || undefined,
         productos: cartItems,
         total: cartItems.length > 0 ? getTotal() : importeDirecto,
         estado: esDeuda ? 'adeuda' : 'completada',
         metodo_pago: metodoPago
-      }
-      
-      await ventasAPI.create(ventaData)
+      })
       toast.success(esDeuda ? 'Venta registrada como deuda' : 'Venta completada exitosamente')
       navigate('/ventas')
-    } catch (error) {
+    } catch {
       toast.error('Error al procesar la venta')
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
+    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>
   }
 
   return (
@@ -219,13 +182,10 @@ const NuevaVenta = () => {
         <h1 className="text-3xl font-bold text-gray-900">Nueva Venta</h1>
         <p className="text-gray-600">Crea una nueva venta</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Productos */}
         <div className="lg:col-span-2">
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Productos Disponibles</h2>
-            {/* Buscador y filtro */}
             <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
               <input
                 type="text"
@@ -240,7 +200,7 @@ const NuevaVenta = () => {
                 className="input-field w-full md:w-1/3"
               >
                 <option value="">Todas las categorías</option>
-                {categorias.map((cat) => (
+                {categorias.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                 ))}
               </select>
@@ -249,40 +209,34 @@ const NuevaVenta = () => {
               {productos
                 .filter(producto =>
                   (!selectedCategoria || (producto.categoria_id && producto.categoria_id === Number(selectedCategoria))) &&
-                  (
-                    (producto.nombre && producto.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
-                    (producto.codigo && producto.codigo.toLowerCase().includes(busqueda.toLowerCase()))
-                  )
+                  ((producto.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ?? false) ||
+                   (producto.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ?? false))
                 )
-                .map((producto) => (
+                .map(producto => (
                   <div key={producto.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-gray-900">{producto.nombre || 'Sin nombre'}</h3>
-                      <span className="text-sm font-medium text-gray-900">${(producto.precio || 0).toFixed(2)}</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        ${Number(producto.precio ?? 0).toFixed(2)}
+                      </span>
                     </div>
-                    {producto.descripcion && (
-                      <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>
-                    )}
+                    {producto.descripcion && <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>}
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        (producto.stock || 0) > 10 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                        (producto.stock || 0) > 10 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         Stock: {producto.stock || 0}
                       </span>
-                                              <button
-                          onClick={() => addToCart(producto)}
-                          disabled={(producto.stock || 0) <= 0}
-                          className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
+                      <button
+                        onClick={() => addToCart(producto)}
+                        disabled={(producto.stock || 0) <= 0}
+                        className="btn-primary text-sm py-1 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                 ))}
-              
-              {/* Item "Sin producto" */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-medium text-gray-900">Sin producto</h3>
@@ -290,10 +244,7 @@ const NuevaVenta = () => {
                 </div>
                 <p className="text-sm text-gray-500 mb-2">Agregar un item con importe personalizado</p>
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => addCustomItem()}
-                    className="btn-primary text-sm py-1 px-3"
-                  >
+                  <button onClick={addCustomItem} className="btn-primary text-sm py-1 px-3">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
@@ -301,62 +252,40 @@ const NuevaVenta = () => {
             </div>
           </div>
         </div>
-
-        {/* Carrito */}
         <div className="lg:col-span-1">
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Carrito
+              <ShoppingCart className="h-5 w-5 mr-2" /> Carrito
             </h2>
-
-            {/* Cliente */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cliente (opcional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cliente (opcional)</label>
               <select
                 value={selectedCliente || ''}
-                onChange={(e) => setSelectedCliente(e.target.value ? parseInt(e.target.value) : null)}
+                onChange={e => setSelectedCliente(e.target.value ? parseInt(e.target.value) : null)}
                 className="input-field"
               >
                 <option value="">Sin cliente</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.id} value={cliente.id}>
-                    {cliente.nombre}
-                  </option>
+                {clientes.map(cliente => (
+                  <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>
                 ))}
               </select>
             </div>
-
-            {/* Opción de Deuda */}
             <div className="mb-4">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={esDeuda}
-                  onChange={(e) => setEsDeuda(e.target.checked)}
+                  onChange={e => setEsDeuda(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">
-                  Marcar como deuda
-                </span>
+                <span className="text-sm font-medium text-gray-700">Marcar como deuda</span>
               </label>
-              {esDeuda && (
-                <p className="text-xs text-orange-600 mt-1">
-                  ⚠️ Esta venta quedará registrada como deuda pendiente
-                </p>
-              )}
             </div>
-
-            {/* Método de Pago */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Método de Pago
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Método de Pago</label>
               <select
                 value={metodoPago}
-                onChange={(e) => setMetodoPago(e.target.value as 'efectivo' | 'mercadopago' | 'tarjeta')}
+                onChange={e => setMetodoPago(e.target.value as 'efectivo' | 'mercadopago' | 'tarjeta')}
                 className="input-field"
               >
                 <option value="efectivo">Efectivo</option>
@@ -364,34 +293,24 @@ const NuevaVenta = () => {
                 <option value="tarjeta">Tarjeta</option>
               </select>
             </div>
-
-            {/* Importe directo (para ventas sin productos) */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Importe directo (opcional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Importe directo (opcional)</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder="0.00"
                 value={importeDirecto}
-                onChange={(e) => setImporteDirecto(parseFloat(e.target.value) || 0)}
+                onChange={e => setImporteDirecto(parseFloat(e.target.value) || 0)}
                 className="input-field"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Use este campo para ventas sin productos específicos
-              </p>
             </div>
-
-            {/* Items del carrito */}
             {cartItems.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No hay productos en el carrito</p>
             ) : (
               <div className="space-y-3">
-                {cartItems.map((item) => {
+                {cartItems.map(item => {
                   const producto = productos.find(p => p.id === item.producto_id)
                   const isCustomItem = item.producto_id === -1
-                  
                   return (
                     <div key={item.producto_id} className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
@@ -406,47 +325,40 @@ const NuevaVenta = () => {
                                 step="0.01"
                                 placeholder="0.00"
                                 value={item.precio_unitario}
-                                onChange={(e) => updatePrecioUnitario(item.producto_id, parseFloat(e.target.value) || 0)}
+                                onChange={e => updatePrecioUnitario(item.producto_id, parseFloat(e.target.value) || 0)}
                                 className="w-20 text-sm border rounded px-2 py-1"
                               />
                               <span className="text-sm text-gray-500">c/u</span>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500">${item.precio_unitario.toFixed(2)} c/u</p>
+                            <p className="text-sm text-gray-500">
+                              ${Number(item.precio_unitario ?? 0).toFixed(2)} c/u
+                            </p>
                           )}
                         </div>
-                        <button
-                          onClick={() => removeFromCart(item.producto_id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
+                        <button onClick={() => removeFromCart(item.producto_id)} className="text-red-600 hover:text-red-800">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => updateQuantity(item.producto_id, item.cantidad - 1)}
-                            className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                          >
+                          <button onClick={() => updateQuantity(item.producto_id, item.cantidad - 1)} className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300">
                             <Minus className="h-3 w-3" />
                           </button>
                           <span className="w-8 text-center">{item.cantidad}</span>
-                          <button
-                            onClick={() => updateQuantity(item.producto_id, item.cantidad + 1)}
-                            className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                          >
+                          <button onClick={() => updateQuantity(item.producto_id, item.cantidad + 1)} className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300">
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
-                        <span className="font-medium">${item.subtotal.toFixed(2)}</span>
+                        <span className="font-medium">
+                          ${Number(item.subtotal ?? 0).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   )
                 })}
               </div>
             )}
-
-            {/* Total */}
             {(cartItems.length > 0 || importeDirecto > 0) && (
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
@@ -456,9 +368,7 @@ const NuevaVenta = () => {
                 <button
                   onClick={handleSubmit}
                   className={`w-full mt-4 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    esDeuda 
-                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                      : 'btn-primary'
+                    esDeuda ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'btn-primary'
                   }`}
                 >
                   {esDeuda ? 'Registrar Deuda' : 'Completar Venta'}
@@ -472,4 +382,4 @@ const NuevaVenta = () => {
   )
 }
 
-export default NuevaVenta 
+export default NuevaVenta
