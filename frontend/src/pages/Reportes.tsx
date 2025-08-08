@@ -64,11 +64,11 @@ const Reportes = () => {
   }
 
   const calcularTotalVentas = (ventas: Venta[]) => {
-    return ventas.reduce((total, venta) => total + venta.total, 0)
+    return ventas.reduce((total, venta) => total + Number(venta.total || 0), 0)
   }
 
   const calcularTotalCompras = (compras: Compra[]) => {
-    return compras.reduce((total, compra) => total + compra.total, 0)
+    return compras.reduce((total, compra) => total + Number(compra.total || 0), 0)
   }
 
   const ventasFiltradas = filtrarVentas()
