@@ -173,8 +173,13 @@ export const clientesAPI = {
 
 export const ventasAPI = {
   getAll: () => api.get<Venta[]>('/ventas'),
-  create: (venta: { cliente_id?: number; productos: DetalleVenta[]; total: number; estado?: string }) => 
-    api.post('/ventas', venta),
+  create: (venta: { 
+    cliente_id?: number
+    productos: DetalleVenta[]
+    total: number
+    estado?: string
+    metodo_pago?: 'efectivo' | 'mercadopago' | 'tarjeta'
+  }) => api.post('/ventas', venta),
   getById: (id: number) => api.get<VentaCompleta>(`/ventas/${id}`),
 }
 
