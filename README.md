@@ -55,7 +55,18 @@ Un sistema completo de gestión de ventas para tu negocio de mascotas con interf
 
 ### Pasos de instalación
 
-#### Opción 1: Instalación automática (macOS/Linux)
+#### Opción 1: PostgreSQL (Recomendado para producción)
+```bash
+# Clonar el repositorio
+git clone <url-del-repositorio>
+cd sistema-ventas
+
+# Ejecutar script de instalación con PostgreSQL
+chmod +x install-postgres.sh
+./install-postgres.sh
+```
+
+#### Opción 2: SQLite (Desarrollo local)
 ```bash
 # Clonar el repositorio
 git clone <url-del-repositorio>
@@ -66,7 +77,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-#### Opción 2: Instalación manual
+#### Opción 3: Instalación manual
 1. **Clonar el repositorio**
 ```bash
 git clone <url-del-repositorio>
@@ -93,13 +104,19 @@ node seed.js
 
 ### Ejecutar el sistema
 
-#### Opción 1: Script automático (macOS/Linux)
+#### Opción 1: PostgreSQL (Recomendado)
+```bash
+chmod +x start-postgres.sh
+./start-postgres.sh
+```
+
+#### Opción 2: SQLite (Desarrollo)
 ```bash
 chmod +x start.sh
 ./start.sh
 ```
 
-#### Opción 2: Manual
+#### Opción 3: Manual
 ```bash
 # Terminal 1 - Backend
 cd backend
@@ -230,8 +247,10 @@ sistema-ventas/
 │   │   ├── services/       # Servicios de API
 │   │   └── App.tsx         # Componente principal
 │   └── package.json        # Dependencias del frontend
-├── install.sh              # Script de instalación (macOS/Linux)
-├── start.sh                # Script de inicio (macOS/Linux)
+├── install.sh              # Script de instalación SQLite (macOS/Linux)
+├── install-postgres.sh     # Script de instalación PostgreSQL (macOS/Linux)
+├── start.sh                # Script de inicio SQLite (macOS/Linux)
+├── start-postgres.sh       # Script de inicio PostgreSQL (macOS/Linux)
 └── README.md              # Este archivo
 ```
 
@@ -240,7 +259,8 @@ sistema-ventas/
 ### Backend
 - **Node.js** - Runtime de JavaScript
 - **Express.js** - Framework web
-- **SQLite** - Base de datos
+- **PostgreSQL** - Base de datos escalable
+- **SQLite** - Base de datos local (versión anterior)
 - **CORS** - Middleware para CORS
 
 ### Frontend
@@ -255,71 +275,105 @@ sistema-ventas/
 
 ## 📊 Base de Datos
 
-### Tablas Principales
+### PostgreSQL (Recomendado para producción)
+
+El sistema soporta **PostgreSQL** para mayor escalabilidad, concurrencia y robustez en producción.
+
+#### Características de PostgreSQL:
+- **ACID Compliance** - Transacciones completas
+- **Concurrencia** - Múltiples usuarios simultáneos
+- **Escalabilidad** - Maneja grandes volúmenes de datos
+- **Índices optimizados** - Consultas rápidas
+- **Pool de conexiones** - Gestión eficiente de recursos
+
+#### Tablas Principales
 
 #### `categorias`
-- `id` (PRIMARY KEY)
-- `nombre` (TEXT, UNIQUE)
+- `id` (SERIAL PRIMARY KEY)
+- `nombre` (VARCHAR(255), UNIQUE)
 - `descripcion` (TEXT)
-- `created_at` (DATETIME)
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 
 #### `productos`
-- `id` (PRIMARY KEY)
-- `nombre` (TEXT)
+- `id` (SERIAL PRIMARY KEY)
+- `nombre` (VARCHAR(255))
 - `descripcion` (TEXT)
-- `precio` (REAL)
+- `precio` (DECIMAL(10,2))
 - `stock` (INTEGER)
-- `categoria_id` (FOREIGN KEY)
-- `codigo` (TEXT, UNIQUE)
-- `created_at` (DATETIME)
-- `updated_at` (DATETIME)
+- `categoria_id` (INTEGER REFERENCES categorias(id))
+- `codigo` (VARCHAR(100), UNIQUE)
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `updated_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 
 #### `clientes`
-- `id` (PRIMARY KEY)
-- `nombre` (TEXT)
-- `email` (TEXT)
-- `telefono` (TEXT)
+- `id` (SERIAL PRIMARY KEY)
+- `nombre` (VARCHAR(255))
+- `email` (VARCHAR(255))
+- `telefono` (VARCHAR(50))
 - `direccion` (TEXT)
-- `created_at` (DATETIME)
+- `created_at` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
 
 #### `ventas`
-- `id` (PRIMARY KEY)
-- `cliente_id` (FOREIGN KEY)
-- `total` (REAL)
-- `fecha` (DATETIME)
-- `estado` (TEXT)
-- `metodo_pago` (TEXT, DEFAULT 'efectivo')
+- `id` (SERIAL PRIMARY KEY)
+- `cliente_id` (INTEGER REFERENCES clientes(id))
+- `total` (DECIMAL(10,2))
+- `fecha` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `estado` (VARCHAR(50) DEFAULT 'completada')
+- `metodo_pago` (VARCHAR(50) DEFAULT 'efectivo')
 
 #### `detalles_venta`
-- `id` (PRIMARY KEY)
-- `venta_id` (FOREIGN KEY)
-- `producto_id` (FOREIGN KEY)
+- `id` (SERIAL PRIMARY KEY)
+- `venta_id` (INTEGER REFERENCES ventas(id) ON DELETE CASCADE)
+- `producto_id` (INTEGER REFERENCES productos(id))
 - `cantidad` (INTEGER)
-- `precio_unitario` (REAL)
-- `subtotal` (REAL)
+- `precio_unitario` (DECIMAL(10,2))
+- `subtotal` (DECIMAL(10,2))
 
 #### `bolsas_abiertas`
-- `id` (PRIMARY KEY)
-- `producto_id` (FOREIGN KEY)
-- `fecha_apertura` (DATETIME)
-- `estado` (TEXT, DEFAULT 'abierta')
+- `id` (SERIAL PRIMARY KEY)
+- `producto_id` (INTEGER REFERENCES productos(id) ON DELETE CASCADE)
+- `fecha_apertura` (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- `estado` (VARCHAR(50) DEFAULT 'abierta')
+
+### SQLite (Desarrollo local)
+
+También disponible para desarrollo local con la misma estructura de tablas.
 
 ## 🔧 Comandos Útiles
 
+### PostgreSQL (Recomendado)
 ```bash
-# Ejecutar el sistema completo (macOS/Linux)
+# Ejecutar el sistema completo con PostgreSQL
+./start-postgres.sh
+
+# Solo backend con PostgreSQL
+cd backend && npm run start:postgres
+
+# Solo frontend
+cd frontend && npm run dev
+
+# Inicializar base de datos PostgreSQL
+cd backend && npm run init:postgres
+
+# Conectar a PostgreSQL
+psql sistema_ventas
+```
+
+### SQLite (Desarrollo)
+```bash
+# Ejecutar el sistema completo con SQLite
 ./start.sh
 
-# Solo backend
+# Solo backend con SQLite
 cd backend && npm start
 
 # Solo frontend
 cd frontend && npm run dev
 
-# Poblar base de datos
-cd backend && node seed.js
+# Poblar base de datos SQLite
+cd backend && npm run seed
 
-# Limpiar base de datos
+# Limpiar base de datos SQLite
 rm backend/database.sqlite
 ```
 
@@ -334,6 +388,10 @@ rm backend/database.sqlite
 - ✅ **Soporte para macOS** con scripts
 - ✅ **Sistema de deudas** con seguimiento
 - ✅ **Gestión de stock** mejorada
+- ✅ **PostgreSQL** para escalabilidad y producción
+- ✅ **Pool de conexiones** optimizado
+- ✅ **Índices de base de datos** para mejor performance
+- ✅ **Transacciones ACID** completas
 
 ## 🤝 Contribuir
 
@@ -346,6 +404,60 @@ rm backend/database.sqlite
 ## 📝 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 🚀 Deploy en Producción
+
+### Servicios Recomendados (Gratuitos)
+
+#### 1. **Supabase** (Recomendado)
+```bash
+# 1. Crear cuenta en supabase.com
+# 2. Crear nuevo proyecto
+# 3. Obtener credenciales de conexión
+# 4. Configurar variables de entorno:
+
+DB_HOST=db.xxxxxxxxxxxxx.supabase.co
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=tu_password_supabase
+```
+
+#### 2. **Railway**
+```bash
+# 1. Conectar repositorio de GitHub
+# 2. Configurar variables de entorno
+# 3. Deploy automático
+```
+
+#### 3. **Render**
+```bash
+# 1. Conectar repositorio de GitHub
+# 2. Configurar servicio web y base de datos
+# 3. Deploy automático
+```
+
+#### 4. **Neon**
+```bash
+# 1. Crear cuenta en neon.tech
+# 2. Crear base de datos PostgreSQL
+# 3. Obtener string de conexión
+# 4. Configurar variables de entorno
+```
+
+### Variables de Entorno para Producción
+```bash
+# Base de datos
+DB_HOST=tu_host_postgresql
+DB_PORT=5432
+DB_NAME=tu_nombre_db
+DB_USER=tu_usuario
+DB_PASSWORD=tu_password
+
+# Servidor
+PORT=3001
+NODE_ENV=production
+```
 
 ## 📞 Soporte
 
