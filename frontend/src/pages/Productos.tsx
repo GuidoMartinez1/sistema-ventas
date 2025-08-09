@@ -25,6 +25,9 @@ const Productos = () => {
     fetchData()
   }, [])
 
+  const [busqueda, setBusqueda] = useState('');
+  const [stockFiltro, setStockFiltro] = useState(''); // '', 'bajo', 'alto'
+
   const fetchData = async () => {
     try {
       const [productosResponse, categoriasResponse] = await Promise.all([
@@ -192,7 +195,25 @@ const Productos = () => {
           Nuevo Producto
         </button>
       </div>
-
+      {/* Filtros */}
+      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+        <input
+          type="text"
+          placeholder="Buscar por nombre..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="input-field w-full md:w-1/3"
+        />
+        <select
+          value={stockFiltro}
+          onChange={(e) => setStockFiltro(e.target.value)}
+          className="input-field w-full md:w-1/4"
+        >
+          <option value="">Todos los stocks</option>
+          <option value="bajo">Stock bajo (≤ 4)</option>
+          <option value="alto">Stock alto (≥ 5)</option>
+        </select>
+      </div>
       {/* Productos Table */}
       <div className="card">
         <div className="overflow-x-auto">
@@ -223,7 +244,16 @@ const Productos = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {productos.map((producto) => (
+            {productos
+              .filter(p =>
+                p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+              )
+              .filter(p =>
+                stockFiltro === 'bajo' ? p.stock <= 4 :
+                stockFiltro === 'alto' ? p.stock > 4 :
+                true
+              )
+              .map((producto) => (
                 <tr key={producto.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
