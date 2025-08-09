@@ -1,43 +1,87 @@
 import { useEffect, useState } from 'react'
 import { 
-  Package, 
-  Users, 
   ShoppingCart, 
   DollarSign,
   AlertTriangle,
   ShoppingBag,
-  CreditCard
+  CreditCard,
+  Calendar
 } from 'lucide-react'
-import { statsAPI, productosAPI, bolsasAbiertasAPI } from '../services/api'
-import { Stats, Producto, BolsaAbierta } from '../services/api'
+import { ventasAPI, comprasAPI, productosAPI, bolsasAbiertasAPI, statsAPI } from '../services/api'
+import { Venta, Compra, Producto, BolsaAbierta, Stats } from '../services/api'
 import { Link } from 'react-router-dom'
 
 const Dashboard = () => {
+  const [ventas, setVentas] = useState<Venta[]>([])
+  const [compras, setCompras] = useState<Compra[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [bajoStock, setBajoStock] = useState<Producto[]>([])
   const [bolsasAbiertas, setBolsasAbiertas] = useState<BolsaAbierta[]>([])
   const [loading, setLoading] = useState(true)
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsResponse, bajoStockResponse, bolsasResponse] = await Promise.all([
-          statsAPI.getStats(),
-          productosAPI.getBajoStock(),
-          bolsasAbiertasAPI.getAll()
-        ])
-        setStats(statsResponse.data)
-        setBajoStock(bajoStockResponse.data)
-        setBolsasAbiertas(bolsasResponse.data)
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchData()
   }, [])
+
+  const fetchData = async () => {
+    try {
+      const [ventasResponse, comprasResponse, statsResponse, bajoStockResponse, bolsasResponse] = await Promise.all([
+        ventasAPI.getAll(),
+        comprasAPI.getAll(),
+        statsAPI.getStats(),
+        productosAPI.getBajoStock(),
+        bolsasAbiertasAPI.getAll()
+      ])
+      setVentas(ventasResponse.data)
+      setCompras(comprasResponse.data)
+      setStats(statsResponse.data)
+      setBajoStock(bajoStockResponse.data)
+      setBolsasAbiertas(bolsasResponse.data)
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filtrarPorRango = <T extends { fecha?: string }>(items: T[]) => {
+    return items.filter(item => {
+      if (!item.fecha) return false
+      const fechaItem = new Date(item.fecha)
+      if (fechaDesde && fechaItem < new Date(fechaDesde)) return false
+      if (fechaHasta && fechaItem > new Date(fechaHasta)) return false
+      return true
+    })
+  }
+
+  const ventasFiltradas = filtrarPorRango(ventas)
+  const comprasFiltradas = filtrarPorRango(compras)
+
+  const ventasCompletadas = ventasFiltradas.filter(v => v.estado !== 'adeuda')
+  const ventasAdeudadas = ventasFiltradas.filter(v => v.estado === 'adeuda')
+
+  const totalVentas = ventasCompletadas.length
+  const totalVentasConDeudas = ventasFiltradas.length
+  const totalCompras = comprasFiltradas.length
+
+  const totalVentasMonto = ventasCompletadas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+  const totalVentasConDeudasMonto = ventasFiltradas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+
+  const totalDeudas = ventasAdeudadas.length
+  const totalDeudasMonto = ventasAdeudadas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+
+  const setHoy = () => {
+    const hoy = new Date().toISOString().split('T')[0]
+    setFechaDesde(hoy)
+    setFechaHasta(hoy)
+  }
+
+  const limpiarFechas = () => {
+    setFechaDesde('')
+    setFechaHasta('')
+  }
 
   if (loading) {
     return (
@@ -48,82 +92,54 @@ const Dashboard = () => {
   }
 
   const cards = [
-    {
-      title: 'Total Productos',
-      value: stats?.total_productos || 0,
-      icon: Package,
-      color: 'bg-orange-500',
-    },
-    {
-      title: 'Total Clientes',
-      value: stats?.total_clientes || 0,
-      icon: Users,
-      color: 'bg-orange-600',
-    },
-    {
-      title: 'Total Ventas',
-      value: stats?.total_ventas || 0,
-      icon: ShoppingCart,
-      color: 'bg-orange-700',
-    },
-    {
-      title: 'Ventas + Deudas',
-      value: stats?.total_ventas_con_deudas || 0,
-      icon: ShoppingCart,
-      color: 'bg-orange-600',
-    },
-    {
-      title: 'Total Compras',
-      value: stats?.total_compras || 0,
-      icon: ShoppingBag,
-      color: 'bg-blue-500',
-    },
-    {
-      title: 'Ingresos (Sin Deudas)',
-      value: `$${(stats?.total_ventas_monto || 0).toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-green-500',
-    },
-    {
-      title: 'Ingresos Totales',
-      value: `$${(stats?.total_ventas_con_deudas_monto || 0).toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-green-600',
-    },
-    {
-      title: 'Gastos Totales',
-      value: `$${(stats?.total_compras_monto || 0).toLocaleString()}`,
-      icon: ShoppingBag,
-      color: 'bg-red-500',
-    },
-    {
-      title: 'Deudas Pendientes',
-      value: stats?.total_deudas || 0,
-      icon: CreditCard,
-      color: 'bg-yellow-500',
-    },
-    {
-      title: 'Monto Deudas',
-      value: `$${(stats?.total_deudas_monto || 0).toLocaleString()}`,
-      icon: CreditCard,
-      color: 'bg-yellow-600',
-    },
-    {
-      title: 'Bolsas Abiertas',
-      value: bolsasAbiertas.length,
-      icon: AlertTriangle,
-      color: 'bg-orange-500',
-    },
+    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700' },
+    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600' },
+    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500' },
+    { title: 'Ingresos (Sin Deudas)', value: `$${totalVentasMonto.toLocaleString()}`, icon: DollarSign, color: 'bg-green-500' },
+    { title: 'Ingresos Totales', value: `$${totalVentasConDeudasMonto.toLocaleString()}`, icon: DollarSign, color: 'bg-green-600' },
+    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500' },
+    { title: 'Monto Deudas', value: `$${totalDeudasMonto.toLocaleString()}`, icon: CreditCard, color: 'bg-yellow-600' },
+    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-orange-500' },
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard - AliMar</h1>
-        <p className="text-gray-600">Resumen de tu negocio de mascotas</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard - AliMar</h1>
+          <p className="text-gray-600">Resumen de tu negocio de mascotas</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-gray-600" />
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => setFechaDesde(e.target.value)}
+            className="input-field w-36"
+          />
+          <span className="text-gray-500">-</span>
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => setFechaHasta(e.target.value)}
+            className="input-field w-36"
+          />
+          <button
+            onClick={setHoy}
+            className="px-3 py-1 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+          >
+            Hoy
+          </button>
+          <button
+            onClick={limpiarFechas}
+            className="px-3 py-1 border border-gray-400 text-gray-700 rounded-lg hover:bg-gray-100 transition flex items-center gap-1"
+          >
+            ✖ Limpiar
+          </button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {cards.map((card) => (
           <div key={card.title} className="card">
@@ -140,14 +156,11 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Alerts */}
       {bajoStock.length > 0 && (
         <div className="card">
           <div className="flex items-center mb-4">
             <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Productos con Bajo Stock
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Productos con Bajo Stock</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {bajoStock.map((producto) => (
@@ -163,7 +176,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Bolsas Abiertas */}
       {bolsasAbiertas.length > 0 && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
@@ -173,10 +185,7 @@ const Dashboard = () => {
                 Bolsas Abiertas ({bolsasAbiertas.length})
               </h2>
             </div>
-            <Link
-              to="/bolsas-abiertas"
-              className="text-orange-600 hover:text-orange-700 text-sm font-medium"
-            >
+            <Link to="/bolsas-abiertas" className="text-orange-600 hover:text-orange-700 text-sm font-medium">
               Ver todas →
             </Link>
           </div>
@@ -201,4 +210,4 @@ const Dashboard = () => {
   )
 }
 
-export default Dashboard 
+export default Dashboard
