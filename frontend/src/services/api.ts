@@ -112,8 +112,8 @@ export interface DetalleCompra {
   compra_id?: number
   producto_id: number
   cantidad: number
-  precio_unitario: number
-  subtotal: number
+  precio_unitario: number | string
+  subtotal: number | string
   producto_nombre?: string
 }
 

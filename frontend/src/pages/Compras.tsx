@@ -226,7 +226,7 @@ const Compras = () => {
                             ${Number(detalle.precio_unitario ?? 0).toFixed(2)}
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                            ${detalle.subtotal.toFixed(2)}
+                            ${Number(detalle.subtotal ?? 0).toFixed(2)}
                           </td>
                         </tr>
                       ))}
