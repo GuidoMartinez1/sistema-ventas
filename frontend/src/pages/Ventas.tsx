@@ -12,6 +12,11 @@ const Ventas = () => {
   const [selectedVenta, setSelectedVenta] = useState<any>(null)
   const [showModal, setShowModal] = useState(false)
 
+  // Filtros
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
+  const [estado, setEstado] = useState('todos')
+
   useEffect(() => {
     fetchVentas()
   }, [])
@@ -37,15 +42,32 @@ const Ventas = () => {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const hoy = () => {
+    const hoyStr = new Date().toISOString().split('T')[0]
+    setFechaDesde(hoyStr)
+    setFechaHasta(hoyStr)
   }
+
+  const limpiarFiltros = () => {
+    setFechaDesde('')
+    setFechaHasta('')
+    setEstado('todos')
+  }
+
+  // Filtrado en front
+  const ventasFiltradas = ventas.filter((venta) => {
+    const fechaVenta = new Date(venta.fecha ?? '').toISOString().split('T')[0];
+    const cumpleFechaDesde = fechaDesde ? fechaVenta >= fechaDesde : true
+    const cumpleFechaHasta = fechaHasta ? fechaVenta <= fechaHasta : true
+    const cumpleEstado =
+      estado === 'todos'
+        ? true
+        : estado === 'completada'
+        ? venta.estado?.toLowerCase() === 'completada'
+        : venta.estado?.toLowerCase() === 'adeuda'
+
+    return cumpleFechaDesde && cumpleFechaHasta && cumpleEstado
+  })
 
   const getEstadoBadge = (estado: string) => {
     if (estado === 'adeuda') {
@@ -77,6 +99,54 @@ const Ventas = () => {
         <p className="text-gray-600">Historial de todas las ventas realizadas</p>
       </div>
 
+      {/* FILTROS */}
+      <div className="card p-4 flex flex-wrap gap-4 items-end">
+        <div>
+          <label className="block text-sm font-medium">Desde</label>
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => setFechaDesde(e.target.value)}
+            className="input-field"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Hasta</label>
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => setFechaHasta(e.target.value)}
+            className="input-field"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Estado</label>
+          <select
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            className="input-field"
+          >
+            <option value="todos">Todos</option>
+            <option value="completada">Completada</option>
+            <option value="adeuda">Adeuda</option>
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={hoy}
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Hoy
+          </button>
+          <button
+            onClick={limpiarFiltros}
+            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+          >
+            Limpiar
+          </button>
+        </div>
+      </div>
+
       {/* Ventas Table */}
       <div className="card">
         <div className="overflow-x-auto">
@@ -104,7 +174,7 @@ const Ventas = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {ventas.map((venta) => (
+              {ventasFiltradas.map((venta) => (
                 <tr key={venta.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -124,7 +194,9 @@ const Ventas = () => {
                     {venta.cliente_nombre || 'Cliente no especificado'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {venta.fecha ? format(new Date(venta.fecha), 'dd/MM/yyyy HH:mm', { locale: es }) : '-'}
+                    {venta.fecha
+                      ? format(new Date(venta.fecha), 'dd/MM/yyyy HH:mm', { locale: es })
+                      : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${venta.total.toLocaleString()}
@@ -239,4 +311,4 @@ const Ventas = () => {
   )
 }
 
-export default Ventas 
+export default Ventas
