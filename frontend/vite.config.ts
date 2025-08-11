@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import * as XLSX from "xlsx"
+
 
 export default defineConfig({
   plugins: [react()],
@@ -12,11 +12,5 @@ export default defineConfig({
         changeOrigin: true
       }
     }
-  },
-  build: {
-    rollupOptions: {
-      external: ['xlsx'] // Evita error en el build de Netlify
-    }
   }
 })
-
