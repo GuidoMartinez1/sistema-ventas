@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:3001/api'
+// Usar variable de entorno de Vite, o fallback a localhost para desarrollo
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -27,12 +29,14 @@ export interface Producto {
   precio_costo?: number
   porcentaje_ganancia?: number
   stock: number
-  categoria_id?: number
+  categoria_id: number
   categoria_nombre?: string
   codigo?: string
   created_at?: string
   updated_at?: string
 }
+
+export default api
 
 export interface Cliente {
   id?: number
