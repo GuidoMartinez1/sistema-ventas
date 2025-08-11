@@ -6,7 +6,6 @@ import {
   ShoppingCart,
   ShoppingBag,
   CreditCard,
-  Filter,
   Calendar
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI } from '../services/api'
