@@ -45,4 +45,8 @@ app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
 
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Conexión exitosa 🚀' })
+})
+
 export default pool;
