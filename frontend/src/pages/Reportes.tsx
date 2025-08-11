@@ -160,7 +160,7 @@ const Reportes = () => {
           onClick={() => setReporteActivo('ventas')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             reporteActivo === 'ventas' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-orange-500 text-white' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -171,7 +171,7 @@ const Reportes = () => {
           onClick={() => setReporteActivo('compras')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             reporteActivo === 'compras' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-orange-500 text-white' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -182,7 +182,7 @@ const Reportes = () => {
           onClick={() => setReporteActivo('resumen')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             reporteActivo === 'resumen' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-orange-500 text-white' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -241,7 +241,7 @@ const Reportes = () => {
             <div className="flex items-end gap-2">
               <button
                 onClick={setHoy}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full"
+                className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 w-full"
               >
                 Hoy
               </button>

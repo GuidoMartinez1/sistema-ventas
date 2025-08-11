@@ -127,7 +127,7 @@ const Dashboard = () => {
           />
           <button
             onClick={setHoy}
-            className="px-3 py-1 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+            className="px-3 py-1 bg-orange-500 text-white rounded-lg shadow hover:bg-orange-500 transition"
           >
             Hoy
           </button>
