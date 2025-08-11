@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2 } from 'lucide-react'
 import { comprasAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -12,6 +12,51 @@ const Compras = () => {
   const [compraSeleccionada, setCompraSeleccionada] = useState<CompraCompleta | null>(null)
   const [mostrarDetalles, setMostrarDetalles] = useState(false)
   const [cargandoDetalles, setCargandoDetalles] = useState(false)
+
+  // ================= FUTUROS PEDIDOS =================
+  const [mostrarFuturos, setMostrarFuturos] = useState(false)
+  const [futurosPedidos, setFuturosPedidos] = useState<{ id: number; producto: string; cantidad: string }[]>([])
+  const [nuevoProducto, setNuevoProducto] = useState('')
+  const [nuevaCantidad, setNuevaCantidad] = useState('')
+  const [futurosCargados, setFuturosCargados] = useState(false)
+
+  useEffect(() => {
+    try {
+      const guardados = localStorage.getItem('futurosPedidos')
+      if (guardados) {
+        const parsed = JSON.parse(guardados)
+        if (Array.isArray(parsed)) {
+          setFuturosPedidos(parsed)
+        }
+      }
+    } catch {}
+    setFuturosCargados(true)
+  }, [])
+
+  useEffect(() => {
+    if (!futurosCargados) return
+    try {
+      localStorage.setItem('futurosPedidos', JSON.stringify(futurosPedidos))
+    } catch {}
+  }, [futurosPedidos, futurosCargados])
+
+  const agregarFuturo = () => {
+    if (!nuevoProducto.trim()) {
+      toast.error('Ingresa un nombre de producto')
+      return
+    }
+    setFuturosPedidos(prev => [
+      ...prev,
+      { id: Date.now(), producto: nuevoProducto.trim(), cantidad: nuevaCantidad.trim() }
+    ])
+    setNuevoProducto('')
+    setNuevaCantidad('')
+  }
+
+  const eliminarFuturo = (id: number) => {
+    setFuturosPedidos(prev => prev.filter(p => p.id !== id))
+  }
+  // ====================================================
 
   useEffect(() => {
     fetchCompras()
@@ -66,39 +111,36 @@ const Compras = () => {
           <h1 className="text-3xl font-bold text-gray-900">Compras</h1>
           <p className="text-gray-600">Historial de compras de mercadería</p>
         </div>
-        <button
-          onClick={() => navigate('/nueva-compra')}
-          className="btn-primary flex items-center"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Nueva Compra
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMostrarFuturos(true)}
+            className="btn-secondary flex items-center"
+          >
+            <ClipboardList className="h-5 w-5 mr-2" />
+            Futuros Pedidos
+          </button>
+          <button
+            onClick={() => navigate('/nueva-compra')}
+            className="btn-primary flex items-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Nueva Compra
+          </button>
+        </div>
       </div>
 
-      {/* Compras Table */}
+      {/* TABLA COMPRAS */}
       <div className="card">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Compra
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Proveedor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compra</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -121,17 +163,13 @@ const Compras = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Building className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">
-                        {compra.proveedor_nombre || 'Sin proveedor'}
-                      </span>
+                      <span className="text-sm text-gray-900">{compra.proveedor_nombre || 'Sin proveedor'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">
-                        {formatDate(compra.fecha!)}
-                      </span>
+                      <span className="text-sm text-gray-900">{formatDate(compra.fecha!)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -159,7 +197,67 @@ const Compras = () => {
         </div>
       </div>
 
-      {/* Modal de Detalles */}
+      {/* MODAL FUTUROS PEDIDOS */}
+      {mostrarFuturos && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-20">
+          <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold flex items-center">
+                <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
+              </h2>
+              <button onClick={() => setMostrarFuturos(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="Producto"
+                value={nuevoProducto}
+                onChange={(e) => setNuevoProducto(e.target.value)}
+                className="border rounded px-3 py-2 flex-1"
+              />
+              <input
+                type="text"
+                placeholder="Cantidad"
+                value={nuevaCantidad}
+                onChange={(e) => setNuevaCantidad(e.target.value)}
+                className="border rounded px-3 py-2 w-28"
+              />
+              <button
+                onClick={agregarFuturo}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+              >
+                Agregar
+              </button>
+            </div>
+
+            {futurosPedidos.length === 0 ? (
+              <p className="text-gray-500">No hay productos en la lista.</p>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {futurosPedidos.map((item) => (
+                  <li key={item.id} className="flex justify-between items-center py-2">
+                    <div>
+                      <span className="font-medium">{item.producto}</span>
+                      {item.cantidad && <span className="text-gray-500 ml-2">({item.cantidad})</span>}
+                    </div>
+                    <button
+                      onClick={() => eliminarFuturo(item.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALLES */}
       {mostrarDetalles && compraSeleccionada && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
@@ -175,8 +273,7 @@ const Compras = () => {
                   <X className="h-6 w-6" />
                 </button>
               </div>
-              
-              {/* Información de la compra */}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-sm text-blue-600 font-medium">Proveedor</p>
@@ -192,42 +289,25 @@ const Compras = () => {
                 </div>
               </div>
 
-              {/* Tabla de productos */}
               <div className="mb-4">
                 <h4 className="text-md font-semibold text-gray-900 mb-3">Productos Comprados</h4>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Producto
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Cantidad
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Precio Unitario
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Subtotal
-                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Unitario</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {compraSeleccionada.detalles.map((detalle) => (
                         <tr key={detalle.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {detalle.producto_nombre}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {detalle.cantidad}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${Number(detalle.precio_unitario ?? 0).toFixed(2)}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                            ${Number(detalle.subtotal ?? 0).toFixed(2)}
-                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{detalle.producto_nombre}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{detalle.cantidad}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${Number(detalle.precio_unitario ?? 0).toFixed(2)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">${Number(detalle.subtotal ?? 0).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -235,7 +315,6 @@ const Compras = () => {
                 </div>
               </div>
 
-              {/* Resumen */}
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total de la Compra:</span>
@@ -250,4 +329,4 @@ const Compras = () => {
   )
 }
 
-export default Compras 
+export default Compras
