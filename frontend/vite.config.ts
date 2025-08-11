@@ -7,9 +7,15 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3001', // Solo se usa en desarrollo local
         changeOrigin: true
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['xlsx'] // Evita error en el build de Netlify
+    }
   }
-}) 
+})
+
