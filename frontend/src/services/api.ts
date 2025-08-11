@@ -36,7 +36,7 @@ export interface Producto {
   updated_at?: string
 }
 
-export default api
+
 
 export interface Cliente {
   id?: number
@@ -196,4 +196,4 @@ export const statsAPI = {
   getStats: () => api.get<Stats>('/stats'),
 }
 
-export default api 
+export default api
