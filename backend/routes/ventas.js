@@ -57,6 +57,11 @@ router.get("/:id", async (req, res) => {
 // Crear nueva venta
 router.post("/", async (req, res) => {
   const { cliente_id, productos, total, estado, metodo_pago } = req.body;
+
+  if (!productos || productos.length === 0) {
+    return res.status(400).json({ error: "No hay productos en la venta" });
+  }
+
   const client = await pool.connect();
 
   try {
@@ -71,35 +76,33 @@ router.post("/", async (req, res) => {
 
     const ventaId = ventaResult.rows[0].id;
 
-    // Caso: no vienen productos => venta directa con ítem ficticio
-    if (!productos || productos.length === 0) {
+    // Insertar detalles
+    for (const producto of productos) {
+      // Normalizar producto_id
+      const prodId =
+        producto.producto_id && Number(producto.producto_id) !== 0
+          ? Number(producto.producto_id)
+          : null;
+
+      // Insertar detalle
       await client.query(
         `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
-         VALUES ($1, NULL, 1, $2, $2)`,
-        [ventaId, total]
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          ventaId,
+          prodId,
+          Number(producto.cantidad) || 1,
+          Number(producto.precio_unitario) || 0,
+          Number(producto.subtotal) || 0
+        ]
       );
-    } else {
-      // Caso: hay productos
-      for (const producto of productos) {
-        await client.query(
-          `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            ventaId,
-            producto.producto_id || null,
-            producto.cantidad,
-            producto.precio_unitario,
-            producto.subtotal
-          ]
-        );
 
-        // Actualizar stock SOLO si es un producto real
-        if (producto.producto_id && producto.producto_id !== 0) {
-          await client.query(
-            `UPDATE productos SET stock = stock - $1 WHERE id = $2`,
-            [producto.cantidad, producto.producto_id]
-          );
-        }
+      // Actualizar stock solo si es un producto real
+      if (prodId) {
+        await client.query(
+          `UPDATE productos SET stock = stock - $1 WHERE id = $2`,
+          [Number(producto.cantidad) || 1, prodId]
+        );
       }
     }
 
@@ -115,5 +118,3 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
-
-
