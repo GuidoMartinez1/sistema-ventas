@@ -1,4 +1,4 @@
-// routes/bolsasAbiertas.js
+// backend/routes/bolsasAbiertas.js
 import express from "express";
 import pool from "../db.js";
 
@@ -7,19 +7,15 @@ const router = express.Router();
 // Obtener todas las bolsas abiertas
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT ba.id, 
-             ba.producto_id, 
-             p.nombre AS producto_nombre, 
-             ba.fecha_apertura, 
-             ba.estado
-      FROM bolsas_abiertas ba
-      LEFT JOIN productos p ON ba.producto_id = p.id
-      ORDER BY ba.fecha_apertura DESC
-    `);
+    const result = await pool.query(
+      `SELECT ba.*, p.nombre AS producto_nombre
+       FROM bolsas_abiertas ba
+       LEFT JOIN productos p ON ba.producto_id = p.id
+       ORDER BY ba.fecha_apertura DESC`
+    );
     res.json(result.rows);
-  } catch (error) {
-    console.error("Error al obtener bolsas abiertas:", error);
+  } catch (err) {
+    console.error("Error al obtener bolsas abiertas:", err);
     res.status(500).json({ error: "Error al obtener bolsas abiertas" });
   }
 });
@@ -28,33 +24,31 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { producto_id, estado } = req.body;
-
     const result = await pool.query(
-      `INSERT INTO bolsas_abiertas (producto_id, estado) 
-       VALUES ($1, $2) 
+      `INSERT INTO bolsas_abiertas (producto_id, estado)
+       VALUES ($1, $2)
        RETURNING *`,
       [producto_id, estado || "abierta"]
     );
-
     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error al crear bolsa abierta:", error);
+  } catch (err) {
+    console.error("Error al crear bolsa abierta:", err);
     res.status(500).json({ error: "Error al crear bolsa abierta" });
   }
 });
 
-// Actualizar bolsa abierta
+// Actualizar una bolsa abierta
 router.put("/:id", async (req, res) => {
   try {
+    const { estado } = req.body;
     const { id } = req.params;
-    const { producto_id, estado } = req.body;
 
     const result = await pool.query(
-      `UPDATE bolsas_abiertas 
-       SET producto_id = $1, estado = $2 
-       WHERE id = $3 
+      `UPDATE bolsas_abiertas
+       SET estado = $1
+       WHERE id = $2
        RETURNING *`,
-      [producto_id, estado, id]
+      [estado, id]
     );
 
     if (result.rows.length === 0) {
@@ -62,17 +56,16 @@ router.put("/:id", async (req, res) => {
     }
 
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error al actualizar bolsa abierta:", error);
+  } catch (err) {
+    console.error("Error al actualizar bolsa abierta:", err);
     res.status(500).json({ error: "Error al actualizar bolsa abierta" });
   }
 });
 
-// Eliminar bolsa abierta
+// Eliminar una bolsa abierta
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
     const result = await pool.query(
       `DELETE FROM bolsas_abiertas WHERE id = $1 RETURNING *`,
       [id]
@@ -83,8 +76,8 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.json({ message: "Bolsa abierta eliminada correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar bolsa abierta:", error);
+  } catch (err) {
+    console.error("Error al eliminar bolsa abierta:", err);
     res.status(500).json({ error: "Error al eliminar bolsa abierta" });
   }
 });

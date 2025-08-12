@@ -59,7 +59,7 @@ app.use('/categorias', categoriasRoutes);
 app.use('/productos', productosRoutes);
 app.use('/clientes', clientesRoutes);
 app.use('/proveedores', proveedoresRoutes);
-app.use('/bolsasAbiertas', bolsasAbiertasRoutes);
+app.use('/bolsas-abiertas', bolsasAbiertasRoutes);
 
 
 
