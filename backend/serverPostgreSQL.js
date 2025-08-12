@@ -8,6 +8,7 @@ import productosRoutes from './routes/productos.js';
 import clientesRoutes from './routes/clientes.js';
 import proveedoresRoutes from './routes/proveedores.js';
 import bolsasAbiertasRoutes from './routes/bolsasAbiertas.js';
+import comprasRoutes from "./routes/compras.js";
 
 
 
@@ -60,6 +61,7 @@ app.use('/productos', productosRoutes);
 app.use('/clientes', clientesRoutes);
 app.use('/proveedores', proveedoresRoutes);
 app.use('/bolsas-abiertas', bolsasAbiertasRoutes);
+app.use("/compras", comprasRoutes);
 
 
 
