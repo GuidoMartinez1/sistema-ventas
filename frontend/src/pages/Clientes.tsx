@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, User } from "lucide-react";
 import toast from "react-hot-toast";
-import api from "../services/api";
+import axios from "axios";
 
 interface Cliente {
   id: number;
@@ -13,158 +13,104 @@ interface Cliente {
 
 export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [nombre, setNombre] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [direccion, setDireccion] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Cargar clientes
   const fetchClientes = async () => {
     try {
-      const res = await api.get("/clientes");
+      const res = await axios.get("/api/clientes");
       setClientes(res.data);
-    } catch (err) {
+    } catch (error) {
       toast.error("Error al cargar clientes");
     }
+  };
+
+  const eliminarCliente = async (id: number) => {
+    if (!confirm("¿Seguro que deseas eliminar este cliente?")) return;
+    try {
+      await axios.delete(`/api/clientes/${id}`);
+      toast.success("Cliente eliminado");
+      fetchClientes();
+    } catch (error) {
+      toast.error("Error al eliminar cliente");
+    }
+  };
+
+  const editarCliente = (cliente: Cliente) => {
+    // Aquí iría la lógica para abrir un modal con los datos del cliente
+    console.log("Editar cliente", cliente);
   };
 
   useEffect(() => {
     fetchClientes();
   }, []);
 
-  // Guardar cliente (crear o editar)
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-        await api.put(`/clientes/${editingId}`, {
-          nombre,
-          email,
-          telefono,
-          direccion,
-        });
-        toast.success("Cliente actualizado");
-      } else {
-        await api.post("/clientes", {
-          nombre,
-          email,
-          telefono,
-          direccion,
-        });
-        toast.success("Cliente creado");
-      }
-      setNombre("");
-      setEmail("");
-      setTelefono("");
-      setDireccion("");
-      setEditingId(null);
-      fetchClientes();
-    } catch {
-      toast.error("Error al guardar cliente");
-    }
-  };
-
-  // Editar cliente
-  const handleEdit = (cliente: Cliente) => {
-    setEditingId(cliente.id);
-    setNombre(cliente.nombre);
-    setEmail(cliente.email || "");
-    setTelefono(cliente.telefono || "");
-    setDireccion(cliente.direccion || "");
-  };
-
-  // Eliminar cliente
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Seguro que quieres eliminar este cliente?")) return;
-    try {
-      await api.delete(`/clientes/${id}`);
-      toast.success("Cliente eliminado");
-      fetchClientes();
-    } catch {
-      toast.error("Error al eliminar cliente");
-    }
-  };
-
   return (
-    <div className="p-4">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Clientes</h1>
-
-      {/* Formulario */}
-      <form onSubmit={handleSubmit} className="mb-6 flex flex-col gap-2 max-w-md">
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          className="border p-2 rounded"
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <input
-          type="text"
-          placeholder="Teléfono"
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <input
-          type="text"
-          placeholder="Dirección"
-          value={direccion}
-          onChange={(e) => setDireccion(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          {editingId ? "Actualizar" : "Agregar"}
-        </button>
-      </form>
-
-      {/* Tabla */}
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border p-2">Nombre</th>
-            <th className="border p-2">Email</th>
-            <th className="border p-2">Teléfono</th>
-            <th className="border p-2">Dirección</th>
-            <th className="border p-2">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {clientes.map((cliente) => (
-            <tr key={cliente.id} className="border">
-              <td className="border p-2">{cliente.nombre}</td>
-              <td className="border p-2">{cliente.email}</td>
-              <td className="border p-2">{cliente.telefono}</td>
-              <td className="border p-2">{cliente.direccion}</td>
-              <td className="border p-2 flex gap-2 justify-center">
-                <button
-                  onClick={() => handleEdit(cliente)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <Pencil size={18} />
-                </button>
-                <button
-                  onClick={() => handleDelete(cliente.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </td>
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full">
+          <thead>
+            <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left">Cliente</th>
+              <th className="py-3 px-6 text-left">Email</th>
+              <th className="py-3 px-6 text-left">Teléfono</th>
+              <th className="py-3 px-6 text-left">Dirección</th>
+              <th className="py-3 px-6 text-right">Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="text-gray-700 text-sm font-light">
+            {clientes.map((cliente) => (
+              <tr
+                key={cliente.id}
+                className="border-b border-gray-200 hover:bg-gray-50"
+              >
+                {/* Avatar + Nombre */}
+                <td className="py-3 px-6 text-left whitespace-nowrap flex items-center gap-3">
+                  <div className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-500 rounded-full">
+                    <User size={18} />
+                  </div>
+                  <span className="font-medium">{cliente.nombre}</span>
+                </td>
+
+                {/* Email */}
+                <td className="py-3 px-6 text-left">{cliente.email || "-"}</td>
+
+                {/* Teléfono */}
+                <td className="py-3 px-6 text-left">{cliente.telefono || "-"}</td>
+
+                {/* Dirección */}
+                <td className="py-3 px-6 text-left">{cliente.direccion || "-"}</td>
+
+                {/* Acciones */}
+                <td className="py-3 px-6 text-right flex justify-end gap-3">
+                  <button
+                    onClick={() => editarCliente(cliente)}
+                    className="text-purple-500 hover:text-purple-700"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button
+                    onClick={() => eliminarCliente(cliente.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+
+            {clientes.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-center py-6 text-gray-400 italic"
+                >
+                  No hay clientes cargados.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
