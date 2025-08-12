@@ -6,9 +6,7 @@ import categoriasRoutes from './routes/categorias.js';
 import productosRoutes from './routes/productos.js';
 import clientesRoutes from './routes/clientes.js';
 import proveedoresRoutes from './routes/proveedores.js';
-import ventasRoutes from './routes/ventas.js';
-import comprasRoutes from './routes/compras.js';
-import reportesRoutes from './routes/reportes.js';
+
 
 
 
@@ -59,9 +57,7 @@ app.use('/categorias', categoriasRoutes);
 app.use('/productos', productosRoutes);
 app.use('/clientes', clientesRoutes);
 app.use('/proveedores', proveedoresRoutes);
-app.use('/ventas', ventasRoutes);
-app.use('/compras', comprasRoutes);
-app.use('/reportes', reportesRoutes);
+
 
 
 
