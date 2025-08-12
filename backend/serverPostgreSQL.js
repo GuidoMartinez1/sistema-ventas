@@ -1,52 +1,46 @@
+// serverPostgreSQL.js
 import express from 'express';
-import pg from 'pg';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-dotenv.config();
+// Configuración de conexión a Neon
+const pool = new Pool({
+  user: 'neondb_owner',
+  host: 'ep-odd-voice-af0w64ag-pooler.c-2.us-west-2.aws.neon.tech',
+  database: 'neondb',
+  password: 'npg_BP8ac9emqiJZ',
+  port: 5432,
+  ssl: { rejectUnauthorized: false }
+});
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const { Pool } = pg;
-
-// Configuración de conexión a PostgreSQL usando variables de entorno
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false } // Requerido por Neon
-});
-
-// Conectar a la base de datos
+// Probar conexión
 pool.connect()
-  .then(() => {
-    console.log('✅ Conectado a PostgreSQL (Neon)');
-  })
-  .catch(err => {
-    console.error('❌ Error conectando a PostgreSQL:', err);
-  });
+  .then(() => console.log('✅ Conectado a PostgreSQL (Neon)'))
+  .catch(err => console.error('❌ Error de conexión a la BD:', err));
 
-// Ejemplo de ruta raíz
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.send('Servidor backend funcionando con Neon 🚀');
+  res.send('Servidor backend funcionando 🚀');
 });
 
-// Aquí deberías importar y usar tus rutas originales
-// Ejemplo:
-// import ventasRoutes from './routes/ventas.js';
-// app.use('/api/ventas', ventasRoutes);
+// Ejemplo de endpoint para probar DB
+app.get('/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW() AS fecha');
+    res.json({ ok: true, fecha: result.rows[0].fecha });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: 'Error consultando la BD' });
+  }
+});
 
+// Levantar servidor
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
+  console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Conexión exitosa 🚀' })
-})
-
-export default pool;
