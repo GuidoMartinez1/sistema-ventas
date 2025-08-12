@@ -1,4 +1,3 @@
-// backend/routes/ventas.js
 import express from "express";
 import pool from "../db.js";
 
@@ -38,7 +37,7 @@ router.get("/:id", async (req, res) => {
 
     const detallesResult = await pool.query(
       `SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre, dv.cantidad, dv.precio_unitario, dv.subtotal
-       FROM detalles_venta dv
+       FROM detalle_ventas dv
        LEFT JOIN productos p ON dv.producto_id = p.id
        WHERE dv.venta_id = $1`,
       [id]
@@ -77,7 +76,7 @@ router.post("/", async (req, res) => {
 
     for (const producto of productos) {
       await client.query(
-        `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
+        `INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
         [
           ventaId,
@@ -88,8 +87,8 @@ router.post("/", async (req, res) => {
         ]
       );
 
-      // Si no es el "Sin producto", actualizamos el stock
-      if (producto.producto_id !== null) {
+      // Solo descontar stock si NO es "Sin producto"
+      if (producto.producto_id !== 0) {
         await client.query(
           `UPDATE productos SET stock = stock - $1 WHERE id = $2`,
           [producto.cantidad, producto.producto_id]
