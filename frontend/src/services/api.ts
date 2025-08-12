@@ -183,7 +183,7 @@ export const ventasAPI = {
   getAll: () => api.get<Venta[]>('/ventas'),
   create: (venta: { 
     cliente_id?: number
-    productos: DetalleVenta[]
+    productos?: DetalleVenta[]
     total: number
     estado?: string
     metodo_pago?: 'efectivo' | 'mercadopago' | 'tarjeta'
