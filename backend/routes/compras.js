@@ -42,7 +42,7 @@ router.post("/", async (req, res) => {
 
     const compraId = compraResult.rows[0].id;
 
-    // Insertar detalles y actualizar stock
+    // Insertar detalles y actualizar stock / precio_costo / ganancia
     for (const prod of productos) {
       await client.query(
         `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal) 
@@ -50,15 +50,34 @@ router.post("/", async (req, res) => {
         [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
       );
 
-      // Actualizar stock del producto
-      await client.query(
-        `UPDATE productos 
-         SET stock = stock + $1, 
-             precio_costo = $2, 
-             updated_at = CURRENT_TIMESTAMP 
-         WHERE id = $3`,
-        [prod.cantidad, prod.precio_unitario, prod.producto_id]
+      // Ver precio actual
+      const productoDB = await client.query(
+        `SELECT precio, precio_costo FROM productos WHERE id = $1`,
+        [prod.producto_id]
       );
+
+      if (productoDB.rows.length > 0) {
+        const { precio, precio_costo } = productoDB.rows[0];
+        let nuevoPrecioCosto = precio_costo;
+        let nuevoPorcentajeGanancia = null;
+
+        // Si cambió el precio de costo, lo actualizamos y recalculamos ganancia
+        if (parseFloat(prod.precio_unitario) !== parseFloat(precio_costo)) {
+          nuevoPrecioCosto = parseFloat(prod.precio_unitario);
+          nuevoPorcentajeGanancia =
+            ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
+        }
+
+        await client.query(
+          `UPDATE productos 
+           SET stock = stock + $1,
+               precio_costo = $2,
+               porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $4`,
+          [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
+        );
+      }
     }
 
     await client.query("COMMIT");

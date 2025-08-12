@@ -29,7 +29,7 @@ export interface Producto {
   precio_costo?: number
   porcentaje_ganancia?: number
   stock: number
-  categoria_id: number
+  categoria_id?: number
   categoria_nombre?: string
   codigo?: string
   created_at?: string
