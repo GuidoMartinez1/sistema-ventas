@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
 import categoriasRoutes from './routes/categorias.js';
+import productosRoutes from './routes/productos.js';
 
 const { Pool } = pkg;
 
@@ -48,3 +49,4 @@ app.listen(PORT, () => {
 });
 
 app.use('/categorias', categoriasRoutes);
+app.use('/productos', productosRoutes);
