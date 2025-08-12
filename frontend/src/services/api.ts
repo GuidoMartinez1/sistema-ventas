@@ -1,26 +1,22 @@
-import axios from 'axios'
+import axios from "axios"
 
-// Usar variable de entorno de Vite, o fallback a localhost para desarrollo
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+// Detectar si estamos en desarrollo o producción
+const apiBaseURL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5000" // URL de tu backend local
+    : "https://sistema-ventas-02m7.onrender.com" // URL de Render
 
+// Instancia de axios
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${apiBaseURL}/api`,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 })
 
-// Interceptor para manejar errores
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error)
-    return Promise.reject(error)
-  }
-)
-
-// Tipos de datos
+// ----------------------
+// TIPOS Y INTERFACES
+// ----------------------
 export interface Producto {
   id?: number
   nombre: string
@@ -35,8 +31,6 @@ export interface Producto {
   created_at?: string
   updated_at?: string
 }
-
-
 
 export interface Cliente {
   id?: number
@@ -134,70 +128,72 @@ export interface BolsaAbierta {
   stock_actual?: number
 }
 
-// API calls
+// ----------------------
+// ENDPOINTS
+// ----------------------
 export const productosAPI = {
-  getAll: () => api.get<Producto[]>('/productos'),
-  create: (producto: Producto) => api.post('/productos', producto),
+  getAll: () => api.get<Producto[]>("/productos"),
+  create: (producto: Producto) => api.post("/productos", producto),
   update: (id: number, producto: Producto) => api.put(`/productos/${id}`, producto),
   delete: (id: number) => api.delete(`/productos/${id}`),
-  getBajoStock: () => api.get<Producto[]>('/productos/bajo-stock'),
+  getBajoStock: () => api.get<Producto[]>("/productos/bajo-stock"),
   abrirBolsa: (id: number) => api.post(`/productos/${id}/abrir-bolsa`),
 }
 
 export const categoriasAPI = {
-  getAll: () => api.get<Categoria[]>('/categorias'),
-  create: (categoria: Categoria) => api.post('/categorias', categoria),
+  getAll: () => api.get<Categoria[]>("/categorias"),
+  create: (categoria: Categoria) => api.post("/categorias", categoria),
   update: (id: number, categoria: Categoria) => api.put(`/categorias/${id}`, categoria),
   delete: (id: number) => api.delete(`/categorias/${id}`),
 }
 
 export const proveedoresAPI = {
-  getAll: () => api.get<Proveedor[]>('/proveedores'),
-  create: (proveedor: Proveedor) => api.post('/proveedores', proveedor),
+  getAll: () => api.get<Proveedor[]>("/proveedores"),
+  create: (proveedor: Proveedor) => api.post("/proveedores", proveedor),
   update: (id: number, proveedor: Proveedor) => api.put(`/proveedores/${id}`, proveedor),
   delete: (id: number) => api.delete(`/proveedores/${id}`),
 }
 
 export const comprasAPI = {
-  getAll: () => api.get<Compra[]>('/compras'),
-  create: (compra: { proveedor_id: number; productos: DetalleCompra[]; total: number }) => 
-    api.post('/compras', compra),
+  getAll: () => api.get<Compra[]>("/compras"),
+  create: (compra: { proveedor_id: number; productos: DetalleCompra[]; total: number }) =>
+    api.post("/compras", compra),
   getById: (id: number) => api.get<CompraCompleta>(`/compras/${id}`),
 }
 
 export const bolsasAbiertasAPI = {
-  getAll: () => api.get<BolsaAbierta[]>('/bolsas-abiertas'),
+  getAll: () => api.get<BolsaAbierta[]>("/bolsas-abiertas"),
   delete: (id: number) => api.delete(`/bolsas-abiertas/${id}`),
 }
 
 export const clientesAPI = {
-  getAll: () => api.get('/clientes'),
+  getAll: () => api.get("/clientes"),
   create: (cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
-    api.post('/clientes', cliente),
+    api.post("/clientes", cliente),
   update: (id: number, cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
     api.put(`/clientes/${id}`, cliente),
-  delete: (id: number) => api.delete(`/clientes/${id}`)
+  delete: (id: number) => api.delete(`/clientes/${id}`),
 }
 
 export const ventasAPI = {
-  getAll: () => api.get<Venta[]>('/ventas'),
-  create: (venta: { 
+  getAll: () => api.get<Venta[]>("/ventas"),
+  create: (venta: {
     cliente_id?: number
     productos?: DetalleVenta[]
     total: number
     estado?: string
-    metodo_pago?: 'efectivo' | 'mercadopago' | 'tarjeta'
-  }) => api.post('/ventas', venta),
+    metodo_pago?: "efectivo" | "mercadopago" | "tarjeta"
+  }) => api.post("/ventas", venta),
   getById: (id: number) => api.get<VentaCompleta>(`/ventas/${id}`),
 }
 
 export const deudasAPI = {
-  getAll: () => api.get<Deuda[]>('/deudas'),
+  getAll: () => api.get<Deuda[]>("/deudas"),
   marcarComoPagada: (id: number) => api.put(`/deudas/${id}/pagar`),
 }
 
 export const statsAPI = {
-  getStats: () => api.get<Stats>('/stats'),
+  getStats: () => api.get<Stats>("/stats"),
 }
 
 export default api
