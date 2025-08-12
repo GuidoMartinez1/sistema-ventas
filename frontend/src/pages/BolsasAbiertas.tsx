@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 const BolsasAbiertas = () => {
   const [bolsas, setBolsas] = useState<BolsaAbierta[]>([])
   const [loading, setLoading] = useState(true)
+  const [busqueda, setBusqueda] = useState("") // 🔍 Estado para búsqueda
 
   useEffect(() => {
     fetchBolsas()
@@ -59,6 +60,11 @@ const BolsasAbiertas = () => {
     }
   }
 
+  // 🔍 Filtrar por búsqueda
+  const bolsasFiltradas = bolsas.filter((b) =>
+    b.producto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -74,8 +80,19 @@ const BolsasAbiertas = () => {
         <p className="text-gray-600">Gestiona las bolsas que han sido abiertas</p>
       </div>
 
+      {/* 🔍 Input de búsqueda */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por nombre de producto..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
+
       {/* Alerta si no hay bolsas */}
-      {bolsas.length === 0 && (
+      {bolsasFiltradas.length === 0 && (
         <div className="card">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
@@ -88,12 +105,12 @@ const BolsasAbiertas = () => {
       )}
 
       {/* Lista de bolsas abiertas */}
-      {bolsas.length > 0 && (
+      {bolsasFiltradas.length > 0 && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center">
               <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
-              Bolsas Abiertas ({bolsas.length})
+              Bolsas Abiertas ({bolsasFiltradas.length})
             </h2>
           </div>
           
@@ -119,7 +136,7 @@ const BolsasAbiertas = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {bolsas.map((bolsa) => (
+                {bolsasFiltradas.map((bolsa) => (
                   <tr key={bolsa.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -184,4 +201,4 @@ const BolsasAbiertas = () => {
   )
 }
 
-export default BolsasAbiertas 
+export default BolsasAbiertas
