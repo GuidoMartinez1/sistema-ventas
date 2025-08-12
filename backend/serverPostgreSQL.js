@@ -2,6 +2,8 @@
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
+import categoriasRoutes from './routes/categorias.js';
+
 const { Pool } = pkg;
 
 // Configuración de conexión a Neon
@@ -44,3 +46,5 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
+app.use('/categorias', categoriasRoutes);
