@@ -4,86 +4,15 @@ import pool from "../db.js";
 
 const router = express.Router();
 
-// Crear venta
-router.post("/", async (req, res) => {
-  const { cliente_id, productos, total, estado, metodo_pago } = req.body;
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    // Buscar o crear el producto "Sin producto"
-    let sinProdId;
-    const prodRes = await client.query(
-      "SELECT id FROM productos WHERE nombre = $1 LIMIT 1",
-      ["Sin producto"]
-    );
-
-    if (prodRes.rows.length > 0) {
-      sinProdId = prodRes.rows[0].id;
-    } else {
-      const insertRes = await client.query(
-        `INSERT INTO productos (nombre, precio, stock, categoria_id, codigo)
-         VALUES ($1, 0, 0, 1, 'SINPROD')
-         RETURNING id`,
-        ["Sin producto"]
-      );
-      sinProdId = insertRes.rows[0].id;
-    }
-
-    // Insertar la venta
-    const ventaResult = await client.query(
-      `INSERT INTO ventas (cliente_id, total, estado, metodo_pago)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [cliente_id || null, total, estado || "completada", metodo_pago || "efectivo"]
-    );
-
-    const ventaId = ventaResult.rows[0].id;
-
-    // Insertar detalles
-    for (let p of productos) {
-      const pid = p.producto_id || sinProdId;
-      const cantidad = p.cantidad || 1;
-      const precio = p.precio_unitario || total;
-      const subtotal = p.subtotal || total;
-
-      await client.query(
-        `INSERT INTO detalle_ventas
-         (venta_id, producto_id, cantidad, precio_unitario, subtotal)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [ventaId, pid, cantidad, precio, subtotal]
-      );
-
-      // Descontar stock si no es "Sin producto"
-      if (pid !== sinProdId) {
-        await client.query(
-          "UPDATE productos SET stock = stock - $1 WHERE id = $2",
-          [cantidad, pid]
-        );
-      }
-    }
-
-    await client.query("COMMIT");
-    res.json({ message: "Venta registrada correctamente" });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error al crear venta:", error);
-    res.status(500).json({ error: "Error al procesar la venta" });
-  } finally {
-    client.release();
-  }
-});
-
 // Obtener todas las ventas
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT v.*, c.nombre as cliente_nombre
-       FROM ventas v
-       LEFT JOIN clientes c ON v.cliente_id = c.id
-       ORDER BY v.fecha DESC`
-    );
+    const result = await pool.query(`
+      SELECT v.*, c.nombre as cliente_nombre
+      FROM ventas v
+      LEFT JOIN clientes c ON v.cliente_id = c.id
+      ORDER BY v.fecha DESC
+    `);
     res.json(result.rows);
   } catch (error) {
     console.error("Error al obtener ventas:", error);
@@ -91,7 +20,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Obtener venta por ID
+// Obtener una venta por ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -122,6 +51,74 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener venta:", error);
     res.status(500).json({ error: "Error al obtener venta" });
+  }
+});
+
+// Crear una nueva venta
+router.post("/", async (req, res) => {
+  const { cliente_id, productos, total, estado, metodo_pago } = req.body;
+
+  try {
+    await pool.query("BEGIN");
+
+    // Si no hay productos en la venta → usar "Sin producto"
+    let productosFinal = productos;
+    if (!productos || productos.length === 0) {
+      const sinProd = await pool.query(
+        "SELECT id FROM productos WHERE nombre = 'Sin producto' LIMIT 1"
+      );
+
+      if (sinProd.rows.length === 0) {
+        throw new Error(
+          "No se encontró el producto 'Sin producto'. Crealo en la base de datos."
+        );
+      }
+
+      productosFinal = [
+        {
+          producto_id: sinProd.rows[0].id,
+          cantidad: 1,
+          precio_unitario: total,
+          subtotal: total,
+        },
+      ];
+    }
+
+    // Insertar venta
+    const ventaResult = await pool.query(
+      `INSERT INTO ventas (cliente_id, total, estado, metodo_pago)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [cliente_id || null, total, estado || "completada", metodo_pago || "efectivo"]
+    );
+    const ventaId = ventaResult.rows[0].id;
+
+    // Insertar detalles
+    for (const prod of productosFinal) {
+      await pool.query(
+        `INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [ventaId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
+      );
+
+      // Si no es "Sin producto", descontar stock
+      const prodInfo = await pool.query(
+        "SELECT nombre FROM productos WHERE id = $1",
+        [prod.producto_id]
+      );
+      if (prodInfo.rows[0].nombre !== "Sin producto") {
+        await pool.query(
+          "UPDATE productos SET stock = stock - $1 WHERE id = $2",
+          [prod.cantidad, prod.producto_id]
+        );
+      }
+    }
+
+    await pool.query("COMMIT");
+    res.json({ message: "Venta creada exitosamente" });
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    console.error("Error al procesar venta:", error);
+    res.status(500).json({ error: "Error al procesar venta" });
   }
 });
 
