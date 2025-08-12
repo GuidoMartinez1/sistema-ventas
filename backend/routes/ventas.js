@@ -37,7 +37,7 @@ router.get("/:id", async (req, res) => {
 
     const detallesResult = await pool.query(
       `SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre, dv.cantidad, dv.precio_unitario, dv.subtotal
-       FROM detalle_ventas dv
+       FROM detalles_venta dv
        LEFT JOIN productos p ON dv.producto_id = p.id
        WHERE dv.venta_id = $1`,
       [id]
@@ -78,7 +78,7 @@ router.post("/", async (req, res) => {
     // Insertar detalles
     for (const producto of productos) {
       await client.query(
-        `INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
+        `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
         [
           ventaId,
