@@ -1,39 +1,52 @@
+// routes/productos.js
 import express from 'express';
 import pool from '../db.js';
+import crypto from 'crypto';
 
 const router = express.Router();
+
+// Generar código único
+const generarCodigo = () => {
+  return `PRD-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+};
 
 // Obtener todos los productos
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM productos ORDER BY id DESC');
     res.json(result.rows);
-  } catch (err) {
-    console.error('Error al obtener productos:', err);
+  } catch (error) {
+    console.error('Error al obtener productos:', error);
     res.status(500).json({ error: 'Error al obtener productos' });
   }
 });
 
-// Crear un producto
+// Crear producto
 router.post('/', async (req, res) => {
   try {
     let { nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo } = req.body;
 
-    // Generar código automático si no se envía
+    // Si no se envió código, generarlo
     if (!codigo || codigo.trim() === '') {
-      codigo = `PROD-${Date.now()}`;
+      codigo = generarCodigo();
     }
 
     const result = await pool.query(
-      `INSERT INTO productos (nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO productos 
+       (nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) 
+       RETURNING *`,
       [nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id || null, codigo]
     );
 
     res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error al crear producto:', err);
-    res.status(500).json({ error: 'Error al crear producto' });
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'El código del producto ya existe' });
+    } else {
+      res.status(500).json({ error: 'Error al crear producto' });
+    }
   }
 });
 
@@ -44,18 +57,24 @@ router.put('/:id', async (req, res) => {
     const { nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo } = req.body;
 
     const result = await pool.query(
-      `UPDATE productos SET nombre=$1, descripcion=$2, precio=$3, precio_costo=$4, porcentaje_ganancia=$5,
-       stock=$6, categoria_id=$7, codigo=$8, updated_at=NOW()
+      `UPDATE productos SET 
+        nombre=$1, descripcion=$2, precio=$3, precio_costo=$4, porcentaje_ganancia=$5, 
+        stock=$6, categoria_id=$7, codigo=$8, updated_at=NOW() 
        WHERE id=$9 RETURNING *`,
       [nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id || null, codigo, id]
     );
 
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
-
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
     res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error al actualizar producto:', err);
-    res.status(500).json({ error: 'Error al actualizar producto' });
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'El código del producto ya existe' });
+    } else {
+      res.status(500).json({ error: 'Error al actualizar producto' });
+    }
   }
 });
 
@@ -63,10 +82,13 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM productos WHERE id=$1', [id]);
-    res.sendStatus(204);
-  } catch (err) {
-    console.error('Error al eliminar producto:', err);
+    const result = await pool.query('DELETE FROM productos WHERE id=$1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json({ message: 'Producto eliminado' });
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
     res.status(500).json({ error: 'Error al eliminar producto' });
   }
 });
