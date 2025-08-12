@@ -14,6 +14,8 @@ import proveedoresRoutes from './routes/proveedores.js'
 import bolsasAbiertasRoutes from './routes/bolsasAbiertas.js'
 import comprasRoutes from './routes/compras.js'
 import ventasRoutes from './routes/ventas.js'
+import deudasRoutes from './routes/deudas.js';
+import deudasRoutes from './routes/deudas.js';
 
 const app = express()
 
@@ -73,6 +75,10 @@ const mount = (prefix) => {
   app.use(`${prefix}/bolsas-abiertas`, bolsasAbiertasRoutes)
   app.use(`${prefix}/compras`, comprasRoutes)
   app.use(`${prefix}/ventas`, ventasRoutes)
+  app.use(`${prefix}/deudas`, deudasRoutes);
+  app.use(`${prefix}/api/deudas`, deudasRoutes);
+  app.use(`${prefix}/deudas`, deudasRoutes);
+
 }
 
 mount('')     // sin prefijo

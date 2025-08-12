@@ -1,4 +1,3 @@
-// backend/routes/ventas.js
 import express from "express";
 import pool from "../db.js";
 
@@ -78,30 +77,23 @@ router.post("/", async (req, res) => {
 
     // Insertar detalles
     for (const producto of productos) {
-      // Normalizar producto_id
-      const prodId =
-        producto.producto_id && Number(producto.producto_id) !== 0
-          ? Number(producto.producto_id)
-          : null;
-
-      // Insertar detalle
       await client.query(
         `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
         [
           ventaId,
-          prodId,
-          Number(producto.cantidad) || 1,
-          Number(producto.precio_unitario) || 0,
-          Number(producto.subtotal) || 0
+          producto.producto_id,
+          producto.cantidad,
+          producto.precio_unitario,
+          producto.subtotal
         ]
       );
 
-      // Actualizar stock solo si es un producto real
-      if (prodId) {
+      // Si no es "Sin producto" (ID null o 0), actualizar stock
+      if (producto.producto_id && producto.producto_id !== 0) {
         await client.query(
           `UPDATE productos SET stock = stock - $1 WHERE id = $2`,
-          [Number(producto.cantidad) || 1, prodId]
+          [producto.cantidad, producto.producto_id]
         );
       }
     }
@@ -114,6 +106,26 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Error al procesar venta" });
   } finally {
     client.release();
+  }
+});
+
+// Marcar deuda como pagada
+router.put("/:id/pagar", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE ventas SET estado = 'pagada' WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Venta no encontrada" });
+    }
+
+    res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] });
+  } catch (error) {
+    console.error("Error al marcar deuda como pagada:", error);
+    res.status(500).json({ error: "Error al marcar deuda como pagada" });
   }
 });
 
