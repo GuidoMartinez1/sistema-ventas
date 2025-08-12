@@ -171,8 +171,12 @@ export const bolsasAbiertasAPI = {
 }
 
 export const clientesAPI = {
-  getAll: () => api.get<Cliente[]>('/clientes'),
-  create: (cliente: Cliente) => api.post('/clientes', cliente),
+  getAll: () => api.get('/clientes'),
+  create: (cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
+    api.post('/clientes', cliente),
+  update: (id: number, cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
+    api.put(`/clientes/${id}`, cliente),
+  delete: (id: number) => api.delete(`/clientes/${id}`)
 }
 
 export const ventasAPI = {
