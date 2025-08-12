@@ -66,6 +66,7 @@ router.post("/", async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    // Insertar venta
     const ventaResult = await client.query(
       `INSERT INTO ventas (cliente_id, total, estado, metodo_pago)
        VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -74,6 +75,7 @@ router.post("/", async (req, res) => {
 
     const ventaId = ventaResult.rows[0].id;
 
+    // Insertar detalles
     for (const producto of productos) {
       await client.query(
         `INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal)
@@ -87,8 +89,8 @@ router.post("/", async (req, res) => {
         ]
       );
 
-      // Solo descontar stock si NO es "Sin producto"
-      if (producto.producto_id !== 0) {
+      // Si no es "Sin producto" (ID 0), actualizar stock
+      if (producto.producto_id && producto.producto_id !== 0) {
         await client.query(
           `UPDATE productos SET stock = stock - $1 WHERE id = $2`,
           [producto.cantidad, producto.producto_id]
@@ -108,3 +110,4 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
