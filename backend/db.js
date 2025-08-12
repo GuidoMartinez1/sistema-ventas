@@ -18,6 +18,6 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Error en keep-alive:", err.message);
   }
-}, 5000);
+}, 60000);
 
 export default pool;
