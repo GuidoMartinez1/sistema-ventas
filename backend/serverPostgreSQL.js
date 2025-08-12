@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
+import "dotenv/config";
 import categoriasRoutes from './routes/categorias.js';
 import productosRoutes from './routes/productos.js';
 import clientesRoutes from './routes/clientes.js';
