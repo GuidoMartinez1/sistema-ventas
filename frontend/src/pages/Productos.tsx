@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, Download } from 'lucide-react'
 import { productosAPI, categoriasAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 
 const Productos = () => {
   const [productos, setProductos] = useState<Producto[]>([])
@@ -40,6 +41,38 @@ const Productos = () => {
       toast.error('Error al cargar datos')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const exportarProductosExcel = async () => {
+    try {
+      const response = await productosAPI.getAll()
+      const data = response.data
+
+      if (!data.length) {
+        toast.error('No hay productos para exportar')
+        return
+      }
+
+      const exportData = data.map((p: Producto) => ({
+        ID: p.id,
+        Nombre: p.nombre,
+        Código: p.codigo || '',
+        Categoría: getCategoriaNombre(p.categoria_id),
+        Precio: p.precio,
+        Precio_Costo: p.precio_costo || 0,
+        Ganancia_Porcentaje: p.porcentaje_ganancia || 0,
+        Stock: p.stock
+      }))
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos')
+
+      XLSX.writeFile(workbook, 'productos_stock.xlsx')
+      toast.success('Productos exportados con éxito')
+    } catch (error) {
+      toast.error('Error al exportar productos')
     }
   }
 
@@ -141,10 +174,6 @@ const Productos = () => {
     return precioCosto * (1 + porcentajeGanancia / 100)
   }
 
-  const calcularGanancia = (precioVenta: number, precioCosto: number) => {
-    return ((precioVenta - precioCosto) / precioCosto) * 100
-  }
-
   const calcularPrecioAutomatico = () => {
     const precioCosto = parseFloat(formData.precio_costo) || 0
     const porcentajeGanancia = parseFloat(formData.porcentaje_ganancia) || 30
@@ -187,14 +216,24 @@ const Productos = () => {
           <h1 className="text-3xl font-bold text-gray-900">Productos - AliMar</h1>
           <p className="text-gray-600">Gestiona tu inventario de productos para mascotas</p>
         </div>
-        <button
-          onClick={openModal}
-          className="btn-primary flex items-center"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Nuevo Producto
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={exportarProductosExcel}
+            className="btn-secondary flex items-center"
+          >
+            <Download className="h-5 w-5 mr-2" />
+            Exportar Excel
+          </button>
+          <button
+            onClick={openModal}
+            className="btn-primary flex items-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Nuevo Producto
+          </button>
+        </div>
       </div>
+
       {/* Filtros */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
         <input
@@ -214,6 +253,7 @@ const Productos = () => {
           <option value="alto">Stock alto (≥ 5)</option>
         </select>
       </div>
+
       {/* Productos Table */}
       <div className="card">
         <div className="overflow-x-auto">
@@ -244,92 +284,92 @@ const Productos = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-            {productos
-              .filter(p =>
-                p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
-              )
-              .filter(p =>
-                stockFiltro === 'bajo' ? p.stock <= 4 :
-                stockFiltro === 'alto' ? p.stock > 4 :
-                true
-              )
-              .map((producto) => (
-                <tr key={producto.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Package className="h-6 w-6 text-orange-600" />
+              {productos
+                .filter(p =>
+                  p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+                )
+                .filter(p =>
+                  stockFiltro === 'bajo' ? p.stock <= 4 :
+                  stockFiltro === 'alto' ? p.stock > 4 :
+                  true
+                )
+                .map((producto) => (
+                  <tr key={producto.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-orange-600" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {producto.nombre}
+                          </div>
+                          {producto.descripcion && (
+                            <div className="text-sm text-gray-500">
+                              {producto.descripcion}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {producto.nombre}
-                        </div>
-                        {producto.descripcion && (
-                          <div className="text-sm text-gray-500">
-                            {producto.descripcion}
-                          </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getCategoriaNombre(producto.categoria_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      ${producto.precio}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${producto.precio_costo || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        (producto.porcentaje_ganancia || 0) >= 50 
+                          ? 'bg-green-100 text-green-800' 
+                          : (producto.porcentaje_ganancia || 0) >= 30
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {producto.porcentaje_ganancia || 0}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        producto.stock <= 4 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {producto.stock} unidades
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(producto)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(producto.id!)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        {producto.stock > 0 && (
+                          <button
+                            onClick={() => handleAbrirBolsa(producto.id!)}
+                            className="text-orange-600 hover:text-orange-900"
+                            title="Abrir bolsa (restar 1 unidad)"
+                          >
+                            📦
+                          </button>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getCategoriaNombre(producto.categoria_id)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${producto.precio}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${producto.precio_costo || 0}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      (producto.porcentaje_ganancia || 0) >= 50 
-                        ? 'bg-green-100 text-green-800' 
-                        : (producto.porcentaje_ganancia || 0) >= 30
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {producto.porcentaje_ganancia || 0}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      producto.stock <= 4 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {producto.stock} unidades
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(producto)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(producto.id!)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      {producto.stock > 0 && (
-                        <button
-                          onClick={() => handleAbrirBolsa(producto.id!)}
-                          className="text-orange-600 hover:text-orange-900"
-                          title="Abrir bolsa (restar 1 unidad)"
-                        >
-                          📦
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -482,4 +522,4 @@ const Productos = () => {
   )
 }
 
-export default Productos 
+export default Productos
