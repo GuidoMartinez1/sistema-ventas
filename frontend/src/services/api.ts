@@ -1,11 +1,11 @@
+// src/services/api.ts
 import axios from "axios"
 
-// Base URL configurable por variable de entorno
+// Detectar si estamos en desarrollo o producción
 const apiBaseURL =
-  import.meta.env.VITE_API_URL || // se usa en producción (Netlify)
-  (import.meta.env.MODE === "development"
+  import.meta.env.MODE === "development"
     ? "http://localhost:5000"
-    : "https://sistema-ventas-02m7.onrender.com") // fallback
+    : "https://sistema-ventas-02m7.onrender.com"
 
 // Instancia de axios
 const api = axios.create({
@@ -54,11 +54,15 @@ export interface Venta {
 export interface DetalleVenta {
   id?: number
   venta_id?: number
-  producto_id: number
+  // ⚠️ Ahora OPCIONAL para permitir “nuevo ítem”
+  producto_id?: number
   cantidad: number
   precio_unitario: number
   subtotal: number
+  // campos de conveniencia / custom
   producto_nombre?: string
+  descripcion?: string
+  es_custom?: boolean
 }
 
 export interface VentaCompleta extends Venta {
@@ -168,10 +172,10 @@ export const bolsasAbiertasAPI = {
 }
 
 export const clientesAPI = {
-  getAll: () => api.get("/clientes"),
-  create: (cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
+  getAll: () => api.get<Cliente[]>("/clientes"),
+  create: (cliente: { nombre: string; telefono?: string; direccion?: string }) =>
     api.post("/clientes", cliente),
-  update: (id: number, cliente: { nombre: string; email?: string; telefono?: string; direccion?: string }) =>
+  update: (id: number, cliente: { nombre: string; telefono?: string; direccion?: string }) =>
     api.put(`/clientes/${id}`, cliente),
   delete: (id: number) => api.delete(`/clientes/${id}`),
 }
@@ -180,7 +184,7 @@ export const ventasAPI = {
   getAll: () => api.get<Venta[]>("/ventas"),
   create: (venta: {
     cliente_id?: number
-    productos?: DetalleVenta[]
+    productos?: DetalleVenta[] // incluye ítems custom
     total: number
     estado?: string
     metodo_pago?: "efectivo" | "mercadopago" | "tarjeta"
