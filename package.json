@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "recharts": "^3.1.2",
+    "@types/react": "^19.1.10",
+    "recharts": "^2.15.4",
     "xlsx": "^0.18.5"
   }
 }
