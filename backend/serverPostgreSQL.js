@@ -15,6 +15,7 @@ import bolsasAbiertasRoutes from './routes/bolsasAbiertas.js'
 import comprasRoutes from './routes/compras.js'
 import ventasRoutes from './routes/ventas.js'
 import deudasRoutes from './routes/deudas.js';
+import statsRoutes from './routes/stats.js'
 
 
 const app = express()
@@ -77,6 +78,8 @@ const mount = (prefix) => {
   app.use(`${prefix}/ventas`, ventasRoutes)
   app.use(`${prefix}/deudas`, deudasRoutes);
   app.use(`${prefix}/api/deudas`, deudasRoutes);
+  app.use(`${prefix}/api/stats`, statsRoutes)
+
 
 }
 
