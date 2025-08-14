@@ -341,7 +341,7 @@ const NuevaCompra = () => {
                         </div>
                         <div className="text-center">
                           <span className="text-sm text-gray-600 block">Subtotal</span>
-                          <span className="font-bold text-lg text-green-600">$${Number(item.subtotal).toFixed(2)}</span>
+                          <span className="font-bold text-lg text-green-600">${Number(item.subtotal).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
