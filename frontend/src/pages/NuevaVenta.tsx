@@ -14,12 +14,9 @@ const NuevaVenta = () => {
   const [cartItems, setCartItems] = useState<DetalleVenta[]>([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
-
-  // UI estado para “importe directo”
   const [importeDirecto, setImporteDirecto] = useState<number>(0)
-
-  // UI estado para “nuevo ítem”
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
+  const [esDeuda, setEsDeuda] = useState(false) // ✅ NUEVO toggle para marcar deuda
 
   useEffect(() => {
     const load = async () => {
@@ -140,12 +137,17 @@ const NuevaVenta = () => {
       toast.error('Agregá al menos un ítem')
       return
     }
+
+    if (esDeuda && !selectedCliente) {
+      toast.error('Para registrar una deuda, seleccioná un cliente')
+      return
+    }
+
     try {
-      // Armamos payload tal cual espera el backend
       const payload = {
         cliente_id: selectedCliente ? Number(selectedCliente) : undefined,
         productos: cartItems.map(d => ({
-          producto_id: d.producto_id,                // puede ser undefined para custom
+          producto_id: d.producto_id,
           cantidad: Number(d.cantidad),
           precio_unitario: Number(d.precio_unitario),
           subtotal: Number(d.subtotal),
@@ -154,11 +156,11 @@ const NuevaVenta = () => {
           es_custom: d.es_custom === true
         })),
         total: Number(total),
-        estado: 'completada',
+        estado: esDeuda ? 'adeuda' : 'completada', // ✅ clave
       }
       await ventasAPI.create(payload)
-      toast.success('Venta registrada')
-      navigate('/ventas')
+      toast.success(esDeuda ? 'Venta registrada como deuda' : 'Venta registrada')
+      navigate(esDeuda ? '/deudas' : '/ventas') // si es deuda, vamos al listado de deudas
     } catch {
       toast.error('Error al registrar la venta')
     }
@@ -194,8 +196,22 @@ const NuevaVenta = () => {
         </select>
       </div>
 
+      {/* Toggle de deuda */}
+      <div className="card flex items-center gap-3">
+        <input
+          id="toggle-deuda"
+          type="checkbox"
+          checked={esDeuda}
+          onChange={() => setEsDeuda(!esDeuda)}
+          className="h-4 w-4"
+        />
+        <label htmlFor="toggle-deuda" className="text-sm text-gray-700">
+          Marcar venta como <strong>pendiente / deuda</strong>
+        </label>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna izquierda: productos y buscador */}
+        {/* Columna izquierda: productos */}
         <div className="lg:col-span-2">
           <div className="card">
             <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
@@ -207,7 +223,6 @@ const NuevaVenta = () => {
                 className="input-field w-full md:w-1/2"
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {productos
                 .filter(p =>
