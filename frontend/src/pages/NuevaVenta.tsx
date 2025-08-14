@@ -39,9 +39,14 @@ const NuevaVenta = () => {
       toast.error('Producto inválido')
       return
     }
+  
     setCartItems(prev => {
       const item = prev.find(i => i.producto_id === producto.id)
       if (item) {
+        if (item.cantidad + 1 > (producto.stock || 0)) {
+          toast.error(`Stock insuficiente. Disponible: ${producto.stock || 0}`)
+          return prev
+        }
         const cantidad = item.cantidad + 1
         const precio = Number(producto.precio ?? 0)
         return prev.map(i =>
@@ -49,6 +54,10 @@ const NuevaVenta = () => {
             ? { ...i, cantidad, precio_unitario: precio, subtotal: cantidad * precio, producto_nombre: producto.nombre }
             : i
         )
+      }
+      if ((producto.stock || 0) < 1) {
+        toast.error(`No hay stock disponible`)
+        return prev
       }
       const precio = Number(producto.precio ?? 0)
       const nuevo: DetalleVenta = {
@@ -103,16 +112,26 @@ const NuevaVenta = () => {
   }
 
   const updateCantidad = (idx: number, cant: number) => {
+    const item = cartItems[idx]
+    const producto = productos.find(p => p.id === item.producto_id)
+  
     if (cant <= 0) {
       removeItem(idx)
       return
     }
+  
+    if (producto && cant > (producto.stock || 0)) {
+      toast.error(`Stock insuficiente. Disponible: ${producto.stock || 0}`)
+      return
+    }
+  
     setCartItems(prev =>
       prev.map((it, i) =>
         i === idx ? { ...it, cantidad: cant, subtotal: cant * Number(it.precio_unitario || 0) } : it
       )
     )
   }
+  
 
   const updatePrecio = (idx: number, precio: number) => {
     if (precio < 0) precio = 0
