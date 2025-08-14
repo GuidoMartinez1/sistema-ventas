@@ -1,10 +1,11 @@
 import axios from "axios"
 
-// Detectar si estamos en desarrollo o producción
+// Base URL configurable por variable de entorno
 const apiBaseURL =
-  import.meta.env.MODE === "development"
-    ? "http://localhost:5000" // URL de tu backend local
-    : "https://sistema-ventas-02m7.onrender.com" // URL de Render
+  import.meta.env.VITE_API_URL || // se usa en producción (Netlify)
+  (import.meta.env.MODE === "development"
+    ? "http://localhost:5000"
+    : "https://sistema-ventas-02m7.onrender.com") // fallback
 
 // Instancia de axios
 const api = axios.create({
