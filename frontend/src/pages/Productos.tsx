@@ -141,6 +141,9 @@ const Productos = () => {
     return precioCosto * (1 + porcentajeGanancia / 100)
   }
 
+  const calcularGanancia = (precioVenta: number, precioCosto: number) => {
+    return ((precioVenta - precioCosto) / precioCosto) * 100
+  }
 
   const calcularPrecioAutomatico = () => {
     const precioCosto = parseFloat(formData.precio_costo) || 0
