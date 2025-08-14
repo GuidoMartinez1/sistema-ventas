@@ -16,7 +16,8 @@ const NuevaVenta = () => {
   const [busqueda, setBusqueda] = useState('')
   const [importeDirecto, setImporteDirecto] = useState<number>(0)
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
-  const [esDeuda, setEsDeuda] = useState(false) // ✅ NUEVO toggle para marcar deuda
+  const [esDeuda, setEsDeuda] = useState(false)
+  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
 
   useEffect(() => {
     const load = async () => {
@@ -156,11 +157,12 @@ const NuevaVenta = () => {
           es_custom: d.es_custom === true
         })),
         total: Number(total),
-        estado: esDeuda ? 'adeuda' : 'completada', // ✅ clave
+        estado: esDeuda ? 'adeuda' : 'completada',
+        metodo_pago: metodoPago
       }
       await ventasAPI.create(payload)
       toast.success(esDeuda ? 'Venta registrada como deuda' : 'Venta registrada')
-      navigate(esDeuda ? '/deudas' : '/ventas') // si es deuda, vamos al listado de deudas
+      navigate(esDeuda ? '/deudas' : '/ventas')
     } catch {
       toast.error('Error al registrar la venta')
     }
@@ -362,6 +364,24 @@ const NuevaVenta = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Método de pago */}
+            {cartItems.length > 0 && (
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Método de pago
+                </label>
+                <select
+                  value={metodoPago}
+                  onChange={(e) => setMetodoPago(e.target.value as 'efectivo' | 'tarjeta' | 'mercadopago')}
+                  className="input-field w-full"
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="mercadopago">MercadoPago</option>
+                </select>
               </div>
             )}
 
