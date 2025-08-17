@@ -76,10 +76,10 @@ const mount = (prefix) => {
   app.use(`${prefix}/bolsas-abiertas`, bolsasAbiertasRoutes)
   app.use(`${prefix}/compras`, comprasRoutes)
   app.use(`${prefix}/ventas`, ventasRoutes)
-  app.use(`${prefix}/deudas`, deudasRoutes);
-  app.use(`${prefix}/api/deudas`, deudasRoutes);
+  app.use(`${prefix}/deudas`, deudasRoutes)
+  app.use(`${prefix}/api/deudas`, deudasRoutes)
   app.use(`${prefix}/api/stats`, statsRoutes)
-
+  app.use(`${prefix}/stats`, statsRoutes)
 
 }
 
