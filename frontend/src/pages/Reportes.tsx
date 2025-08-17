@@ -245,7 +245,7 @@ const Reportes = () => {
                   <div>
                     <p className="text-sm text-purple-600">Promedio</p>
                     <p className="text-2xl font-bold text-purple-900">
-                      ${ventasFiltradas.length > 0 ? (calcularTotalVentas(ventasFiltradas) / ventasFiltradas.length).toFixed(2) : '0.00'}
+                      ${ventasFiltradas.length > 0 ? (calcularTotalVentas(ventasFiltradas) / ventasFiltradas.length).toFixed(2).toLocaleString() : '0.00'}
                     </p>
                   </div>
                 </div>
