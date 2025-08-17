@@ -2,25 +2,16 @@ import { useEffect, useState } from 'react'
 import {
   BarChart3,
   TrendingUp,
+  DollarSign,
   ShoppingCart,
-  ShoppingBag
+  ShoppingBag,
+  CreditCard,
+  Calendar
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI } from '../services/api'
 import { Venta, Compra, Stats } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
-
-// 📊 Gráficos de recharts
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend
-} from 'recharts'
 
 const Reportes = () => {
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -55,16 +46,23 @@ const Reportes = () => {
     }
   }
 
+  // Helper: filtra un array por rango de fechas (usa item.fecha)
   const filtrarPorFecha = <T extends { fecha?: string }>(items: T[]) => {
     return items.filter(item => {
       if (!item.fecha) return false
       const fechaItem = new Date(item.fecha)
-      if (fechaDesde && fechaItem < new Date(fechaDesde)) return false
+
+      if (fechaDesde) {
+        const desde = new Date(fechaDesde)
+        if (fechaItem < desde) return false
+      }
+
       if (fechaHasta) {
         const hasta = new Date(fechaHasta)
         hasta.setHours(23, 59, 59, 999)
         if (fechaItem > hasta) return false
       }
+
       return true
     })
   }
@@ -81,6 +79,13 @@ const Reportes = () => {
 
   const filtrarCompras = () => filtrarPorFecha(compras)
 
+  const calcularTotalVentas = (ventasArr: Venta[]) =>
+      ventasArr.reduce((total, venta) => total + Number(venta.total || 0), 0)
+
+  const calcularTotalCompras = (comprasArr: Compra[]) =>
+      comprasArr.reduce((total, compra) => total + Number(compra.total || 0), 0)
+
+  // Exportar a Excel
   const exportToExcel = (data: any[], filename: string, type: 'ventas' | 'compras') => {
     if (!data.length) {
       toast.error('No hay datos para exportar')
@@ -175,113 +180,224 @@ const Reportes = () => {
           </button>
         </div>
 
+        {/* --- Filtros globales (solo en ventas/compras) --- */}
+        {reporteActivo !== 'resumen' && (
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                Filtro por Rango de Fechas
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Desde</label>
+                  <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="input-field"/>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
+                  <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="input-field"/>
+                </div>
+                {reporteActivo === 'ventas' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Método de Pago</label>
+                      <select value={filtroMetodoPago} onChange={e => setFiltroMetodoPago(e.target.value)} className="input-field">
+                        <option value="">Todos</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="mercadopago">MercadoPago</option>
+                        <option value="tarjeta">Tarjeta</option>
+                      </select>
+                    </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <button onClick={setHoy} className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 w-full">Hoy</button>
+                  <button onClick={limpiarFechas} className="px-3 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full">Limpiar</button>
+                </div>
+              </div>
+            </div>
+        )}
+
         {/* --- Reporte de Ventas --- */}
         {reporteActivo === 'ventas' && (
-            <div className="card p-4 space-y-4">
-              <h3 className="text-lg font-semibold flex items-center">
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Reporte de Ventas
-              </h3>
-
-              {/* Filtros */}
-              <div className="flex flex-wrap gap-2 items-end">
-                <div>
-                  <label className="block text-sm">Desde</label>
-                  <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="border p-1 rounded"/>
-                </div>
-                <div>
-                  <label className="block text-sm">Hasta</label>
-                  <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="border p-1 rounded"/>
-                </div>
-                <div>
-                  <label className="block text-sm">Método de pago</label>
-                  <select value={filtroMetodoPago} onChange={e => setFiltroMetodoPago(e.target.value)} className="border p-1 rounded">
-                    <option value="">Todos</option>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Tarjeta">Tarjeta</option>
-                    <option value="Transferencia">Transferencia</option>
-                  </select>
-                </div>
-                <button onClick={setHoy} className="px-3 py-1 bg-gray-200 rounded">Hoy</button>
-                <button onClick={limpiarFechas} className="px-3 py-1 bg-gray-200 rounded">Limpiar</button>
-                <button onClick={() => exportToExcel(ventasFiltradas, 'ventas.xlsx', 'ventas')} className="px-3 py-1 bg-green-500 text-white rounded">Exportar Excel</button>
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <ShoppingCart className="h-5 w-5 mr-2" /> Reporte de Ventas
+                </h3>
+                <button onClick={() => exportToExcel(ventasFiltradas, 'reporte_ventas.xlsx', 'ventas')} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Exportar Excel</button>
               </div>
-
-              {ventasFiltradas.length === 0 ? (
-                  <p className="text-gray-500">No hay ventas registradas.</p>
-              ) : (
-                  <ul className="divide-y">
-                    {ventasFiltradas.map(v => (
-                        <li key={v.id} className="py-2 flex justify-between">
-                          <span>{new Date(v.fecha || '').toLocaleDateString()} - {v.cliente_nombre || 'Sin cliente'}</span>
-                          <span className="font-bold">${v.total}</span>
-                        </li>
-                    ))}
-                  </ul>
-              )}
+              {/* Totales */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-blue-50 p-4 rounded-lg flex items-center">
+                  <ShoppingCart className="h-8 w-8 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-blue-600">Total Ventas</p>
+                    <p className="text-2xl font-bold text-blue-900">{ventasFiltradas.length}</p>
+                  </div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg flex items-center">
+                  <DollarSign className="h-8 w-8 text-green-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-green-600">Monto Total</p>
+                    <p className="text-2xl font-bold text-green-900">${calcularTotalVentas(ventasFiltradas).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg flex items-center">
+                  <CreditCard className="h-8 w-8 text-purple-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-purple-600">Promedio</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      ${ventasFiltradas.length > 0 ? (calcularTotalVentas(ventasFiltradas) / ventasFiltradas.length).toFixed(2) : '0.00'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Tabla */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Método</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                  {ventasFiltradas.map(v => (
+                      <tr key={v.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{v.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{v.cliente_nombre || 'Sin cliente'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${v.total.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                          v.metodo_pago === 'efectivo' ? 'bg-green-100 text-green-800' :
+                              v.metodo_pago === 'mercadopago' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-purple-100 text-purple-800'
+                      }`}>
+                        {v.metodo_pago}
+                      </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                          v.estado === 'adeuda' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {v.estado}
+                      </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(v.fecha || '').toLocaleDateString()}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
         )}
 
         {/* --- Reporte de Compras --- */}
         {reporteActivo === 'compras' && (
-            <div className="card p-4 space-y-4">
-              <h3 className="text-lg font-semibold flex items-center">
-                <ShoppingBag className="h-5 w-5 mr-2" />
-                Reporte de Compras
-              </h3>
-
-              {/* Filtros */}
-              <div className="flex flex-wrap gap-2 items-end">
-                <div>
-                  <label className="block text-sm">Desde</label>
-                  <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="border p-1 rounded"/>
-                </div>
-                <div>
-                  <label className="block text-sm">Hasta</label>
-                  <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="border p-1 rounded"/>
-                </div>
-                <button onClick={setHoy} className="px-3 py-1 bg-gray-200 rounded">Hoy</button>
-                <button onClick={limpiarFechas} className="px-3 py-1 bg-gray-200 rounded">Limpiar</button>
-                <button onClick={() => exportToExcel(comprasFiltradas, 'compras.xlsx', 'compras')} className="px-3 py-1 bg-green-500 text-white rounded">Exportar Excel</button>
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <ShoppingBag className="h-5 w-5 mr-2" /> Reporte de Compras
+                </h3>
+                <button onClick={() => exportToExcel(comprasFiltradas, 'reporte_compras.xlsx', 'compras')} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Exportar Excel</button>
               </div>
-
-              {comprasFiltradas.length === 0 ? (
-                  <p className="text-gray-500">No hay compras registradas.</p>
-              ) : (
-                  <ul className="divide-y">
-                    {comprasFiltradas.map(c => (
-                        <li key={c.id} className="py-2 flex justify-between">
-                          <span>{new Date(c.fecha || '').toLocaleDateString()} - {c.proveedor_nombre || 'Sin proveedor'}</span>
-                          <span className="font-bold">${c.total}</span>
-                        </li>
-                    ))}
-                  </ul>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-orange-50 p-4 rounded-lg flex items-center">
+                  <ShoppingBag className="h-8 w-8 text-orange-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-orange-600">Total Compras</p>
+                    <p className="text-2xl font-bold text-orange-900">{comprasFiltradas.length}</p>
+                  </div>
+                </div>
+                <div className="bg-red-50 p-4 rounded-lg flex items-center">
+                  <DollarSign className="h-8 w-8 text-red-600 mr-3" />
+                  <div>
+                    <p className="text-sm text-red-600">Monto Total</p>
+                    <p className="text-2xl font-bold text-red-900">${calcularTotalCompras(comprasFiltradas).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                  {comprasFiltradas.map(c => (
+                      <tr key={c.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{c.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{c.proveedor_nombre || 'Sin proveedor'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${c.total.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">{c.estado}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(c.fecha || '').toLocaleDateString()}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
         )}
 
-        {/* --- Resumen con gráfico --- */}
+        {/* --- Resumen --- */}
         {reporteActivo === 'resumen' && stats && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="card p-4">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  Resumen Financiero
+                  <TrendingUp className="h-5 w-5 mr-2" /> Resumen Financiero
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { name: 'Ventas', monto: stats.total_ventas_monto },
-                    { name: 'Compras', monto: stats.total_compras_monto },
-                    { name: 'Deudas', monto: stats.total_deudas_monto }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="monto" fill="#ff7f50" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="space-y-4">
+                  <div className="flex justify-between p-3 bg-green-50 rounded-lg">
+                    <span className="text-green-700 font-medium">Ingresos Totales</span>
+                    <span className="text-green-900 font-bold">${stats.total_ventas_monto.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-red-50 rounded-lg">
+                    <span className="text-red-700 font-medium">Gastos Totales</span>
+                    <span className="text-red-900 font-bold">${stats.total_compras_monto.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-blue-50 rounded-lg">
+                    <span className="text-blue-700 font-medium">Deudas Pendientes</span>
+                    <span className="text-blue-900 font-bold">${stats.total_deudas_monto.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-purple-50 rounded-lg">
+                    <span className="text-purple-700 font-medium">Balance Neto</span>
+                    <span className={`font-bold ${(stats.total_ventas_monto - stats.total_compras_monto) >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                  ${(stats.total_ventas_monto - stats.total_compras_monto).toLocaleString()}
+                </span>
+                  </div>
+                </div>
+              </div>
+              <div className="card p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <BarChart3 className="h-5 w-5 mr-2" /> Estadísticas Generales
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700 font-medium">Total Productos</span>
+                    <span className="text-gray-900 font-bold">{stats.total_productos}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700 font-medium">Total Clientes</span>
+                    <span className="text-gray-900 font-bold">{stats.total_clientes}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700 font-medium">Total Ventas</span>
+                    <span className="text-gray-900 font-bold">{stats.total_ventas}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-700 font-medium">Total Compras</span>
+                    <span className="text-gray-900 font-bold">{stats.total_compras}</span>
+                  </div>
+                </div>
               </div>
             </div>
         )}
