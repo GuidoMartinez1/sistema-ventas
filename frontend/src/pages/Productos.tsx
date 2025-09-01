@@ -5,6 +5,8 @@ import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
+const PRECIOS_KG_KEY = 'preciosKg' // key en localStorage
+
 const Productos = () => {
   const [productos, setProductos] = useState<Producto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -15,6 +17,7 @@ const Productos = () => {
     nombre: '',
     descripcion: '',
     precio: '',
+    precio_kg: '',
     precio_costo: '',
     porcentaje_ganancia: '',
     stock: '',
@@ -30,6 +33,40 @@ const Productos = () => {
   const [stockFiltro, setStockFiltro] = useState(''); // '', 'bajo', 'alto'
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
 
+  /* ---------- Helpers localStorage para precios x kg ---------- */
+  const loadPreciosKgFromStorage = (): Record<string, number> => {
+    try {
+      const raw = localStorage.getItem(PRECIOS_KG_KEY)
+      if (!raw) return {}
+      return JSON.parse(raw)
+    } catch (e) {
+      console.warn('Error parseando preciosKg en localStorage', e)
+      return {}
+    }
+  }
+
+  const getPrecioKgFromStorage = (productId?: number) => {
+    if (!productId && productId !== 0) return undefined
+    const obj = loadPreciosKgFromStorage()
+    const key = String(productId)
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      return Number(obj[key])
+    }
+    return undefined
+  }
+
+  const setPrecioKgInStorage = (productId: number, precioKg: number | string | undefined) => {
+    try {
+      const obj = loadPreciosKgFromStorage()
+      const key = String(productId)
+      const val = precioKg === undefined || precioKg === null || precioKg === '' ? 0 : Number(precioKg)
+      obj[key] = isNaN(val) ? 0 : val
+      localStorage.setItem(PRECIOS_KG_KEY, JSON.stringify(obj))
+    } catch (e) {
+      console.warn('Error guardando precioKg en localStorage', e)
+    }
+  }
+  /* ------------------------------------------------------------ */
 
   const fetchData = async () => {
     try {
@@ -37,7 +74,19 @@ const Productos = () => {
         productosAPI.getAll(),
         categoriasAPI.getAll()
       ])
-      setProductos(productosResponse.data)
+
+      // integrar valores desde localStorage (si existen)
+      const stored = loadPreciosKgFromStorage()
+      const productosConPrecioKg = productosResponse.data.map((p: any) => {
+        const precioKgStored = stored[String(p.id)]
+        return {
+          ...p,
+          // mantengo la propiedad precio_kg si existe en backend, pero priorizo el valor guardado en localStorage
+          precio_kg: precioKgStored !== undefined ? precioKgStored : (p.precio_kg ?? '')
+        }
+      })
+
+      setProductos(productosConPrecioKg)
       setCategorias(categoriasResponse.data)
     } catch (error) {
       toast.error('Error al cargar datos')
@@ -56,12 +105,15 @@ const Productos = () => {
         return
       }
 
-      const exportData = data.map((p: Producto) => ({
+      const stored = loadPreciosKgFromStorage()
+
+      const exportData = data.map((p: any) => ({
         ID: p.id,
         Nombre: p.nombre,
         Código: p.codigo || '',
         Categoría: getCategoriaNombre(p.categoria_id),
         Precio: p.precio,
+        Precio_x_Kg: stored[String(p.id)] !== undefined ? stored[String(p.id)] : (p.precio_kg ?? ''),
         Precio_Costo: p.precio_costo || 0,
         Ganancia_Porcentaje: p.porcentaje_ganancia || 0,
         Stock: p.stock
@@ -84,18 +136,34 @@ const Productos = () => {
     try {
       const productoData = {
         ...formData,
-        precio: parseFloat(formData.precio),
-        precio_costo: parseFloat(formData.precio_costo),
-        porcentaje_ganancia: parseFloat(formData.porcentaje_ganancia),
-        stock: parseInt(formData.stock) || 0,
+        precio: parseFloat(formData.precio || '0') || 0,
+        // precio_kg lo guardamos en localStorage, pero igualmente lo enviamos al backend si el backend acepta esa propiedad
+        precio_kg: formData.precio_kg ? parseFloat(formData.precio_kg) : undefined,
+        precio_costo: parseFloat(formData.precio_costo || '0') || 0,
+        porcentaje_ganancia: parseFloat(formData.porcentaje_ganancia || '0') || 0,
+        stock: parseInt(formData.stock || '0') || 0,
         categoria_id: formData.categoria_id ? parseInt(formData.categoria_id) : undefined
       }
 
       if (editingProducto) {
-        await productosAPI.update(editingProducto.id!, productoData)
+        // Update
+        const res = await productosAPI.update(editingProducto.id!, productoData)
+        // Persistir precio_kg en localStorage usando el id conocido
+        const precioKgNumber = formData.precio_kg ? parseFloat(formData.precio_kg) : 0
+        setPrecioKgInStorage(editingProducto.id!, precioKgNumber)
         toast.success('Producto actualizado exitosamente')
       } else {
-        await productosAPI.create(productoData)
+        // Create: intentamos obtener el id que devuelve la API para poder guardarlo en localStorage
+        const res = await productosAPI.create(productoData)
+        const created = res?.data
+        if (created && created.id) {
+          const createdId = created.id
+          const precioKgNumber = formData.precio_kg ? parseFloat(formData.precio_kg) : 0
+          setPrecioKgInStorage(createdId, precioKgNumber)
+        } else {
+          // Si la API no devuelve id, guardamos un mensaje en consola y seguimos (fetchData traerá el nuevo producto y no podremos mapearlo inmediatamente)
+          console.warn('No se obtuvo id del producto creado; precio_kg no pudo persistirse por id.')
+        }
         toast.success('Producto creado exitosamente')
       }
 
@@ -109,14 +177,17 @@ const Productos = () => {
   }
 
   const handleEdit = (producto: Producto) => {
+    // cargar precio_kg desde localStorage si existe
+    const precioKgStored = getPrecioKgFromStorage(producto.id)
     setEditingProducto(producto)
     setFormData({
       nombre: producto.nombre,
       descripcion: producto.descripcion || '',
-      precio: producto.precio.toString(),
+      precio: producto.precio?.toString() || '',
+      precio_kg: precioKgStored !== undefined ? String(precioKgStored) : (producto as any).precio_kg?.toString() || '',
       precio_costo: producto.precio_costo?.toString() || '',
       porcentaje_ganancia: producto.porcentaje_ganancia?.toString() || '',
-      stock: producto.stock.toString(),
+      stock: producto.stock?.toString() || '',
       categoria_id: producto.categoria_id?.toString() || '',
       codigo: producto.codigo || ''
     })
@@ -127,6 +198,18 @@ const Productos = () => {
     if (window.confirm('¿Está seguro de que desea eliminar este producto?')) {
       try {
         await productosAPI.delete(id)
+        // opcional: borrar precio_kg asociado del localStorage al eliminar producto
+        try {
+          const obj = loadPreciosKgFromStorage()
+          const key = String(id)
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            delete obj[key]
+            localStorage.setItem(PRECIOS_KG_KEY, JSON.stringify(obj))
+          }
+        } catch (e) {
+          console.warn('Error al borrar precio_kg de localStorage', e)
+        }
+
         toast.success('Producto eliminado exitosamente')
         fetchData()
       } catch (error) {
@@ -152,6 +235,7 @@ const Productos = () => {
       nombre: '',
       descripcion: '',
       precio: '',
+      precio_kg: '',
       precio_costo: '',
       porcentaje_ganancia: '',
       stock: '',
@@ -185,6 +269,7 @@ const Productos = () => {
       setFormData(prev => ({
         ...prev,
         precio: precioCalculado.toFixed(2)
+        // NOTA: no tocamos precio_kg automáticamente — se mantiene manual y persistente en localStorage
       }))
     }
   }
@@ -255,16 +340,16 @@ const Productos = () => {
           <option value="alto">Stock alto (≥ 3)</option>
         </select>
         <select
-        value={categoriaFiltro}
-        onChange={(e) => setCategoriaFiltro(e.target.value)}
-        className="input-field w-full md:w-1/4"
+          value={categoriaFiltro}
+          onChange={(e) => setCategoriaFiltro(e.target.value)}
+          className="input-field w-full md:w-1/4"
         >
-        <option value="">Todas las categorías</option>
-        {categorias.map((categoria) => (
-          <option key={categoria.id} value={categoria.id?.toString()}>
-            {categoria.nombre}
-          </option>
-        ))}
+          <option value="">Todas las categorías</option>
+          {categorias.map((categoria) => (
+            <option key={categoria.id} value={categoria.id?.toString()}>
+              {categoria.nombre}
+            </option>
+          ))}
         </select>
 
       </div>
@@ -283,6 +368,9 @@ const Productos = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio Venta
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Precio x Kg
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio Costo
@@ -337,6 +425,9 @@ const Productos = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       ${producto.precio}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      ${ (getPrecioKgFromStorage(producto.id) !== undefined ? getPrecioKgFromStorage(producto.id) : (producto as any).precio_kg) || 0 }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${producto.precio_costo || 0}
@@ -425,6 +516,19 @@ const Productos = () => {
                     rows={3}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Precio por Kilo
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.precio_kg}
+                    onChange={(e) => setFormData({...formData, precio_kg: e.target.value})}
+                    className="input-field"
+                    placeholder="0.00"
+                  />
+                </div> 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
