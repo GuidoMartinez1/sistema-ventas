@@ -28,6 +28,8 @@ const Productos = () => {
 
   const [busqueda, setBusqueda] = useState('');
   const [stockFiltro, setStockFiltro] = useState(''); // '', 'bajo', 'alto'
+  const [categoriaFiltro, setCategoriaFiltro] = useState('');
+
 
   const fetchData = async () => {
     try {
@@ -249,9 +251,22 @@ const Productos = () => {
           className="input-field w-full md:w-1/4"
         >
           <option value="">Todos los stocks</option>
-          <option value="bajo">Stock bajo (≤ 4)</option>
-          <option value="alto">Stock alto (≥ 5)</option>
+          <option value="bajo">Stock bajo (≤ 2)</option>
+          <option value="alto">Stock alto (≥ 3)</option>
         </select>
+        <select
+        value={categoriaFiltro}
+        onChange={(e) => setCategoriaFiltro(e.target.value)}
+        className="input-field w-full md:w-1/4"
+        >
+        <option value="">Todas las categorías</option>
+        {categorias.map((categoria) => (
+          <option key={categoria.id} value={categoria.id?.toString()}>
+            {categoria.nombre}
+          </option>
+        ))}
+        </select>
+
       </div>
 
       {/* Productos Table */}
@@ -289,9 +304,12 @@ const Productos = () => {
                   p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
                 )
                 .filter(p =>
-                  stockFiltro === 'bajo' ? p.stock <= 4 :
-                  stockFiltro === 'alto' ? p.stock > 4 :
+                  stockFiltro === 'bajo' ? p.stock <= 3 :
+                  stockFiltro === 'alto' ? p.stock > 3 :
                   true
+                )
+                .filter(p =>
+                  categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
                 )
                 .map((producto) => (
                   <tr key={producto.id}>
