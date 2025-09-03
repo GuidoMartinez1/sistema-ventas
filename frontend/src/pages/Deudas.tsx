@@ -4,6 +4,11 @@ import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
 
+const formatPrice = (value: number | string | undefined) => {
+  if (value === null || value === undefined || value === '') return '$0';
+  return '$' + Number(value).toLocaleString("es-AR");
+};
+
 const Deudas = () => {
   const [deudas, setDeudas] = useState<Deuda[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,7 +111,7 @@ const Deudas = () => {
                   
                   <div className="text-right ml-4">
                     <div className="text-2xl font-bold text-orange-600">
-                      ${deuda.total.toLocaleString()}
+                      {formatPrice(deuda.total.toLocaleString())}
                     </div>
                     <button
                       onClick={() => handleMarcarComoPagada(deuda.id!)}
@@ -146,7 +151,7 @@ const Deudas = () => {
                             Cantidad: {detalle.cantidad}
                           </div>
                           <div className="font-medium text-gray-900">
-                            ${detalle.subtotal.toLocaleString()}
+                            {formatPrice(detalle.subtotal.toLocaleString())}
                           </div>
                         </div>
                       </div>
