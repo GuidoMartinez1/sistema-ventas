@@ -345,13 +345,13 @@ const Productos = () => {
                           {getCategoriaNombre(producto.categoria_id)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${formatPrice(producto.precio)}
+                          {formatPrice(producto.precio)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${formatPrice(producto.precio_kg)}
+                          {formatPrice(producto.precio_kg)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${formatPrice(producto.precio_costo)}
+                          {formatPrice(producto.precio_costo)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
