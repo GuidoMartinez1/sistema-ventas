@@ -42,6 +42,7 @@ router.post('/', async (req, res) => {
     nombre,
     descripcion,
     precio,
+    precio_kg,
     precio_costo,
     porcentaje_ganancia,
     stock,
@@ -58,10 +59,10 @@ router.post('/', async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO productos
-      (nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
-      [nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigoFinal]
+      [nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigoFinal]
     );
     res.json(result.rows[0]);
   } catch (error) {
@@ -77,6 +78,7 @@ router.put('/:id', async (req, res) => {
     nombre,
     descripcion,
     precio,
+    precio_kg,
     precio_costo,
     porcentaje_ganancia,
     stock,
@@ -87,10 +89,10 @@ router.put('/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE productos
-      SET nombre=$1, descripcion=$2, precio=$3, precio_costo=$4, porcentaje_ganancia=$5, stock=$6, categoria_id=$7, codigo=$8, updated_at=NOW()
-      WHERE id=$9
+      SET nombre=$1, descripcion=$2, precio=$3, precio_kg=$4, precio_costo=$5, porcentaje_ganancia=$6, stock=$7, categoria_id=$8, codigo=$9, updated_at=NOW()
+      WHERE id=$10
       RETURNING *`,
-      [nombre, descripcion, precio, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, id]
+      [nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
