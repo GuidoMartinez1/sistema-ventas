@@ -5,6 +5,11 @@ import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
+const formatPrice = (value: number | string | undefined) => {
+  if (value === null || value === undefined || value === '') return '$0';
+  return '$' + Number(value).toLocaleString("es-AR");
+};
+
 const Productos = () => {
   const [productos, setProductos] = useState<Producto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -62,9 +67,9 @@ const Productos = () => {
         Nombre: p.nombre,
         Código: p.codigo || '',
         Categoría: getCategoriaNombre(p.categoria_id),
-        Precio: p.precio,
-        Precio_x_Kg: p.precio_kg ?? '',
-        Precio_Costo: p.precio_costo || 0,
+        Precio: formatPrice(p.precio),
+        Precio_x_Kg: formatPrice(p.precio_kg),
+        Precio_Costo: formatPrice(p.precio_costo),
         Ganancia_Porcentaje: p.porcentaje_ganancia || 0,
         Stock: p.stock
       }))
@@ -340,13 +345,13 @@ const Productos = () => {
                           {getCategoriaNombre(producto.categoria_id)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${producto.precio}
+                          ${formatPrice(producto.precio)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${producto.precio_kg || 0}
+                          ${formatPrice(producto.precio_kg)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${producto.precio_costo || 0}
+                          ${formatPrice(producto.precio_costo)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
