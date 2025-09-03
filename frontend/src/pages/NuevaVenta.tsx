@@ -6,6 +6,11 @@ import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
+const formatPrice = (value: number | string | undefined) => {
+  if (value === null || value === undefined || value === '') return '$0';
+  return '$' + Number(value).toLocaleString("es-AR");
+};
+
 const NuevaVenta = () => {
   const navigate = useNavigate()
   const [productos, setProductos] = useState<Producto[]>([])
@@ -258,7 +263,7 @@ const NuevaVenta = () => {
                         <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-medium text-gray-900">{p.nombre}</h3>
-                            <span className="text-sm font-medium text-gray-900">${Number(p.precio || 0).toFixed(2)}</span>
+                            <span className="text-sm font-medium text-gray-900">{formatPrice(Number(p.precio || 0).toFixed(2))}</span>
                           </div>
                           {p.descripcion && <p className="text-sm text-gray-500 mb-2">{p.descripcion}</p>}
                           <div className="flex justify-between items-center">
@@ -338,7 +343,7 @@ const NuevaVenta = () => {
                               <input
                                   type="number"
                                   step="0.01"
-                                  value={it.precio_unitario}
+                                  value={formatPrice(it.precio_unitario)}
                                   onChange={(e) => updatePrecio(idx, Number(e.target.value || 0))}
                                   className="w-full text-center border rounded px-2 py-1 text-sm mt-1"
                               />
@@ -346,7 +351,7 @@ const NuevaVenta = () => {
                             <div className="text-center">
                               <span className="text-xs text-gray-600 block">Subtotal</span>
                               <span className="font-bold text-lg text-green-600">
-                          ${Number(it.subtotal).toFixed(2)}
+                          {formatPrice(Number(it.subtotal).toFixed(2))}
                         </span>
                             </div>
                           </div>
@@ -378,7 +383,7 @@ const NuevaVenta = () => {
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center text-lg font-bold">
                       <span>Total:</span>
-                      <span>${Number(total).toFixed(2)}</span>
+                      <span>{formatPrice(Number(total).toFixed(2))}</span>
                     </div>
                     <button onClick={handleSubmit} className="w-full btn-primary mt-4">
                       Registrar Venta

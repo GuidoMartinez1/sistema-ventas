@@ -6,6 +6,11 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 
+const formatPrice = (value: number | string | undefined) => {
+  if (value === null || value === undefined || value === '') return '$0';
+  return '$' + Number(value).toLocaleString("es-AR");
+};
+
 const Ventas = () => {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [loading, setLoading] = useState(true)
@@ -199,7 +204,7 @@ const Ventas = () => {
                       : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${venta.total.toLocaleString()}
+                    {formatPrice(venta.total.toLocaleString())}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getEstadoBadge(venta.estado || 'completada')}
@@ -254,7 +259,7 @@ const Ventas = () => {
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Resumen</h4>
                   <div className="text-2xl font-bold text-primary-600">
-                    ${selectedVenta.total.toLocaleString()}
+                    {formatPrice(selectedVenta.total.toLocaleString())}
                   </div>
                   <div className="text-sm text-gray-500">
                     Total de la venta
@@ -292,10 +297,10 @@ const Ventas = () => {
                             {detalle.cantidad}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${detalle.precio_unitario}
+                            {formatPrice(detalle.precio_unitario)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${detalle.subtotal}
+                            {formatPrice(detalle.subtotal)}
                           </td>
                         </tr>
                       ))}
