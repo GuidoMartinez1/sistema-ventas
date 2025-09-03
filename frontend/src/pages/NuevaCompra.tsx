@@ -5,6 +5,11 @@ import { Producto, Proveedor, DetalleCompra, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
+const formatPrice = (value: number | string | undefined) => {
+  if (value === null || value === undefined || value === '') return '$0';
+  return '$' + Number(value).toLocaleString("es-AR");
+};
+
 const NuevaCompra = () => {
   const navigate = useNavigate()
   const [productos, setProductos] = useState<Producto[]>([])
@@ -235,7 +240,7 @@ const NuevaCompra = () => {
                     {producto.descripcion && <p className="text-sm text-gray-500 mb-2">{producto.descripcion}</p>}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">
-                        Costo actual: ${producto.precio_costo || 0}
+                        Costo actual: {formatPrice(producto.precio_costo)}
                       </span>
                       <button
                         onClick={() => addToCart(producto)}
@@ -341,7 +346,7 @@ const NuevaCompra = () => {
                         </div>
                         <div className="text-center">
                           <span className="text-sm text-gray-600 block">Subtotal</span>
-                          <span className="font-bold text-lg text-green-600">${Number(item.subtotal).toFixed(2)}</span>
+                          <span className="font-bold text-lg text-green-600">{formatPrice(Number(item.subtotal).toFixed(2))}</span>
                         </div>
                       </div>
                     </div>
@@ -354,7 +359,7 @@ const NuevaCompra = () => {
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total:</span>
-                  <span>${getTotal().toFixed(2)}</span>
+                  <span>{formatPrice(getTotal().toFixed(2))}</span>
                 </div>
                 <button
                   onClick={handleSubmit}
