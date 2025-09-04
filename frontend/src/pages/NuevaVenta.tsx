@@ -343,7 +343,7 @@ const NuevaVenta = () => {
                               <input
                                   type="number"
                                   step="0.01"
-                                  value={formatPrice(it.precio_unitario)}
+                                  value={it.precio_unitario}
                                   onChange={(e) => updatePrecio(idx, Number(e.target.value || 0))}
                                   className="w-full text-center border rounded px-2 py-1 text-sm mt-1"
                               />
