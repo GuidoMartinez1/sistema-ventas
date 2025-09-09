@@ -70,8 +70,10 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-8">
-          {children}
+        <main className="flex-1 overflow-auto p-4 md:p-8">
+          <div className="max-w-[1920px] w-full mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>
