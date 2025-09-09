@@ -17,12 +17,6 @@ const Productos = () => {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null)
-  // ================= FUTUROS PEDIDOS =================
-  const [mostrarFuturos, setMostrarFuturos] = useState(false)
-  const [futurosPedidos, setFuturosPedidos] = useState<{ id: number; producto: string; cantidad: string }[]>([])
-  const [nuevoProducto, setNuevoProducto] = useState('')
-  const [nuevaCantidad, setNuevaCantidad] = useState('')
-  const [cargandoFuturos, setCargandoFuturos] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -34,10 +28,15 @@ const Productos = () => {
     categoria_id: '',
     codigo: ''
   })
-
   const [busqueda, setBusqueda] = useState('')
   const [stockFiltro, setStockFiltro] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState('')
+  // ================= FUTUROS PEDIDOS =================
+  const [mostrarFuturos, setMostrarFuturos] = useState(false)
+  const [futurosPedidos, setFuturosPedidos] = useState<{ id: number; producto: string; cantidad: string }[]>([])
+  const [nuevoProducto, setNuevoProducto] = useState('')
+  const [nuevaCantidad, setNuevaCantidad] = useState('')
+  const [cargandoFuturos, setCargandoFuturos] = useState(false)
 
   useEffect(() => {
     fetchData()
