@@ -260,10 +260,14 @@ const Productos = () => {
               onChange={(e) => setStockFiltro(e.target.value)}
               className="input-field w-full md:w-1/4"
           >
-            <option value="">Todos los stocks</option>
-            <option value="bajo">Stock bajo (≤ 2)</option>
-            <option value="alto">Stock alto (≥ 3)</option>
+            <option value="">Todos los Stocks</option>
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value=">4">&gt;4</option>
           </select>
+
           <select
               value={categoriaFiltro}
               onChange={(e) => setCategoriaFiltro(e.target.value)}
@@ -313,10 +317,11 @@ const Productos = () => {
               <tbody className="bg-white divide-y divide-gray-200">
               {productos
                   .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()))
-                  .filter(p =>
-                      stockFiltro === 'bajo' ? p.stock <= 3 :
-                          stockFiltro === 'alto' ? p.stock > 3 : true
-                  )
+                  .filter(p => {
+                    if (!stockFiltro) return true
+                    if (stockFiltro === '>4') return p.stock > 4
+                    return p.stock === parseInt(stockFiltro)
+                  })
                   .filter(p =>
                       categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
                   )
