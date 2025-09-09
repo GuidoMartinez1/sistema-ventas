@@ -6,6 +6,7 @@ import 'dotenv/config'
 // importa pool central (asegúrate que ./db.js existe y exporta `pool`)
 import pool from './db.js'
 
+
 // importa rutas (asegúrate que existen en ./routes/*.js y usan el mismo pool de ./db.js)
 import categoriasRoutes from './routes/categorias.js'
 import productosRoutes from './routes/productos.js'
@@ -16,7 +17,7 @@ import comprasRoutes from './routes/compras.js'
 import ventasRoutes from './routes/ventas.js'
 import deudasRoutes from './routes/deudas.js';
 import statsRoutes from './routes/stats.js'
-
+import futurosPedidosRoutes from './routes/futurosPedidos.js'
 
 const app = express()
 
@@ -80,6 +81,7 @@ const mount = (prefix) => {
   app.use(`${prefix}/api/deudas`, deudasRoutes)
   app.use(`${prefix}/api/stats`, statsRoutes)
   app.use(`${prefix}/stats`, statsRoutes)
+  app.use('/futuros-pedidos', futurosPedidosRoutes)
 
 }
 

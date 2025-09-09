@@ -4,6 +4,7 @@ import { productosAPI, categoriasAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
+import { ClipboardList, X } from 'lucide-react'
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
@@ -16,6 +17,12 @@ const Productos = () => {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null)
+  // ================= FUTUROS PEDIDOS =================
+  const [mostrarFuturos, setMostrarFuturos] = useState(false)
+  const [futurosPedidos, setFuturosPedidos] = useState<{ id: number; producto: string; cantidad: string }[]>([])
+  const [nuevoProducto, setNuevoProducto] = useState('')
+  const [nuevaCantidad, setNuevaCantidad] = useState('')
+  const [cargandoFuturos, setCargandoFuturos] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -221,6 +228,45 @@ const Productos = () => {
     )
   }
 
+  const fetchFuturosPedidos = async () => {
+    setCargandoFuturos(true)
+    try {
+      const res = await futurosPedidosAPI.getAll()
+      setFuturosPedidos(res.data)
+    } catch {
+      toast.error('Error al cargar futuros pedidos')
+    } finally {
+      setCargandoFuturos(false)
+    }
+  }
+
+  const agregarFuturo = async () => {
+    if (!nuevoProducto.trim()) {
+      toast.error('Ingresa un nombre de producto')
+      return
+    }
+    try {
+      const res = await futurosPedidosAPI.create({ producto: nuevoProducto.trim(), cantidad: nuevaCantidad.trim() })
+      setFuturosPedidos(prev => [res.data, ...prev])
+      setNuevoProducto('')
+      setNuevaCantidad('')
+      toast.success('Futuro pedido agregado')
+    } catch {
+      toast.error('Error al agregar futuro pedido')
+    }
+  }
+
+  const eliminarFuturo = async (id: number) => {
+    try {
+      await futurosPedidosAPI.delete(id)
+      setFuturosPedidos(prev => prev.filter(p => p.id !== id))
+      toast.success('Futuro pedido eliminado')
+    } catch {
+      toast.error('Error al eliminar futuro pedido')
+    }
+  }
+// ====================================================
+
   return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -235,6 +281,16 @@ const Productos = () => {
             >
               <Download className="h-5 w-5 mr-2" />
               Exportar Excel
+            </button>
+            <button
+                onClick={() => {
+                  setMostrarFuturos(true)
+                  fetchFuturosPedidos()
+                }}
+                className="btn-secondary flex items-center"
+            >
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Futuros Pedidos
             </button>
             <button
                 onClick={openModal}
@@ -563,6 +619,67 @@ const Productos = () => {
                     </div>
                   </form>
                 </div>
+              </div>
+            </div>
+        )}
+        {/* MODAL FUTUROS PEDIDOS */}
+        {mostrarFuturos && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-20">
+              <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold flex items-center">
+                    <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
+                  </h2>
+                  <button onClick={() => setMostrarFuturos(false)} className="text-gray-500 hover:text-gray-700">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="flex gap-2 mb-4">
+                  <input
+                      type="text"
+                      placeholder="Producto"
+                      value={nuevoProducto}
+                      onChange={(e) => setNuevoProducto(e.target.value)}
+                      className="border rounded px-3 py-2 flex-1"
+                  />
+                  <input
+                      type="text"
+                      placeholder="Cantidad"
+                      value={nuevaCantidad}
+                      onChange={(e) => setNuevaCantidad(e.target.value)}
+                      className="border rounded px-3 py-2 w-28"
+                  />
+                  <button
+                      onClick={agregarFuturo}
+                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                  >
+                    Agregar
+                  </button>
+                </div>
+
+                {cargandoFuturos ? (
+                    <p className="text-gray-500">Cargando...</p>
+                ) : futurosPedidos.length === 0 ? (
+                    <p className="text-gray-500">No hay productos en la lista.</p>
+                ) : (
+                    <ul className="divide-y divide-gray-200">
+                      {futurosPedidos.map((item) => (
+                          <li key={item.id} className="flex justify-between items-center py-2">
+                            <div>
+                              <span className="font-medium">{item.producto}</span>
+                              {item.cantidad && <span className="text-gray-500 ml-2">({item.cantidad})</span>}
+                            </div>
+                            <button
+                                onClick={() => eliminarFuturo(item.id)}
+                                className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </li>
+                      ))}
+                    </ul>
+                )}
               </div>
             </div>
         )}
