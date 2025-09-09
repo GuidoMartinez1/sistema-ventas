@@ -11,6 +11,8 @@ import { ventasAPI, comprasAPI, productosAPI, bolsasAbiertasAPI, statsAPI } from
 import { Venta, Compra, Producto, BolsaAbierta, Stats } from '../services/api'
 import { Link } from 'react-router-dom'
 
+const [mostrarTodoBajoStock, setMostrarTodoBajoStock] = useState(false)
+
 const Dashboard = () => {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [compras, setCompras] = useState<Compra[]>([])
@@ -165,16 +167,18 @@ const Dashboard = () => {
                   Productos con Bajo Stock ({bajoStock.length})
                 </h2>
               </div>
-              <Link
-                  to="/productos?stock=bajo"
-                  className="text-red-600 hover:text-red-700 text-sm font-medium"
-              >
-                Ver todos →
-              </Link>
+              {!mostrarTodoBajoStock && (
+                  <button
+                      onClick={() => setMostrarTodoBajoStock(true)}
+                      className="text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
+                    Ver todos →
+                  </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bajoStock.slice(0, 6).map((producto) => (
+              {(mostrarTodoBajoStock ? bajoStock : bajoStock.slice(0, 6)).map((producto) => (
                   <div
                       key={producto.id}
                       className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
@@ -187,6 +191,17 @@ const Dashboard = () => {
                   </div>
               ))}
             </div>
+
+            {mostrarTodoBajoStock && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                      onClick={() => setMostrarTodoBajoStock(false)}
+                      className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                  >
+                    Mostrar menos ↑
+                  </button>
+                </div>
+            )}
           </div>
       )}
 
