@@ -81,7 +81,7 @@ const mount = (prefix) => {
   app.use(`${prefix}/api/deudas`, deudasRoutes)
   app.use(`${prefix}/api/stats`, statsRoutes)
   app.use(`${prefix}/stats`, statsRoutes)
-  app.use('/futuros-pedidos', futurosPedidosRoutes)
+  app.use(`${prefix}/futuros-pedidos`, futurosPedidosRoutes)
 
 }
 
