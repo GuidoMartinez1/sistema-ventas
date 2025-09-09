@@ -133,6 +133,14 @@ export interface BolsaAbierta {
   stock_actual?: number
 }
 
+export interface FuturoPedido {
+  id?: number
+  producto: string
+  cantidad?: string
+  created_at?: string
+}
+
+
 // ----------------------
 // ENDPOINTS
 // ----------------------
@@ -200,5 +208,16 @@ export const deudasAPI = {
 export const statsAPI = {
   getStats: () => api.get<Stats>("/stats"),
 }
+
+export const futurosPedidosAPI = {
+  getAll: () => api.get<FuturoPedido[]>("/futuros-pedidos"),
+  create: (pedido: { producto: string; cantidad?: string }) =>
+      api.post<FuturoPedido>("/futuros-pedidos", pedido),
+  update: (id: number, pedido: { producto: string; cantidad?: string }) =>
+      api.put<FuturoPedido>(`/futuros-pedidos/${id}`, pedido),
+  delete: (id: number) => api.delete(`/futuros-pedidos/${id}`),
+}
+
+
 
 export default api
