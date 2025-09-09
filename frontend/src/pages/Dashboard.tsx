@@ -157,23 +157,37 @@ const Dashboard = () => {
       </div>
 
       {bajoStock.length > 0 && (
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Productos con Bajo Stock</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {bajoStock.map((producto) => (
-              <div key={producto.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
-                  <p className="text-sm text-gray-500">Stock: {producto.stock}</p>
-                </div>
-                <span className="text-red-600 font-bold">{producto.stock}</span>
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Productos con Bajo Stock ({bajoStock.length})
+                </h2>
               </div>
-            ))}
+              <Link
+                  to="/productos?stock=bajo"
+                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+              >
+                Ver todos →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bajoStock.slice(0, 6).map((producto) => (
+                  <div
+                      key={producto.id}
+                      className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                  >
+                    <div>
+                      <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
+                      <p className="text-sm text-gray-500">Stock: {producto.stock}</p>
+                    </div>
+                    <span className="text-red-600 font-bold">{producto.stock}</span>
+                  </div>
+              ))}
+            </div>
           </div>
-        </div>
       )}
 
       {bolsasAbiertas.length > 0 && (
