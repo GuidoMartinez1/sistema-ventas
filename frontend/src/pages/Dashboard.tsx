@@ -11,7 +11,6 @@ import { ventasAPI, comprasAPI, productosAPI, bolsasAbiertasAPI, statsAPI } from
 import { Venta, Compra, Producto, BolsaAbierta, Stats } from '../services/api'
 import { Link } from 'react-router-dom'
 
-const [mostrarTodoBajoStock, setMostrarTodoBajoStock] = useState(false)
 
 const Dashboard = () => {
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -22,6 +21,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
+  const [mostrarTodoBajoStock, setMostrarTodoBajoStock] = useState(false)
 
   useEffect(() => {
     fetchData()
