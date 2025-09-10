@@ -205,6 +205,11 @@ const Productos = () => {
     }
   }
 
+  const calcularPorcentajeGanancia = (precioCosto: number, precioVenta: number) => {
+    if (precioCosto <= 0) return 0
+    return ((precioVenta - precioCosto) / precioCosto) * 100
+  }
+
   const handlePrecioCostoChange = (value: string) => {
     setFormData(prev => ({ ...prev, precio_costo: value }))
     if (value && formData.porcentaje_ganancia) {
@@ -218,6 +223,26 @@ const Productos = () => {
       setTimeout(calcularPrecioAutomatico, 100)
     }
   }
+
+  const handlePrecioVentaChange = (value: string) => {
+    setFormData(prev => {
+      const precioCosto = parseFloat(prev.precio_costo) || 0
+      const precioVenta = parseFloat(value) || 0
+
+      let nuevoPorcentaje = prev.porcentaje_ganancia
+      if (precioCosto > 0 && precioVenta > 0) {
+        nuevoPorcentaje = calcularPorcentajeGanancia(precioCosto, precioVenta).toFixed(2)
+      }
+
+      return {
+        ...prev,
+        precio: value,
+        porcentaje_ganancia: nuevoPorcentaje
+      }
+    })
+  }
+
+
 
   if (loading) {
     return (
@@ -557,7 +582,7 @@ const Productos = () => {
                             step="0.01"
                             required
                             value={formData.precio}
-                            onChange={(e) => setFormData({...formData, precio: e.target.value})}
+                            onChange={(e) => handlePrecioVentaChange(e.target.value)}
                             className="input-field"
                             placeholder="0.00"
                         />
