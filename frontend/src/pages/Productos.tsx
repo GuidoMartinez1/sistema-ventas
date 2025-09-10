@@ -94,54 +94,35 @@ const Productos = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    let porcentaje = formData.porcentaje_ganancia
-    const costo = parseFloat(formData.precio_costo) || 0
-    const venta = parseFloat(formData.precio) || 0
-
-    if ((!porcentaje || porcentaje === '0') && costo > 0 && venta > 0) {
-      porcentaje = (((venta - costo) / costo) * 100).toFixed(2)
-    }
-
-    const productoData = {
-      ...formData,
-      precio: formData.precio ? parseFloat(formData.precio) : null,
-      precio_kg: formData.precio_kg ? parseFloat(formData.precio_kg) : null,
-      precio_costo: formData.precio_costo ? parseFloat(formData.precio_costo) : null,
-      porcentaje_ganancia: porcentaje ? parseFloat(porcentaje) : null,
-      stock: formData.stock ? parseInt(formData.stock) : null,
-      categoria_id: formData.categoria_id ? parseInt(formData.categoria_id) : null
-    }
-
     try {
+      const productoData = {
+        ...formData,
+        precio: parseFloat(formData.precio || '0') || 0,
+        precio_kg: parseFloat(formData.precio_kg || '0') || 0,
+        precio_costo: parseFloat(formData.precio_costo || '0') || 0,
+        porcentaje_ganancia: parseFloat(formData.porcentaje_ganancia || '0') || 0,
+        stock: parseInt(formData.stock || '0') || 0,
+        categoria_id: formData.categoria_id ? parseInt(formData.categoria_id) : undefined
+      }
+
       if (editingProducto) {
-        await productosAPI.update(editingProducto.id, productoData)
-        toast.success('Producto actualizado con éxito')
+        await productosAPI.update(editingProducto.id!, productoData)
+        toast.success('Producto actualizado exitosamente')
       } else {
         await productosAPI.create(productoData)
-        toast.success('Producto creado con éxito')
+        toast.success('Producto creado exitosamente')
       }
-      fetchProductos()
+
       setShowModal(false)
+      setEditingProducto(null)
       resetForm()
-    } catch (err) {
-      console.error(err)
-      toast.error('Error al guardar el producto')
+      fetchData()
+    } catch (error) {
+      toast.error('Error al guardar producto')
     }
   }
 
-
   const handleEdit = (producto: Producto) => {
-    let porcentaje = producto.porcentaje_ganancia?.toString() || ''
-
-    // si no tiene % pero tiene precio y costo, lo calculo
-    if ((!porcentaje || porcentaje === '0') && producto.precio_costo && producto.precio) {
-      const costo = parseFloat(producto.precio_costo.toString()) || 0
-      const venta = parseFloat(producto.precio.toString()) || 0
-      if (costo > 0 && venta > 0) {
-        porcentaje = (((venta - costo) / costo) * 100).toFixed(2)
-      }
-    }
-
     setEditingProducto(producto)
     setFormData({
       nombre: producto.nombre,
@@ -149,14 +130,13 @@ const Productos = () => {
       precio: producto.precio?.toString() || '',
       precio_kg: producto.precio_kg?.toString() || '',
       precio_costo: producto.precio_costo?.toString() || '',
-      porcentaje_ganancia: porcentaje,
+      porcentaje_ganancia: producto.porcentaje_ganancia?.toString() || '',
       stock: producto.stock?.toString() || '',
       categoria_id: producto.categoria_id?.toString() || '',
       codigo: producto.codigo || ''
     })
     setShowModal(true)
   }
-
 
   const handleDelete = async (id: number) => {
     if (window.confirm('¿Está seguro de que desea eliminar este producto?')) {
@@ -183,29 +163,18 @@ const Productos = () => {
   }
 
   const resetForm = () => {
-    let porcentaje = ''
-
-    const costo = parseFloat(formData.precio_costo) || 0
-    const venta = parseFloat(formData.precio) || 0
-
-    if (costo > 0 && venta > 0) {
-      porcentaje = (((venta - costo) / costo) * 100).toFixed(2)
-    }
-
     setFormData({
       nombre: '',
       descripcion: '',
       precio: '',
       precio_kg: '',
       precio_costo: '',
-      porcentaje_ganancia: porcentaje,
+      porcentaje_ganancia: '',
       stock: '',
       categoria_id: '',
       codigo: ''
     })
-    setEditingProducto(null)
   }
-
 
   const openModal = () => {
     setEditingProducto(null)
