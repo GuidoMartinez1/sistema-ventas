@@ -50,19 +50,13 @@ const Reportes = () => {
   const filtrarPorFecha = <T extends { fecha?: string }>(items: T[]) => {
     return items.filter(item => {
       if (!item.fecha) return false
+  
       const fechaItem = new Date(item.fecha)
-
-      if (fechaDesde) {
-        const desde = new Date(fechaDesde)
-        if (fechaItem < desde) return false
-      }
-
-      if (fechaHasta) {
-        const hasta = new Date(fechaHasta)
-        hasta.setHours(23, 59, 59, 999)
-        if (fechaItem > hasta) return false
-      }
-
+      const fechaStr = fechaItem.toISOString().split('T')[0] // normalizamos a yyyy-mm-dd
+  
+      if (fechaDesde && fechaStr < fechaDesde) return false
+      if (fechaHasta && fechaStr > fechaHasta) return false
+  
       return true
     })
   }
@@ -118,9 +112,13 @@ const Reportes = () => {
   const comprasFiltradas = filtrarCompras()
 
   const setHoy = () => {
-    const hoy = new Date().toISOString().split('T')[0]
-    setFechaDesde(hoy)
-    setFechaHasta(hoy)
+    const hoy = new Date()
+    const yyyy = hoy.getFullYear()
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0')
+    const dd = String(hoy.getDate()).padStart(2, '0')
+    const fechaLocal = `${yyyy}-${mm}-${dd}`
+    setFechaDesde(fechaLocal)
+    setFechaHasta(fechaLocal)
   }
 
   const limpiarFechas = () => {
