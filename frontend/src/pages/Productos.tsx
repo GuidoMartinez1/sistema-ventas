@@ -405,7 +405,27 @@ const Productos = () => {
                   .filter(p =>
                       categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
                   )
-                  .sort((a, b) => a.nombre.localeCompare(b.nombre)).map((producto) => (
+                  .sort((a, b) => {
+                    // función para extraer el primer número del nombre
+                    const extractFirstNumber = (s?: string): number => {
+                      if (!s) return NaN
+                      const match = s.match(/(\d+(?:[.,]\d+)?)/)
+                      if (!match) return NaN
+                      return parseFloat(match[1].replace(',', '.'))
+                    }
+
+                    const na = extractFirstNumber(a.nombre)
+                    const nb = extractFirstNumber(b.nombre)
+
+                    if (!isNaN(na) && !isNaN(nb)) {
+                      if (na !== nb) return na - nb
+                      return (a.nombre ?? '').localeCompare(b.nombre ?? '')
+                    }
+                    if (!isNaN(na)) return -1
+                    if (!isNaN(nb)) return 1
+                    return (a.nombre ?? '').localeCompare(b.nombre ?? '')
+                  })
+                  .map((producto) => (
                       <tr key={producto.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -439,24 +459,24 @@ const Productos = () => {
                           {formatPrice(producto.precio_costo)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          (producto.porcentaje_ganancia || 0) >= 50
-                              ? 'bg-green-100 text-green-800'
-                              : (producto.porcentaje_ganancia || 0) >= 30
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                      }`}>
-                        {producto.porcentaje_ganancia || 0}%
-                      </span>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              (producto.porcentaje_ganancia || 0) >= 50
+                  ? 'bg-green-100 text-green-800'
+                  : (producto.porcentaje_ganancia || 0) >= 30
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+          }`}>
+            {producto.porcentaje_ganancia || 0}%
+          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          producto.stock <= 4
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-green-100 text-green-800'
-                      }`}>
-                        {producto.stock} unidades
-                      </span>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              producto.stock <= 4
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-green-100 text-green-800'
+          }`}>
+            {producto.stock} unidades
+          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
