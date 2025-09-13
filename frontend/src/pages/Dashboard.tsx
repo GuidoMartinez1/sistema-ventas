@@ -51,12 +51,17 @@ const Dashboard = () => {
   const filtrarPorRango = <T extends { fecha?: string }>(items: T[]) => {
     return items.filter(item => {
       if (!item.fecha) return false
+  
       const fechaItem = new Date(item.fecha)
-      if (fechaDesde && fechaItem < new Date(fechaDesde)) return false
-      if (fechaHasta && fechaItem > new Date(fechaHasta)) return false
+      const fechaStr = fechaItem.toISOString().split('T')[0] // normalizamos a yyyy-mm-dd
+  
+      if (fechaDesde && fechaStr < fechaDesde) return false
+      if (fechaHasta && fechaStr > fechaHasta) return false
+  
       return true
     })
   }
+  
 
   const ventasFiltradas = filtrarPorRango(ventas)
   const comprasFiltradas = filtrarPorRango(compras)
@@ -75,10 +80,15 @@ const Dashboard = () => {
   const totalDeudasMonto = ventasAdeudadas.reduce((acc, v) => acc + Number(v.total || 0), 0)
 
   const setHoy = () => {
-    const hoy = new Date().toISOString().split('T')[0]
-    setFechaDesde(hoy)
-    setFechaHasta(hoy)
+    const hoy = new Date()
+    const yyyy = hoy.getFullYear()
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0')
+    const dd = String(hoy.getDate()).padStart(2, '0')
+    const fechaLocal = `${yyyy}-${mm}-${dd}`
+    setFechaDesde(fechaLocal)
+    setFechaHasta(fechaLocal)
   }
+  
 
   const limpiarFechas = () => {
     setFechaDesde('')
