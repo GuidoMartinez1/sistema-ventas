@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
       SELECT p.*, c.nombre AS categoria_nombre
       FROM productos p
       LEFT JOIN categorias c ON p.categoria_id = c.id
-      ORDER BY p.id ASC
+      ORDER BY p.nombre ASC
     `);
     res.json(result.rows);
   } catch (error) {
