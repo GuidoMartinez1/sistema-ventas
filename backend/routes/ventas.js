@@ -129,4 +129,84 @@ router.put("/:id/pagar", async (req, res) => {
   }
 });
 
+// Editar venta (cambiar metodo_pago, estado, total, etc.)
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { metodo_pago, estado, total } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE ventas 
+       SET metodo_pago = COALESCE($1, metodo_pago),
+           estado = COALESCE($2, estado),
+           total = COALESCE($3, total)
+       WHERE id = $4
+       RETURNING *`,
+      [metodo_pago, estado, total, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Venta no encontrada" });
+    }
+
+    res.json({ message: "Venta actualizada", venta: result.rows[0] });
+  } catch (error) {
+    console.error("Error al editar venta:", error);
+    res.status(500).json({ error: "Error al editar venta" });
+  }
+});
+
+// Eliminar venta
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Recuperar los productos de la venta
+    const detalles = await client.query(
+      `SELECT producto_id, cantidad 
+       FROM detalles_venta 
+       WHERE venta_id = $1`,
+      [id]
+    );
+
+    // Reponer stock
+    for (const det of detalles.rows) {
+      if (det.producto_id && det.producto_id !== 0) {
+        await client.query(
+          `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+          [det.cantidad, det.producto_id]
+        );
+      }
+    }
+
+    // Eliminar detalles
+    await client.query(`DELETE FROM detalles_venta WHERE venta_id = $1`, [id]);
+
+    // Eliminar venta
+    const result = await client.query(
+      `DELETE FROM ventas WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    await client.query("COMMIT");
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Venta no encontrada" });
+    }
+
+    res.json({ message: "Venta eliminada correctamente" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error al eliminar venta:", error);
+    res.status(500).json({ error: "Error al eliminar venta" });
+  } finally {
+    client.release();
+  }
+});
+
+
+
 export default router;

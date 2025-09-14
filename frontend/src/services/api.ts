@@ -198,6 +198,8 @@ export const ventasAPI = {
     metodo_pago?: "efectivo" | "mercadopago" | "tarjeta"
   }) => api.post("/ventas", venta),
   getById: (id: number) => api.get<VentaCompleta>(`/ventas/${id}`),
+  update: (id: number, data: any) => api.put(`/ventas/${id}`, data),
+  delete: (id: number) => api.delete(`/ventas/${id}`)
 }
 
 export const deudasAPI = {
@@ -217,7 +219,5 @@ export const futurosPedidosAPI = {
       api.put<FuturoPedido>(`/futuros-pedidos/${id}`, pedido),
   delete: (id: number) => api.delete(`/futuros-pedidos/${id}`),
 }
-
-
 
 export default api

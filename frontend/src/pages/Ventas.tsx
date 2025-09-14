@@ -240,6 +240,27 @@ const Ventas = () => {
                   ✕
                 </button>
               </div>
+
+              {/* Botón Eliminar */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={async () => {
+                    if (confirm("¿Seguro que deseas eliminar esta venta?")) {
+                      try {
+                        await ventasAPI.delete(selectedVenta.id);
+                        toast.success("Venta eliminada correctamente");
+                        setShowModal(false);
+                        fetchVentas();
+                      } catch (error) {
+                        toast.error("Error al eliminar la venta");
+                      }
+                    }
+                  }}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Eliminar
+                </button>
+              </div>
               
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
