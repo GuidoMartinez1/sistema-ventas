@@ -48,7 +48,7 @@ export interface Venta {
   fecha?: string
   estado?: string
   cliente_nombre?: string
-  metodo_pago?: string
+  metodo_pago?: "efectivo" | "mercadopago" | "tarjeta"
 }
 
 export interface DetalleVenta {
@@ -204,7 +204,8 @@ export const ventasAPI = {
 
 export const deudasAPI = {
   getAll: () => api.get<Deuda[]>("/deudas"),
-  marcarComoPagada: (id: number) => api.put(`/deudas/${id}/pagar`),
+  marcarComoPagada: (id: number, metodo_pago: "efectivo" | "mercadopago" | "tarjeta"  = "efectivo") =>
+      api.put(`/deudas/${id}/pagar`, { metodo_pago }),
 }
 
 export const statsAPI = {

@@ -43,20 +43,25 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Marcar deuda como pagada
+// Marcar deuda como pagada y actualizar método de pago
 router.put("/:id/pagar", async (req, res) => {
   const { id } = req.params;
+  const { metodo_pago } = req.body; // <-- viene del frontend
+
   try {
     const result = await pool.query(
-      `UPDATE ventas SET estado = 'pagada' WHERE id = $1 RETURNING *`,
-      [id]
+        `UPDATE ventas 
+       SET estado = 'pagada', metodo_pago = $2
+       WHERE id = $1 
+       RETURNING *`,
+        [id, metodo_pago]
     );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    res.json({ message: "Deuda marcada como pagada" });
+    res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] });
   } catch (error) {
     console.error("Error al marcar deuda como pagada:", error);
     res.status(500).json({ error: "Error al marcar deuda como pagada" });
