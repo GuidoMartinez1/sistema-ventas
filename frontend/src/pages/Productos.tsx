@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, Package, Download } from 'lucide-react'
-import { productosAPI, categoriasAPI } from '../services/api'
+import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
