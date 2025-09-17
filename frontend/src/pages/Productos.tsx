@@ -31,7 +31,8 @@ const Productos = () => {
   const [busqueda, setBusqueda] = useState('')
   const [stockFiltro, setStockFiltro] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState('')
-
+// Estado para manejar pedidos futuros por producto
+  const [futuroPedido, setFuturoPedido] = useState<{ [key: number]: number }>({})
 
   useEffect(() => {
     fetchData()
@@ -154,6 +155,25 @@ const Productos = () => {
       } catch (error) {
         toast.error('Error al abrir bolsa')
       }
+    }
+  }
+
+  const handleAgregarAFuturoPedido = async (producto: Producto) => {
+    const cantidad = futuroPedido[producto.id!] || 0
+    if (cantidad <= 0) {
+      toast.error("Debe ingresar una cantidad mayor a 0")
+      return
+    }
+
+    try {
+      await futurosPedidosAPI.create({
+        producto_id: producto.id,
+        cantidad,
+      })
+      toast.success("Producto agregado a futuros pedidos")
+      setFuturoPedido((prev) => ({ ...prev, [producto.id!]: 0 })) // reset cantidad
+    } catch (error) {
+      toast.error("Error al agregar a futuros pedidos")
     }
   }
 
@@ -426,6 +446,28 @@ const Productos = () => {
                                   📦
                                 </button>
                             )}
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <input
+                                type="number"
+                                min="1"
+                                value={futuroPedido[producto.id!] || ""}
+                                onChange={(e) =>
+                                    setFuturoPedido((prev) => ({
+                                      ...prev,
+                                      [producto.id!]: parseInt(e.target.value) || 0,
+                                    }))
+                                }
+                                placeholder="+ Cant."
+                                className="w-16 border rounded px-1 text-sm"
+                            />
+                            <button
+                                onClick={() => handleAgregarAFuturoPedido(producto)}
+                                className="text-green-600 hover:text-green-900"
+                                title="Agregar a futuros pedidos"
+                            >
+                              <ClipboardList className="h-4 w-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
