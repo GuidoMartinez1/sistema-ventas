@@ -32,7 +32,12 @@ const Productos = () => {
   const [stockFiltro, setStockFiltro] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState('')
 // Estado para manejar pedidos futuros por producto
-  const [futuroPedido, setFuturoPedido] = useState<{ [key: number]: number }>({})
+  +const [openModalPedido, setOpenModalPedido] = useState(false)
+  +const [productoPedido, setProductoPedido] = useState<Producto | null>(null)
+  +const [cantidadPedido, setCantidadPedido] = useState<number>(1)
+  const [showCantidadModal, setShowCantidadModal] = useState(false);
+  const [cantidad, setCantidad] = useState("");
+
 
   useEffect(() => {
     fetchData()
@@ -90,6 +95,11 @@ const Productos = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const handleCantidadSubmit = (e) => {
+      e.preventDefault();
+      // lógica para guardar la cantidad
+      setShowCantidadModal(false);
+    };
     try {
       const productoData = {
         ...formData,
@@ -157,25 +167,24 @@ const Productos = () => {
       }
     }
   }
-
-  const handleAgregarAFuturoPedido = async (producto: Producto) => {
-    const cantidad = futuroPedido[producto.id!] || 0
-    if (cantidad <= 0) {
-      toast.error("Debe ingresar una cantidad mayor a 0")
-      return
-    }
-
-    try {
-      await futurosPedidosAPI.create({
-        producto_id: producto.id,
-        cantidad,
-      })
-      toast.success("Producto agregado a futuros pedidos")
-      setFuturoPedido((prev) => ({ ...prev, [producto.id!]: 0 })) // reset cantidad
-    } catch (error) {
-      toast.error("Error al agregar a futuros pedidos")
-    }
+// Abrir modal desde la carpetita verde
+  const handleAbrirPedido = (producto: Producto) => {
+    setProductoPedido(producto)
+    setCantidadPedido(1)
+    setOpenModalPedido(true)
   }
+
+  // Confirmar pedido
+  const handleConfirmarPedido = async () => {
+    if (!productoPedido) return
+    await futurosPedidosAPI.create({
+      producto_id: productoPedido.id!,
+      cantidad: cantidadPedido.toString(),
+    })
+    toast.success("Futuro pedido agregado")
+    setOpenModalPedido(false)
+  }
+
 
   const resetForm = () => {
     setFormData({
@@ -447,26 +456,11 @@ const Productos = () => {
                                 </button>
                             )}
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <input
-                                type="number"
-                                min="1"
-                                value={futuroPedido[producto.id!] || ""}
-                                onChange={(e) =>
-                                    setFuturoPedido((prev) => ({
-                                      ...prev,
-                                      [producto.id!]: parseInt(e.target.value) || 0,
-                                    }))
-                                }
-                                placeholder="+ Cant."
-                                className="w-16 border rounded px-1 text-sm"
-                            />
                             <button
-                                onClick={() => handleAgregarAFuturoPedido(producto)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Agregar a futuros pedidos"
+                                className="text-green-600 hover:text-green-800"
+                                onClick={() => handleAbrirPedido(producto)}
                             >
-                              <ClipboardList className="h-4 w-4" />
+                              <ClipboardList size={20} />
                             </button>
                           </div>
                         </td>
@@ -636,5 +630,44 @@ const Productos = () => {
       </div>
   )
 }
+                      {/* Modal para cantidad */}
+        {showCantidadModal && (
+              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                  <div className="relative top-40 mx-auto p-5 border w-80 shadow-lg rounded-md bg-white">
+                    <div className="mt-3">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        Ingresar Cantidad
+                      </h3>
+                      <form onSubmit={handleCantidadSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Cantidad
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            value={cantidad}
+                            onChange={(e) => setCantidad(e.target.value)}
+                            className="input-field"
+                            placeholder="Ingrese la cantidad"
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowCantidadModal(false)}
+                            className="btn-secondary"
+                          >
+                            Cancelar
+                          </button>
+                          <button type="submit" className="btn-primary">
+                            Confirmar
+                          </button>
+                        </div>
+                      </form>
+                </div>
+              </div>
+            </div>
+          )}
 
 export default Productos
