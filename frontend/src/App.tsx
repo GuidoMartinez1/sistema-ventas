@@ -1,6 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Productos from './pages/Productos'
 import Categorias from './pages/Categorias'
@@ -16,27 +20,107 @@ import BolsasAbiertas from './pages/BolsasAbiertas'
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Layout>
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/productos" element={<Productos />} />
-            <Route path="/categorias" element={<Categorias />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/ventas" element={<Ventas />} />
-            <Route path="/nueva-venta" element={<NuevaVenta />} />
-            <Route path="/deudas" element={<Deudas />} />
-            <Route path="/proveedores" element={<Proveedores />} />
-            <Route path="/compras" element={<Compras />} />
-            <Route path="/nueva-compra" element={<NuevaCompra />} />
-            <Route path="/reportes" element={<Reportes />} />
-            <Route path="/bolsas-abiertas" element={<BolsasAbiertas />} />
+            {/* Rutas públicas */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Rutas protegidas */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/productos" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Productos />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/categorias" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Categorias />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/clientes" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Clientes />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/ventas" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Ventas />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/nueva-venta" element={
+              <ProtectedRoute>
+                <Layout>
+                  <NuevaVenta />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/deudas" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Deudas />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/proveedores" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Proveedores />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/compras" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Compras />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/nueva-compra" element={
+              <ProtectedRoute>
+                <Layout>
+                  <NuevaCompra />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/reportes" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reportes />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/bolsas-abiertas" element={
+              <ProtectedRoute>
+                <Layout>
+                  <BolsasAbiertas />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
+            {/* Redirección por defecto */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Layout>
-        <Toaster position="top-right" />
-      </div>
-    </Router>
+          <Toaster position="top-right" />
+        </div>
+      </Router>
+    </AuthProvider>
   )
 }
 

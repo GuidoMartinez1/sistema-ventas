@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import {
   Home,
   Package,
@@ -14,7 +15,9 @@ import {
   BarChart3,
   AlertTriangle,
   Menu,
-  X
+  X,
+  LogOut,
+  User
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -24,6 +27,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -93,6 +97,24 @@ const Layout = ({ children }: LayoutProps) => {
               )
             })}
           </nav>
+
+          {/* User info and logout */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center mb-3">
+              <User className="h-5 w-5 text-gray-500 mr-2" />
+              <div className="text-sm">
+                <p className="font-medium text-gray-900">{user?.nombre}</p>
+                <p className="text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors duration-200"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Cerrar Sesión
+            </button>
+          </div>
         </aside>
 
         {/* Main content */}
