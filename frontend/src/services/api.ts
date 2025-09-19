@@ -204,8 +204,13 @@ export const ventasAPI = {
 
 export const deudasAPI = {
   getAll: () => api.get<Deuda[]>("/deudas"),
-  marcarComoPagada: (id: number, metodo_pago: "efectivo" | "mercadopago" | "tarjeta"  = "efectivo") =>
-      api.put(`/deudas/${id}/pagar`, { metodo_pago }),
+  marcarComoPagada: (
+      id: number,
+      metodo_pago: "efectivo" | "mercadopago" | "tarjeta" = "efectivo",
+      tipoPago: "total" | "parcial" = "total",
+      montoParcial?: number
+  ) =>
+      api.put(`/deudas/${id}/pagar`, { metodo_pago, tipoPago, montoParcial }),
 }
 
 export const statsAPI = {

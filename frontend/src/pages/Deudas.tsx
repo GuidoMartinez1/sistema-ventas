@@ -18,6 +18,9 @@ const Deudas = () => {
   const [deudaSeleccionada, setDeudaSeleccionada] = useState<number | null>(null)
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('efectivo')
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const [tipoPago, setTipoPago] = useState<'total' | 'parcial'>('total')
+  const [montoParcial, setMontoParcial] = useState<number>(0)
+
 
   useEffect(() => {
     fetchDeudas()
@@ -40,16 +43,27 @@ const Deudas = () => {
     setMetodoPagoSeleccionado('efectivo') // default
   }
 
+
   const handleConfirmarPago = async () => {
     if (!deudaSeleccionada) return
+
     try {
       setConfirmLoading(true)
-      await deudasAPI.marcarComoPagada(deudaSeleccionada, metodoPagoSeleccionado)
-      toast.success('Deuda marcada como pagada')
+      await deudasAPI.marcarComoPagada(
+          deudaSeleccionada,
+          metodoPagoSeleccionado,
+          tipoPago,
+          montoParcial
+      )
+
+      toast.success(tipoPago === 'total'
+          ? 'Deuda pagada en su totalidad'
+          : 'Pago parcial registrado')
+
       setDeudaSeleccionada(null)
       fetchDeudas()
     } catch (error) {
-      toast.error('Error al marcar la deuda como pagada')
+      toast.error('Error al registrar el pago')
     } finally {
       setConfirmLoading(false)
     }
@@ -69,6 +83,8 @@ const Deudas = () => {
       minute: '2-digit'
     })
   }
+
+
 
   if (loading) {
     return (
@@ -193,20 +209,49 @@ const Deudas = () => {
                 <select
                     value={metodoPagoSeleccionado}
                     onChange={(e) => setMetodoPagoSeleccionado(e.target.value)}
-                    className="w-full border p-2 rounded mb-4"
-                >
+                    className="w-full border p-2 rounded mb-4">
                   <option value="efectivo">Efectivo</option>
                   <option value="mercadopago">MercadoPago</option>
                   <option value="tarjeta">Tarjeta</option>
                 </select>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de pago</label>
+                  <select
+                      value={tipoPago}
+                      onChange={(e) => setTipoPago(e.target.value as 'total' | 'parcial')}
+                      className="w-full border p-2 rounded">
+                    <option value="total">Total</option>
+                    <option value="parcial">Parcial</option>
+                  </select>
+                </div>
+                {tipoPago === 'parcial' && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Monto a pagar</label>
+                      <input
+                          type="number"
+                          value={montoParcial}
+                          onChange={(e) => setMontoParcial(Number(e.target.value))}
+                          className="w-full border p-2 rounded"
+                          placeholder="Ingrese monto"/>
+                    </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-1 bg-gray-300 rounded">Cancelar</button>
+                  <button
+                      onClick={handleConfirmarPago}
+                      className="px-3 py-1 bg-green-600 text-white rounded flex items-center"
+                      disabled={confirmLoading}>
+                    {confirmLoading ? 'Procesando...' : 'Confirmar'}
+                  </button>
+                </div>
+
 
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-1 bg-gray-300 rounded">Cancelar</button>
                   <button
                       onClick={handleConfirmarPago}
                       className="px-3 py-1 bg-green-600 text-white rounded flex items-center"
-                      disabled={confirmLoading}
-                  >
+                      disabled={confirmLoading}>
                     {confirmLoading ? 'Procesando...' : 'Confirmar'}
                   </button>
                 </div>
