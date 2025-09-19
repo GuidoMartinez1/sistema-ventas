@@ -61,12 +61,12 @@ router.put("/:id/pagar", async (req, res) => {
             // Pago total
             const result = await pool.query(
                 `UPDATE ventas 
-                 SET estado = 'completada', metodo_pago = $2
-                 WHERE id = $1 
-                 RETURNING *`,
+         SET estado = 'pagada', metodo_pago = $2
+         WHERE id = $1 
+         RETURNING *`,
                 [id, metodo_pago]
             );
-            return res.json({ message: "Deuda marcada como completada", venta: result.rows[0] });
+            return res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] });
         }
 
         // Pago parcial
@@ -78,12 +78,12 @@ router.put("/:id/pagar", async (req, res) => {
         try {
             await client.query("BEGIN");
 
-            // 1. Crear nueva venta parcial asociada a la original
+            // 1. Crear nueva venta solo con el monto pagado
             const pagoResult = await client.query(
-                `INSERT INTO ventas (cliente_id, total, estado, metodo_pago, fecha, venta_origen_id)
-                 VALUES ($1, $2, 'completada', $3, NOW(), $4)
-                 RETURNING *`,
-                [venta.cliente_id, montoParcial, metodo_pago, id]
+                `INSERT INTO ventas (cliente_id, total, estado, metodo_pago, fecha)
+         VALUES ($1, $2, 'pagada', $3, NOW())
+         RETURNING *`,
+                [venta.cliente_id, montoParcial, metodo_pago]
             );
 
             // 2. Actualizar venta original con el nuevo total
@@ -92,9 +92,9 @@ router.put("/:id/pagar", async (req, res) => {
 
             const deudaResult = await client.query(
                 `UPDATE ventas 
-                 SET total = $2, estado = $3
-                 WHERE id = $1
-                 RETURNING *`,
+         SET total = $2, estado = $3
+         WHERE id = $1
+         RETURNING *`,
                 [id, nuevoTotal, nuevoEstado]
             );
 
