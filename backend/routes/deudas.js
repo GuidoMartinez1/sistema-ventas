@@ -65,28 +65,64 @@ router.put("/:id/pagar", async (req, res) => {
 
       return res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] })
     } else {
-      // Pago parcial: descontar del total y mantener estado = 'adeuda'
-      const venta = await pool.query(`SELECT total FROM ventas WHERE id = $1`, [id])
-      if (venta.rowCount === 0) {
-        return res.status(404).json({ error: "Venta no encontrada" })
-      }
+        // Pago parcial: crear una nueva venta con el monto pagado y actualizar la deuda original
+        const ventaResult = await pool.query(
+            `SELECT * FROM ventas WHERE id = $1`,
+            [id]
+        )
 
-      const nuevoTotal = venta.rows[0].total - montoParcial
+        if (ventaResult.rowCount === 0) {
+            return res.status(404).json({ error: "Venta no encontrada" })
+        }
 
-      const result = await pool.query(
-          `UPDATE ventas 
-         SET total = $2, metodo_pago = $3
-         WHERE id = $1 
-         RETURNING *`,
-          [id, nuevoTotal, metodo_pago]
-      )
+        const venta = ventaResult.rows[0]
 
-      return res.json({ message: "Pago parcial registrado", venta: result.rows[0] })
+        if (montoParcial > venta.total) {
+            return res.status(400).json({ error: "El monto parcial no puede ser mayor a la deuda" })
+        }
+
+        const client = await pool.connect()
+
+        try {
+            await client.query("BEGIN")
+
+            // 1. Insertar una nueva venta con el pago realizado
+            const pagoResult = await client.query(
+                `INSERT INTO ventas (cliente_id, total, estado, metodo_pago, fecha)
+       VALUES ($1, $2, 'pagada', $3, NOW())
+       RETURNING *`,
+                [venta.cliente_id, montoParcial, metodo_pago]
+            )
+
+            // 2. Actualizar la venta original con el nuevo total
+            const nuevoTotal = venta.total - montoParcial
+            const nuevoEstado = nuevoTotal === 0 ? "pagada" : "adeuda"
+
+            const deudaResult = await client.query(
+                `UPDATE ventas 
+       SET total = $2, estado = $3, metodo_pago = $4
+       WHERE id = $1
+       RETURNING *`,
+                [id, nuevoTotal, nuevoEstado, metodo_pago]
+            )
+
+            await client.query("COMMIT")
+
+            return res.json({
+                message: nuevoEstado === "pagada"
+                    ? "La deuda fue cancelada completamente"
+                    : "Pago parcial registrado",
+                pago: pagoResult.rows[0],   // la nueva fila (monto pagado)
+                deuda: deudaResult.rows[0]  // la venta original actualizada
+            })
+        } catch (err) {
+            await client.query("ROLLBACK")
+            console.error("Error en pago parcial:", err)
+            res.status(500).json({ error: "Error al registrar pago parcial" })
+        } finally {
+            client.release()
+        }
     }
-  } catch (error) {
-    console.error("Error al registrar pago:", error)
-    res.status(500).json({ error: "Error al registrar pago" })
-  }
 })
 
 export default router;
