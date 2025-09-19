@@ -140,6 +140,18 @@ export interface FuturoPedido {
   created_at?: string
 }
 
+export interface User {
+  id?: number
+  username: string
+  email: string
+  password?: string
+}
+
+export interface LoginResponse {
+  message: string
+  token: string
+}
+
 
 // ----------------------
 // ENDPOINTS
@@ -224,6 +236,14 @@ export const futurosPedidosAPI = {
   update: (id: number, pedido: { producto: string; cantidad?: string }) =>
       api.put<FuturoPedido>(`/futuros-pedidos/${id}`, pedido),
   delete: (id: number) => api.delete(`/futuros-pedidos/${id}`),
+}
+
+export const authAPI = {
+  register: (user: { username: string; email: string; password: string }) =>
+      api.post<User>("/auth/register", user),
+
+  login: (credentials: { email: string; password: string }) =>
+      api.post<LoginResponse>("/auth/login", credentials),
 }
 
 export default api
