@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node serverPostgreSQL.js",
-    "dev": "nodemon serverPostgreSQL.js"
+    "dev": "nodemon serverPostgreSQL.js",
+    "build": "echo 'No build step required for Node.js backend'"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
