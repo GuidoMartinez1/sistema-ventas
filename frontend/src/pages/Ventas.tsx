@@ -288,28 +288,29 @@ const Ventas = () => {
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-medium text-gray-900 mb-4">Productos</h4>
+              {/* Productos de la venta original */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">Productos</h4>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Producto
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Cantidad
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Precio Unitario
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Subtotal
-                        </th>
-                      </tr>
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Producto
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cantidad
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Precio Unitario
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subtotal
+                      </th>
+                    </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedVenta.detalles?.map((detalle: any, index: number) => (
+                    {selectedVenta.detalles?.map((detalle: any, index: number) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {detalle.producto_nombre}
@@ -324,10 +325,59 @@ const Ventas = () => {
                             {formatPrice(detalle.subtotal)}
                           </td>
                         </tr>
-                      ))}
+                    ))}
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Pagos parciales */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">Pagos Parciales</h4>
+                {selectedVenta.pagosParciales && selectedVenta.pagosParciales.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ID Pago
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fecha
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Método
+                          </th>
+                        </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedVenta.pagosParciales.map((pago: any) => (
+                            <tr key={pago.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pago.id}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {format(new Date(pago.fecha), 'dd/MM/yyyy HH:mm', { locale: es })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {formatPrice(pago.total)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {getEstadoBadge(pago.estado)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pago.metodo_pago}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                      </table>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500">No hay pagos parciales registrados</p>
+                )}
               </div>
             </div>
           </div>
