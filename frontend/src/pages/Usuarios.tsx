@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import CreateUserModal from '../components/CreateUserModal';
+import EditUserModal from '../components/EditUserModal';
+import { Edit, Trash2 } from 'lucide-react';
 
 interface Usuario {
   id: number;
@@ -18,6 +20,8 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
 
   useEffect(() => {
     if (user?.rol === 'ADMIN') {
@@ -33,6 +37,22 @@ export default function Usuarios() {
       setError(err.response?.data?.error || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditUser = (usuario: Usuario) => {
+    setSelectedUser(usuario);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+      try {
+        await api.delete(`/usuarios/${id}`);
+        fetchUsuarios();
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Error al eliminar usuario');
+      }
     }
   };
 
@@ -110,9 +130,7 @@ export default function Usuarios() {
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     usuario.rol === 'ADMIN' 
                       ? 'bg-red-100 text-red-800'
-                      : usuario.rol === 'EMPLEADO'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
+                      : 'bg-blue-100 text-blue-800'
                   }`}>
                     {usuario.rol}
                   </span>
@@ -126,6 +144,22 @@ export default function Usuarios() {
                   <span className="text-sm text-gray-500">
                     {new Date(usuario.created_at).toLocaleDateString()}
                   </span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEditUser(usuario)}
+                      className="p-1 text-orange-600 hover:text-orange-800"
+                      title="Editar usuario"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(usuario.id)}
+                      className="p-1 text-red-600 hover:text-red-800"
+                      title="Eliminar usuario"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>
@@ -137,6 +171,16 @@ export default function Usuarios() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onUserCreated={fetchUsuarios}
+      />
+
+      <EditUserModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={fetchUsuarios}
+        user={selectedUser}
       />
     </div>
   );

@@ -41,7 +41,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
 router.put("/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, email } = req.body;
+        const { nombre, email, rol, activo, password } = req.body;
         
         // Verificar que el usuario existe
         const existingUser = await pool.query("SELECT * FROM usuarios WHERE id = $1", [id]);
@@ -57,10 +57,38 @@ router.put("/:id", authenticateToken, async (req, res) => {
             }
         }
         
-        const result = await pool.query(
-            "UPDATE usuarios SET nombre = COALESCE($1, nombre), email = COALESCE($2, email) WHERE id = $3 RETURNING id, nombre, email",
-            [nombre, email, id]
-        );
+        let updateQuery = "UPDATE usuarios SET nombre = COALESCE($1, nombre), email = COALESCE($2, email)";
+        let queryParams = [nombre, email];
+        let paramIndex = 3;
+        
+        // Agregar rol si se proporciona
+        if (rol) {
+            updateQuery += `, rol = $${paramIndex}`;
+            queryParams.push(rol);
+            paramIndex++;
+        }
+        
+        // Agregar estado activo si se proporciona
+        if (activo !== undefined) {
+            updateQuery += `, activo = $${paramIndex}`;
+            queryParams.push(activo);
+            paramIndex++;
+        }
+        
+        // Agregar contraseña si se proporciona
+        if (password) {
+            const bcrypt = await import('bcrypt');
+            const salt = await bcrypt.genSalt(10);
+            const password_hash = await bcrypt.hash(password, salt);
+            updateQuery += `, password_hash = $${paramIndex}`;
+            queryParams.push(password_hash);
+            paramIndex++;
+        }
+        
+        updateQuery += ` WHERE id = $${paramIndex} RETURNING id, nombre, email, rol, activo`;
+        queryParams.push(id);
+        
+        const result = await pool.query(updateQuery, queryParams);
         
         res.json(result.rows[0]);
     } catch (error) {
