@@ -1,4 +1,12 @@
 {
+  "name": "sistema-ventas",
+  "version": "1.0.0",
+  "description": "Sistema de ventas completo",
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
   "dependencies": {
     "@types/react": "^19.1.10",
     "recharts": "^2.15.4",
