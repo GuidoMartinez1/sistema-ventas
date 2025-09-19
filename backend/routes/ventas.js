@@ -109,23 +109,57 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Marcar deuda como pagada
+// Marcar deuda como pagada (total o parcial)
 router.put("/:id/pagar", async (req, res) => {
   const { id } = req.params;
+  const { monto } = req.body; // monto que el cliente abona
+
+  if (!monto || monto <= 0) {
+    return res.status(400).json({ error: "Debe ingresar un monto válido" });
+  }
+
   try {
-    const result = await pool.query(
-      `UPDATE ventas SET estado = 'pagada' WHERE id = $1 RETURNING *`,
-      [id]
+    // Traer la venta actual
+    const ventaResult = await pool.query(
+        `SELECT * FROM ventas WHERE id = $1`,
+        [id]
     );
 
-    if (result.rows.length === 0) {
+    if (ventaResult.rows.length === 0) {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] });
+    const venta = ventaResult.rows[0];
+
+    if (venta.estado === "pagada") {
+      return res.status(400).json({ error: "La venta ya está pagada" });
+    }
+
+    if (monto > venta.total) {
+      return res.status(400).json({ error: "El monto ingresado supera la deuda" });
+    }
+
+    // Calcular nuevo total
+    const nuevoTotal = venta.total - monto;
+    const nuevoEstado = nuevoTotal === 0 ? "pagada" : "pendiente";
+
+    const updateResult = await pool.query(
+        `UPDATE ventas 
+       SET total = $1, estado = $2 
+       WHERE id = $3 
+       RETURNING *`,
+        [nuevoTotal, nuevoEstado, id]
+    );
+
+    res.json({
+      message: nuevoEstado === "pagada"
+          ? "Venta pagada completamente"
+          : "Pago parcial registrado",
+      venta: updateResult.rows[0]
+    });
   } catch (error) {
-    console.error("Error al marcar deuda como pagada:", error);
-    res.status(500).json({ error: "Error al marcar deuda como pagada" });
+    console.error("Error al registrar pago:", error);
+    res.status(500).json({ error: "Error al registrar pago" });
   }
 });
 
