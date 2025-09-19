@@ -9,12 +9,12 @@ router.get("/", async (req, res) => {
     try {
         // Traemos ventas que aún tienen deuda (estado = 'adeuda') o que son originales de pagos parciales
         const ventasResult = await pool.query(`
-      SELECT v.id, v.total, v.fecha, v.estado, v.cliente_id,
-             c.nombre AS cliente_nombre, c.telefono, c.direccion
-      FROM ventas v
-      LEFT JOIN clientes c ON v.cliente_id = c.id
-      WHERE v.estado = 'adeuda' OR v.venta_origen_id IS NULL
-      ORDER BY v.fecha DESC
+        SELECT v.id, v.total, v.fecha, v.estado, v.cliente_id,
+               c.nombre AS cliente_nombre, c.telefono, c.direccion
+        FROM ventas v
+                 LEFT JOIN clientes c ON v.cliente_id = c.id
+        WHERE v.estado = 'adeuda' AND v.venta_origen_id IS NULL
+        ORDER BY v.fecha DESC
     `);
 
         const deudas = [];
