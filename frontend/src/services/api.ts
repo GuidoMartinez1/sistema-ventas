@@ -171,6 +171,8 @@ export interface User {
   nombre: string
   email: string
   password?: string
+  rol?: 'ADMIN' | 'EMPLEADO'
+  activo?: boolean
 }
 
 export interface LoginResponse {

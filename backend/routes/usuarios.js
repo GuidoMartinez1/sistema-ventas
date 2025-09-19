@@ -7,7 +7,12 @@ const router = express.Router();
 // GET /usuarios - Obtener todos los usuarios (solo para admin)
 router.get("/", authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query("SELECT id, nombre, email, created_at FROM usuarios ORDER BY created_at DESC");
+        // Verificar que sea admin
+        if (req.user.rol !== 'ADMIN') {
+            return res.status(403).json({ error: 'Acceso denegado. Solo administradores.' });
+        }
+        
+        const result = await pool.query("SELECT id, nombre, email, rol, activo, created_at FROM usuarios ORDER BY created_at DESC");
         res.json(result.rows);
     } catch (error) {
         console.error(error);

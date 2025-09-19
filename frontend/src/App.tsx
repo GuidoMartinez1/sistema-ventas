@@ -2,9 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import RoleProtectedRoute from './components/RoleProtectedRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Productos from './pages/Productos'
 import Categorias from './pages/Categorias'
@@ -17,6 +17,7 @@ import Compras from './pages/Compras'
 import NuevaCompra from './pages/NuevaCompra'
 import Reportes from './pages/Reportes'
 import BolsasAbiertas from './pages/BolsasAbiertas'
+import Usuarios from './pages/Usuarios'
 
 function App() {
   return (
@@ -26,92 +27,101 @@ function App() {
           <Routes>
             {/* Rutas públicas */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
             {/* Rutas protegidas */}
+            {/* Solo ADMIN */}
             <Route path="/" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Dashboard />
                 </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/productos" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Productos />
-                </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/categorias" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Categorias />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/clientes" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Clientes />
                 </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/ventas" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Ventas />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/nueva-venta" element={
-              <ProtectedRoute>
-                <Layout>
-                  <NuevaVenta />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/deudas" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Deudas />
-                </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/proveedores" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Proveedores />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/compras" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Compras />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/nueva-compra" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <NuevaCompra />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/reportes" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
                   <Reportes />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
+            } />
+            <Route path="/usuarios" element={
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
+                <Layout>
+                  <Usuarios />
+                </Layout>
+              </RoleProtectedRoute>
+            } />
+            
+            {/* ADMIN y EMPLEADO */}
+            <Route path="/productos" element={
+              <RoleProtectedRoute allowedRoles={['ADMIN', 'EMPLEADO']}>
+                <Layout>
+                  <Productos />
+                </Layout>
+              </RoleProtectedRoute>
+            } />
+            <Route path="/ventas" element={
+              <RoleProtectedRoute allowedRoles={['ADMIN', 'EMPLEADO']}>
+                <Layout>
+                  <Ventas />
+                </Layout>
+              </RoleProtectedRoute>
+            } />
+            <Route path="/nueva-venta" element={
+              <RoleProtectedRoute allowedRoles={['ADMIN', 'EMPLEADO']}>
+                <Layout>
+                  <NuevaVenta />
+                </Layout>
+              </RoleProtectedRoute>
+            } />
+            <Route path="/deudas" element={
+              <RoleProtectedRoute allowedRoles={['ADMIN', 'EMPLEADO']}>
+                <Layout>
+                  <Deudas />
+                </Layout>
+              </RoleProtectedRoute>
             } />
             <Route path="/bolsas-abiertas" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['ADMIN', 'EMPLEADO']}>
                 <Layout>
                   <BolsasAbiertas />
                 </Layout>
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             
             {/* Redirección por defecto */}

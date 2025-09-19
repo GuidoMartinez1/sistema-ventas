@@ -29,20 +29,39 @@ const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, logout } = useAuth()
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Productos', href: '/productos', icon: Package },
-    { name: 'Categorías', href: '/categorias', icon: Tag },
-    { name: 'Clientes', href: '/clientes', icon: Users },
-    { name: 'Proveedores', href: '/proveedores', icon: Building },
-    { name: 'Ventas', href: '/ventas', icon: ShoppingCart },
-    { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
-    { name: 'Compras', href: '/compras', icon: Truck },
-    { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
-    { name: 'Deudas', href: '/deudas', icon: DollarSign },
-    { name: 'Reportes', href: '/reportes', icon: BarChart3 },
-    { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
-  ]
+  const getNavigationForRole = () => {
+    const baseItems = [
+      { name: 'Productos', href: '/productos', icon: Package },
+      { name: 'Ventas', href: '/ventas', icon: ShoppingCart },
+      { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
+      { name: 'Deudas', href: '/deudas', icon: DollarSign },
+      { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
+    ];
+
+    if (user?.rol === 'ADMIN') {
+      return [
+        { name: 'Dashboard', href: '/', icon: Home },
+        { name: 'Productos', href: '/productos', icon: Package },
+        { name: 'Categorías', href: '/categorias', icon: Tag },
+        { name: 'Clientes', href: '/clientes', icon: Users },
+        { name: 'Proveedores', href: '/proveedores', icon: Building },
+        { name: 'Ventas', href: '/ventas', icon: ShoppingCart },
+        { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
+        { name: 'Compras', href: '/compras', icon: Truck },
+        { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
+        { name: 'Deudas', href: '/deudas', icon: DollarSign },
+        { name: 'Reportes', href: '/reportes', icon: BarChart3 },
+        { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
+        { name: 'Usuarios', href: '/usuarios', icon: Users },
+      ];
+    } else if (user?.rol === 'EMPLEADO') {
+      return baseItems;
+    }
+    
+    return baseItems;
+  };
+
+  const navigation = getNavigationForRole();
 
   return (
       <div className="flex h-screen bg-gray-50">

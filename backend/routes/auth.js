@@ -22,7 +22,7 @@ router.post("/login", async (req, res) => {
 
         // Generar token JWT
         const token = jwt.sign(
-            { id: user.id, nombre: user.nombre, email: user.email },
+            { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'EMPLEADO' },
             process.env.JWT_SECRET || "clave_secreta_supersegura",
             { expiresIn: "8h" }
         );
@@ -32,7 +32,9 @@ router.post("/login", async (req, res) => {
             data: { 
                 id: user.id, 
                 nombre: user.nombre, 
-                email: user.email 
+                email: user.email,
+                rol: user.rol || 'EMPLEADO',
+                activo: user.activo !== false
             } 
         });
     } catch (error) {
@@ -51,7 +53,7 @@ router.post(
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-        const { username, email, password } = req.body;
+        const { username, email, password, rol = 'EMPLEADO' } = req.body;
 
         try {
             // Verificar si el email ya existe
@@ -64,8 +66,8 @@ router.post(
 
             // Insertar usuario
             const result = await pool.query(
-                "INSERT INTO usuarios (nombre, email, password_hash) VALUES ($1, $2, $3) RETURNING id, nombre, email",
-                [username, email, password_hash]
+                "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ($1, $2, $3, $4) RETURNING id, nombre, email, rol",
+                [username, email, password_hash, rol]
             );
 
             res.status(201).json({ 

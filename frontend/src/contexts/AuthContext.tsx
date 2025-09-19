@@ -36,7 +36,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser({
           id: payload.id,
           nombre: payload.nombre,
-          email: payload.email
+          email: payload.email,
+          rol: payload.rol || 'EMPLEADO'
         });
       } catch (error) {
         console.error('Error decodificando token:', error);
