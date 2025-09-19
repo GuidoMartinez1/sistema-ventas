@@ -239,18 +239,7 @@ const Deudas = () => {
                   <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-1 bg-gray-300 rounded">Cancelar</button>
                   <button
                       onClick={handleConfirmarPago}
-                      className="px-3 py-1 bg-green-600 text-white rounded flex items-center"
-                      disabled={confirmLoading}>
-                    {confirmLoading ? 'Procesando...' : 'Confirmar'}
-                  </button>
-                </div>
-
-
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-1 bg-gray-300 rounded">Cancelar</button>
-                  <button
-                      onClick={handleConfirmarPago}
-                      className="px-3 py-1 bg-green-600 text-white rounded flex items-center"
+                      className="bg-orange-500 hover:bg-orange-600 text-white rounded flex items-center"
                       disabled={confirmLoading}>
                     {confirmLoading ? 'Procesando...' : 'Confirmar'}
                   </button>
