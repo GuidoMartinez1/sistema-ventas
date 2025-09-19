@@ -19,7 +19,7 @@ const Deudas = () => {
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('efectivo')
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [tipoPago, setTipoPago] = useState<'total' | 'parcial'>('total')
-  const [montoParcial, setMontoParcial] = useState<number>(0)
+  const [montoParcial, setMontoParcial] = useState("")
 
 
   useEffect(() => {
@@ -226,13 +226,16 @@ const Deudas = () => {
                 </div>
                 {tipoPago === 'parcial' && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Monto a pagar</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Monto a pagar
+                      </label>
                       <input
                           type="number"
                           value={montoParcial}
-                          onChange={(e) => setMontoParcial(Number(e.target.value))}
+                          onChange={(e) => setMontoParcial(e.target.value)}
                           className="w-full border p-2 rounded"
-                          placeholder="Ingrese monto"/>
+                          placeholder="Ingrese monto"
+                      />
                     </div>
                 )}
                 <div className="flex justify-end gap-2">
