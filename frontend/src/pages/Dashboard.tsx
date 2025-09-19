@@ -188,7 +188,10 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(mostrarTodoBajoStock ? bajoStock : bajoStock.slice(0, 6)).map((producto) => (
+              {(mostrarTodoBajoStock
+                      ? bajoStock.filter(p => p.stock === 0 || p.stock === 1)
+                      : bajoStock.filter(p => p.stock === 0 || p.stock === 1).slice(0, 6)
+              ).map((producto) => (
                   <div
                       key={producto.id}
                       className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
