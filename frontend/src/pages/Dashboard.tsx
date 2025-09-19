@@ -174,7 +174,7 @@ const Dashboard = () => {
               <div className="flex items-center">
                 <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Productos con Bajo Stock ({bajoStock.length})
+                  Productos con Bajo Stock ({bajoStock.filter(p => p.stock === 0 || p.stock === 1).length})
                 </h2>
               </div>
               {!mostrarTodoBajoStock && (
