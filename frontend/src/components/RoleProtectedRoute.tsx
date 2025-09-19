@@ -15,6 +15,11 @@ export default function RoleProtectedRoute({ children, allowedRoles }: RoleProte
   }
 
   if (!allowedRoles.includes(user.rol as 'ADMIN' | 'EMPLEADO')) {
+    // Si es empleado y no tiene acceso, redirigir a productos
+    if (user.rol === 'EMPLEADO') {
+      return <Navigate to="/productos" replace />;
+    }
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

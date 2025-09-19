@@ -55,7 +55,13 @@ const Layout = ({ children }: LayoutProps) => {
         { name: 'Usuarios', href: '/usuarios', icon: Users },
       ];
     } else if (user?.rol === 'EMPLEADO') {
-      return baseItems;
+      return [
+        { name: 'Productos', href: '/productos', icon: Package },
+        { name: 'Ventas', href: '/ventas', icon: ShoppingCart },
+        { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
+        { name: 'Deudas', href: '/deudas', icon: DollarSign },
+        { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
+      ];
     }
     
     return baseItems;

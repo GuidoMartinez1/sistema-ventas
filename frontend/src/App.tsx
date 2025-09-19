@@ -37,6 +37,15 @@ function App() {
                 </Layout>
               </RoleProtectedRoute>
             } />
+            
+            {/* Redirección para empleados */}
+            <Route path="/empleado" element={
+              <RoleProtectedRoute allowedRoles={['EMPLEADO']}>
+                <Layout>
+                  <Productos />
+                </Layout>
+              </RoleProtectedRoute>
+            } />
             <Route path="/categorias" element={
               <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <Layout>
