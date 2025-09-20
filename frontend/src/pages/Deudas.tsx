@@ -22,6 +22,8 @@ const Deudas = () => {
   const [montoParcial, setMontoParcial] = useState("")
 
 
+  const [search, setSearch] = useState("")
+
   useEffect(() => {
     fetchDeudas()
   }, [])
@@ -37,6 +39,10 @@ const Deudas = () => {
       setLoading(false)
     }
   }
+
+  const filteredDeudas = deudas.filter((d) =>
+      d.cliente_nombre?.toLowerCase().includes(search.toLowerCase())
+  )
 
   const openModalPago = (deudaId: number) => {
     setDeudaSeleccionada(deudaId)
@@ -107,7 +113,15 @@ const Deudas = () => {
             Gestiona las ventas registradas como deudas y marca como pagadas cuando corresponda
           </p>
         </div>
-
+        <div className="mb-6">
+          <input
+              type="text"
+              placeholder="Buscar por cliente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2
+               focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+        </div>
         {deudas.length === 0 ? (
             <div className="text-center py-12">
               <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -116,7 +130,7 @@ const Deudas = () => {
             </div>
         ) : (
             <div className="space-y-4">
-              {deudas.map((deuda) => (
+              {filteredDeudas.map((deuda) => (
                   <div key={deuda.id} className="bg-white rounded-lg shadow-md border border-gray-200">
                     <div className="p-6">
                       <div className="flex justify-between items-start">
