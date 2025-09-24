@@ -103,7 +103,7 @@ const NuevaCompra = () => {
           subtotal: Number(producto.precio_costo ?? 0),
           producto_nombre: producto.nombre
         }
-        return [...prev, newItem]
+        return [newItem, ...prev]
       }
     })
   }
