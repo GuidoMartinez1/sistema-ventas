@@ -1,6 +1,6 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Minus, Trash2, DollarSign, FilePlus2 } from 'lucide-react'
+import { Plus, Minus, Trash2, DollarSign } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -20,7 +20,6 @@ const NuevaVenta = () => {
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
 
-  // 🔹 Antes: useState<number>(0) → Ahora string vacío
   const [importeDirecto, setImporteDirecto] = useState<string>('')
 
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
@@ -75,11 +74,11 @@ const NuevaVenta = () => {
         subtotal: precio,
         producto_nombre: producto.nombre
       }
-      return [...prev, nuevo]
+      // 🔹 ahora se agrega ARRIBA
+      return [nuevo, ...prev]
     })
   }
 
-  // 🔹 Ajuste: parsear el string a número y resetear a ''
   const addImporteDirecto = () => {
     const monto = Number(importeDirecto)
     if (!monto || monto <= 0) {
@@ -93,8 +92,9 @@ const NuevaVenta = () => {
       descripcion: 'Importe directo',
       es_custom: true
     }
-    setCartItems(prev => [...prev, item])
-    setImporteDirecto('') // 🔹 limpiar input
+    // 🔹 ahora se agrega ARRIBA
+    setCartItems(prev => [item, ...prev])
+    setImporteDirecto('')
   }
 
   const addNuevoItem = () => {
@@ -116,7 +116,8 @@ const NuevaVenta = () => {
       descripcion: desc,
       es_custom: true
     }
-    setCartItems(prev => [...prev, item])
+    // 🔹 ahora se agrega ARRIBA
+    setCartItems(prev => [item, ...prev])
     setNuevoItem({ descripcion: '', cantidad: 1, precio: 0 })
   }
 
@@ -140,7 +141,6 @@ const NuevaVenta = () => {
         )
     )
   }
-
 
   const updatePrecio = (idx: number, precio: number) => {
     if (precio < 0) precio = 0
@@ -211,33 +211,36 @@ const NuevaVenta = () => {
           <p className="text-gray-600">Vendé productos o cobrá importes directos</p>
         </div>
 
-        {/* Selección de cliente */}
-        <div className="card">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Cliente (opcional)</label>
-          <select
-              value={selectedCliente}
-              onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
-              className="input-field w-full md:w-1/2"
-          >
-            <option value="">Sin cliente</option>
-            {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-        </div>
+        {/* Cliente y deuda en la misma fila */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Selección de cliente */}
+          <div className="card h-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Cliente (opcional)</label>
+            <select
+                value={selectedCliente}
+                onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
+                className="input-field w-full"
+            >
+              <option value="">Sin cliente</option>
+              {clientes.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Toggle de deuda */}
-        <div className="card flex items-center gap-3">
-          <input
-              id="toggle-deuda"
-              type="checkbox"
-              checked={esDeuda}
-              onChange={() => setEsDeuda(!esDeuda)}
-              className="h-4 w-4"
-          />
-          <label htmlFor="toggle-deuda" className="text-sm text-gray-700">
-            Marcar venta como <strong>pendiente / deuda</strong>
-          </label>
+          {/* Toggle de deuda */}
+          <div className="card h-full flex items-center gap-3">
+            <input
+                id="toggle-deuda"
+                type="checkbox"
+                checked={esDeuda}
+                onChange={() => setEsDeuda(!esDeuda)}
+                className="h-4 w-4"
+            />
+            <label htmlFor="toggle-deuda" className="text-sm text-gray-700">
+              Marcar venta como <strong>pendiente / deuda</strong>
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -278,7 +281,7 @@ const NuevaVenta = () => {
             </div>
           </div>
 
-          {/* Columna derecha: carrito / custom */}
+          {/* Columna derecha: carrito */}
           <div className="lg:col-span-1">
             <div className="card space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
