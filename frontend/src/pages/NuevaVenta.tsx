@@ -74,8 +74,7 @@ const NuevaVenta = () => {
         subtotal: precio,
         producto_nombre: producto.nombre
       }
-      // 🔹 ahora se agrega ARRIBA
-      return [nuevo, ...prev]
+      return [nuevo, ...prev] // arriba
     })
   }
 
@@ -92,8 +91,7 @@ const NuevaVenta = () => {
       descripcion: 'Importe directo',
       es_custom: true
     }
-    // 🔹 ahora se agrega ARRIBA
-    setCartItems(prev => [item, ...prev])
+    setCartItems(prev => [item, ...prev]) // arriba
     setImporteDirecto('')
   }
 
@@ -116,8 +114,7 @@ const NuevaVenta = () => {
       descripcion: desc,
       es_custom: true
     }
-    // 🔹 ahora se agrega ARRIBA
-    setCartItems(prev => [item, ...prev])
+    setCartItems(prev => [item, ...prev]) // arriba
     setNuevoItem({ descripcion: '', cantidad: 1, precio: 0 })
   }
 
@@ -212,14 +209,14 @@ const NuevaVenta = () => {
         </div>
 
         {/* Cliente y deuda en la misma fila */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Selección de cliente */}
-          <div className="card h-full">
+          <div className="card">
             <label className="block text-sm font-medium text-gray-700 mb-2">Cliente (opcional)</label>
             <select
                 value={selectedCliente}
                 onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
-                className="input-field w-full"
+                className="input-field w-64"
             >
               <option value="">Sin cliente</option>
               {clientes.map(c => (
@@ -229,7 +226,7 @@ const NuevaVenta = () => {
           </div>
 
           {/* Toggle de deuda */}
-          <div className="card h-full flex items-center gap-3">
+          <div className="card flex items-center">
             <input
                 id="toggle-deuda"
                 type="checkbox"
@@ -237,7 +234,7 @@ const NuevaVenta = () => {
                 onChange={() => setEsDeuda(!esDeuda)}
                 className="h-4 w-4"
             />
-            <label htmlFor="toggle-deuda" className="text-sm text-gray-700">
+            <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700">
               Marcar venta como <strong>pendiente / deuda</strong>
             </label>
           </div>
@@ -282,7 +279,7 @@ const NuevaVenta = () => {
           </div>
 
           {/* Columna derecha: carrito */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 self-start">
             <div className="card space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
