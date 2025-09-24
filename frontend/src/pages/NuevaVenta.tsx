@@ -19,9 +19,7 @@ const NuevaVenta = () => {
   const [cartItems, setCartItems] = useState<DetalleVenta[]>([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
-
   const [importeDirecto, setImporteDirecto] = useState<string>('')
-
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
   const [esDeuda, setEsDeuda] = useState(false)
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
@@ -208,41 +206,43 @@ const NuevaVenta = () => {
           <p className="text-gray-600">Vendé productos o cobrá importes directos</p>
         </div>
 
-        {/* Cliente + deuda en la misma card (ocupando ancho) */}
-        <div className="card w-full">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3">
-              <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
-              <select
-                  value={selectedCliente}
-                  onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
-                  className="input-field w-full md:max-w-sm"
-              >
-                <option value="">Sin cliente</option>
-                {clientes.map(c => (
-                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                  id="toggle-deuda"
-                  type="checkbox"
-                  checked={esDeuda}
-                  onChange={() => setEsDeuda(!esDeuda)}
-                  className="h-4 w-4"
-              />
-              <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700">
-                Marcar venta como <strong>pendiente / deuda</strong>
-              </label>
-            </div>
-          </div>
-        </div>
-
+        {/* Grid principal con 2 columnas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Columna izquierda: productos */}
-          <div className="lg:col-span-2">
+          {/* Columna izquierda: Cliente + Productos */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Cliente + deuda */}
+            <div className="card w-full">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3">
+                  <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
+                  <select
+                      value={selectedCliente}
+                      onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
+                      className="input-field w-full md:max-w-sm"
+                  >
+                    <option value="">Sin cliente</option>
+                    {clientes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                      id="toggle-deuda"
+                      type="checkbox"
+                      checked={esDeuda}
+                      onChange={() => setEsDeuda(!esDeuda)}
+                      className="h-4 w-4"
+                  />
+                  <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700">
+                    Marcar venta como <strong>pendiente / deuda</strong>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Productos */}
             <div className="card">
               <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
                 <input
@@ -278,9 +278,9 @@ const NuevaVenta = () => {
             </div>
           </div>
 
-          {/* Columna derecha: carrito (sticky para arrancar arriba) */}
+          {/* Columna derecha: carrito sticky */}
           <div className="lg:col-span-1">
-            <div className="card space-y-4 sticky top-20">
+            <div className="card space-y-4 sticky top-6">
               <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
               {/* Importe directo */}
