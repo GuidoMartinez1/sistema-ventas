@@ -265,6 +265,11 @@ const NuevaVenta = () => {
                             <h3 className="font-medium text-gray-900">{p.nombre}</h3>
                             <span className="text-sm font-medium text-gray-900">{formatPrice(Number(p.precio || 0).toFixed(2))}</span>
                           </div>
+                          {p.precio_kg ? (
+                              <p className="text-xs text-gray-500 mb-1">
+                                Precio x Kg: <span className="font-medium text-gray-800">{formatPrice(Number(p.precio_kg).toFixed(2))}</span>
+                              </p>
+                          ) : null}
                           {p.descripcion && <p className="text-sm text-gray-500 mb-2">{p.descripcion}</p>}
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">Stock: {p.stock}</span>
