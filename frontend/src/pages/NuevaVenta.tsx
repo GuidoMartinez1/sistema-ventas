@@ -1,10 +1,11 @@
 // src/pages/NuevaVenta.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { Plus, Minus, Trash2, DollarSign } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
@@ -13,6 +14,8 @@ const formatPrice = (value: number | string | undefined) => {
 
 const NuevaVenta = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const montoRef = useRef<HTMLInputElement>(null)
   const [productos, setProductos] = useState<Producto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
@@ -38,6 +41,13 @@ const NuevaVenta = () => {
     }
     load()
   }, [])
+
+    // Si vengo desde el botón flotante, enfoco el campo "Importe directo"
+    useEffect(() => {
+        if (location.state?.focusMonto && montoRef.current) {
+            montoRef.current.focus()
+          }
+      }, [location.state])
 
   const addProducto = (producto: Producto) => {
     if (!producto?.id) {
@@ -296,6 +306,7 @@ const NuevaVenta = () => {
                 </div>
                 <div className="flex gap-2">
                   <input
+                      ref={montoRef}
                       type="number"
                       step="0.01"
                       value={importeDirecto}

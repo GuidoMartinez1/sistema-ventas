@@ -16,6 +16,7 @@ import {
   Menu,
   X
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -24,6 +25,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const navigate = useNavigate()
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -112,6 +114,13 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="max-w-[1920px] w-full mx-auto overflow-x-auto">
               {children}
             </div>
+            {/* Botón flotante Nueva Venta */}
+            <button
+            onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
+            className="fixed bottom-6 left-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4">
+            <Plus className="mr-2 w-6 h-6" />
+            Nueva Venta
+            </button>
           </main>
         </div>
       </div>
