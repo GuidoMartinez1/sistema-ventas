@@ -23,8 +23,8 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
-  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const navigate = useNavigate()
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -42,8 +42,8 @@ const Layout = ({ children }: LayoutProps) => {
   ]
 
   return (
-      <div className="relative md:flex h-screen bg-gray-50">
-        {/* Overlay mobile */}
+      <div className="flex h-screen bg-gray-50">
+        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
             <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -53,7 +53,7 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Sidebar */}
         <aside
-            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 ${
+            className={`relative fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
@@ -65,7 +65,7 @@ const Layout = ({ children }: LayoutProps) => {
               <TrendingUp className="h-8 w-8 text-white" />
               <h1 className="ml-2 text-xl font-bold text-white">Sistema de AliMar</h1>
             </div>
-            {/* Close mobile */}
+            {/* Close button for mobile */}
             <button
                 className="md:hidden text-white focus:outline-none"
                 onClick={() => setSidebarOpen(false)}
@@ -95,19 +95,19 @@ const Layout = ({ children }: LayoutProps) => {
             })}
           </nav>
 
-          {/* Botón Nueva Venta solo Desktop */}
+          {/* Botón flotante dentro del sidebar (solo desktop) */}
           <button
               onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="hidden md:flex md:sticky md:bottom-4 md:left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
           >
             <Plus className="mr-2 w-6 h-6" />
             Nueva Venta
           </button>
         </aside>
 
-        {/* Main */}
-        <div className="flex-1 flex flex-col overflow-hidden md:pl-64">
-          {/* Topbar mobile */}
+        {/* Main content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Topbar for mobile */}
           <header className="flex items-center justify-between h-16 bg-white shadow-md md:hidden px-4">
             <button
                 className="text-gray-700 focus:outline-none"
@@ -118,8 +118,10 @@ const Layout = ({ children }: LayoutProps) => {
             <h1 className="text-lg font-bold text-gray-800">Sistema de AliMar</h1>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-8 w-full">
-            <div className="max-w-[1920px] w-full mx-auto overflow-x-auto">{children}</div>
+          <main className="flex-1 overflow-auto p-4 md:p-8">
+            <div className="max-w-[1920px] w-full mx-auto overflow-x-auto">
+              {children}
+            </div>
           </main>
         </div>
       </div>
