@@ -23,8 +23,8 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -42,30 +42,34 @@ const Layout = ({ children }: LayoutProps) => {
   ]
 
   return (
-      <div className="flex h-screen bg-gray-50">
-        {/* Mobile sidebar overlay */}
+      <div className="relative md:flex h-screen bg-gray-50">
+        {/* Overlay mobile */}
         {sidebarOpen && (
             <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                onClick={() => setSidebarOpen(false)}/>
+                onClick={() => setSidebarOpen(false)}
+            />
         )}
 
         {/* Sidebar */}
         <aside
-            className={`relative fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}>
+            }`}
+        >
           <div
               className="flex items-center justify-between h-16 px-4"
-              style={{ backgroundColor: '#F78F1E' }}>
+              style={{ backgroundColor: '#F78F1E' }}
+          >
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-white" />
               <h1 className="ml-2 text-xl font-bold text-white">Sistema de AliMar</h1>
             </div>
-            {/* Close button for mobile */}
+            {/* Close mobile */}
             <button
                 className="md:hidden text-white focus:outline-none"
-                onClick={() => setSidebarOpen(false)}>
+                onClick={() => setSidebarOpen(false)}
+            >
               <X className="h-6 w-6" />
             </button>
           </div>
@@ -82,7 +86,8 @@ const Layout = ({ children }: LayoutProps) => {
                               ? 'bg-orange-100 text-orange-700'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }`}
-                      onClick={() => setSidebarOpen(false)}>
+                      onClick={() => setSidebarOpen(false)}
+                  >
                     <item.icon className="mr-3 h-5 w-5" />
                     {item.name}
                   </Link>
@@ -93,28 +98,28 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Botón Nueva Venta solo Desktop */}
           <button
               onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4">
+              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+          >
             <Plus className="mr-2 w-6 h-6" />
             Nueva Venta
           </button>
         </aside>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Topbar for mobile */}
+        {/* Main */}
+        <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+          {/* Topbar mobile */}
           <header className="flex items-center justify-between h-16 bg-white shadow-md md:hidden px-4">
             <button
                 className="text-gray-700 focus:outline-none"
-                onClick={() => setSidebarOpen(true)}>
+                onClick={() => setSidebarOpen(true)}
+            >
               <Menu className="h-6 w-6" />
             </button>
             <h1 className="text-lg font-bold text-gray-800">Sistema de AliMar</h1>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-8">
-            <div className="max-w-[1920px] w-full mx-auto overflow-x-auto">
-              {children}
-            </div>
+          <main className="flex-1 overflow-auto p-4 md:p-8 w-full">
+            <div className="max-w-[1920px] w-full mx-auto overflow-x-auto">{children}</div>
           </main>
         </div>
       </div>
