@@ -53,7 +53,7 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Sidebar */}
         <aside
-            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
@@ -98,7 +98,7 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Botón Nueva Venta solo Desktop */}
           <button
               onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+              className="hidden md:flex md:sticky md:bottom-4 md:left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
           >
             <Plus className="mr-2 w-6 h-6" />
             Nueva Venta
@@ -106,7 +106,7 @@ const Layout = ({ children }: LayoutProps) => {
         </aside>
 
         {/* Main */}
-        <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+        <div className="flex-1 flex flex-col overflow-hidden md:pl-64">
           {/* Topbar mobile */}
           <header className="flex items-center justify-between h-16 bg-white shadow-md md:hidden px-4">
             <button
