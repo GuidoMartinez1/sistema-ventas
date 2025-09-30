@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home,
   Package,
@@ -16,7 +16,6 @@ import {
   Menu,
   X
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -54,7 +53,7 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Sidebar */}
         <aside
-            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+            className={`relative fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
@@ -87,7 +86,7 @@ const Layout = ({ children }: LayoutProps) => {
                               ? 'bg-orange-100 text-orange-700'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }`}
-                      onClick={() => setSidebarOpen(false)} // cerrar sidebar en móvil al click
+                      onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
                     {item.name}
@@ -95,6 +94,15 @@ const Layout = ({ children }: LayoutProps) => {
               )
             })}
           </nav>
+
+          {/* Botón flotante dentro del sidebar */}
+          <button
+              onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
+              className="absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+          >
+            <Plus className="mr-2 w-6 h-6" />
+            Nueva Venta
+          </button>
         </aside>
 
         {/* Main content */}
@@ -115,13 +123,6 @@ const Layout = ({ children }: LayoutProps) => {
               {children}
             </div>
           </main>
-          {/* Botón flotante Nueva Venta */}
-          <button
-              onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="fixed bottom-6 left-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4">
-            <Plus className="mr-2 w-6 h-6" />
-            Nueva Venta
-          </button>
         </div>
       </div>
   )
