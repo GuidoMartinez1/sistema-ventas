@@ -47,20 +47,17 @@ const Layout = ({ children }: LayoutProps) => {
         {sidebarOpen && (
             <div
                 className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                onClick={() => setSidebarOpen(false)}
-            />
+                onClick={() => setSidebarOpen(false)}/>
         )}
 
         {/* Sidebar */}
         <aside
-            className={`relative fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-        >
+            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+          md:relative md:translate-x-0`}>
           <div
               className="flex items-center justify-between h-16 px-4"
-              style={{ backgroundColor: '#F78F1E' }}
-          >
+              style={{ backgroundColor: '#F78F1E' }}>
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-white" />
               <h1 className="ml-2 text-xl font-bold text-white">Sistema de AliMar</h1>
@@ -68,8 +65,7 @@ const Layout = ({ children }: LayoutProps) => {
             {/* Close button for mobile */}
             <button
                 className="md:hidden text-white focus:outline-none"
-                onClick={() => setSidebarOpen(false)}
-            >
+                onClick={() => setSidebarOpen(false)}>
               <X className="h-6 w-6" />
             </button>
           </div>
@@ -86,8 +82,7 @@ const Layout = ({ children }: LayoutProps) => {
                               ? 'bg-orange-100 text-orange-700'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }`}
-                      onClick={() => setSidebarOpen(false)}
-                  >
+                      onClick={() => setSidebarOpen(false)}>
                     <item.icon className="mr-3 h-5 w-5" />
                     {item.name}
                   </Link>
@@ -98,21 +93,19 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Botón flotante dentro del sidebar (solo desktop) */}
           <button
               onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
-          >
+              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4">
             <Plus className="mr-2 w-6 h-6" />
             Nueva Venta
           </button>
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden w-full">
           {/* Topbar for mobile */}
           <header className="flex items-center justify-between h-16 bg-white shadow-md md:hidden px-4">
             <button
                 className="text-gray-700 focus:outline-none"
-                onClick={() => setSidebarOpen(true)}
-            >
+                onClick={() => setSidebarOpen(true)}>
               <Menu className="h-6 w-6" />
             </button>
             <h1 className="text-lg font-bold text-gray-800">Sistema de AliMar</h1>
