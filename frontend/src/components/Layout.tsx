@@ -95,10 +95,10 @@ const Layout = ({ children }: LayoutProps) => {
             })}
           </nav>
 
-          {/* Botón flotante dentro del sidebar */}
+          {/* Botón Nueva Venta - Desktop */}
           <button
               onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
-              className="absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+              className="hidden md:flex absolute bottom-4 left-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
           >
             <Plus className="mr-2 w-6 h-6" />
             Nueva Venta
@@ -123,6 +123,15 @@ const Layout = ({ children }: LayoutProps) => {
               {children}
             </div>
           </main>
+
+          {/* Botón Nueva Venta - Mobile */}
+          <button
+              onClick={() => navigate('/nueva-venta', { state: { focusMonto: true } })}
+              className="md:hidden fixed bottom-6 left-6 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg font-bold px-6 py-4"
+          >
+            <Plus className="mr-2 w-6 h-6" />
+            Nueva Venta
+          </button>
         </div>
       </div>
   )
