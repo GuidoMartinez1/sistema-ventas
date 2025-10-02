@@ -53,7 +53,7 @@ const Dashboard = () => {
       if (!item.fecha) return false
   
       const fechaItem = new Date(item.fecha)
-      const fechaStr = fechaItem.toISOString().split('T')[0] // normalizamos a yyyy-mm-dd
+      const fechaStr = fechaItem.toLocaleDateString('en-CA') // normalizamos a yyyy-mm-dd
   
       if (fechaDesde && fechaStr < fechaDesde) return false
       if (fechaHasta && fechaStr > fechaHasta) return false
