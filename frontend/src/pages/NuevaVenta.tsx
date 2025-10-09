@@ -26,6 +26,7 @@ const NuevaVenta = () => {
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
   const [esDeuda, setEsDeuda] = useState(false)
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
+  const [nombreClienteInput, setNombreClienteInput] = useState('')
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
 
   useEffect(() => {
@@ -229,16 +230,15 @@ const NuevaVenta = () => {
                   <div className="w-full md:max-w-sm relative">
                     <input
                         type="text"
-                        value={
-                          selectedCliente
-                              ? clientes.find(c => c.id === selectedCliente)?.nombre || ''
-                              : ''
-                        }
+                        value={nombreClienteInput}
                         onChange={(e) => {
                           const texto = e.target.value
+                          setNombreClienteInput(texto)
+
                           const coincidencia = clientes.find(c =>
                               c.nombre.toLowerCase().includes(texto.toLowerCase())
                           )
+
                           if (coincidencia) {
                             setSelectedCliente(coincidencia.id)
                           } else {
@@ -248,25 +248,26 @@ const NuevaVenta = () => {
                         placeholder="Escribí para buscar cliente..."
                         className="input-field w-full"
                         onFocus={() => setMostrarSugerencias(true)}
-                        onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}/>
+                        onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}
+                    />
 
                     {/* Lista de sugerencias */}
-                    {mostrarSugerencias && (
+                    {mostrarSugerencias && nombreClienteInput && (
                         <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto">
                           {clientes
                               .filter(c =>
-                                  c.nombre.toLowerCase().includes(
-                                      clientes.find(x => x.id === selectedCliente)?.nombre.toLowerCase() || ''
-                                  )
+                                  c.nombre.toLowerCase().includes(nombreClienteInput.toLowerCase())
                               )
                               .map(c => (
                                   <li
                                       key={c.id}
                                       onMouseDown={() => {
                                         setSelectedCliente(c.id)
+                                        setNombreClienteInput(c.nombre)
                                         setMostrarSugerencias(false)
                                       }}
-                                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
+                                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                  >
                                     {c.nombre}
                                   </li>
                               ))}
@@ -274,6 +275,7 @@ const NuevaVenta = () => {
                     )}
                   </div>
                 </div>
+
                 <div className="flex items-center">
                   <input
                       id="toggle-deuda"
