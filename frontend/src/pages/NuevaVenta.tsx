@@ -222,20 +222,53 @@ const NuevaVenta = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Cliente + deuda */}
             <div className="card w-full">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3">
-                  <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
-                  <select
-                      value={selectedCliente}
-                      onChange={(e) => setSelectedCliente(e.target.value ? Number(e.target.value) : '')}
-                      className="input-field w-full md:max-w-sm"
-                  >
-                    <option value="">Sin cliente</option>
-                    {clientes.map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))}
-                  </select>
+              <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3 relative">
+                <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
+                <div className="w-full md:max-w-sm relative">
+                  <input
+                      type="text"
+                      placeholder="Buscar cliente..."
+                      value={
+                        selectedCliente
+                            ? clientes.find(c => c.id === selectedCliente)?.nombre || ''
+                            : ''
+                      }
+                      onChange={(e) => {
+                        setSelectedCliente(''); // resetea selección
+                        setBusqueda(e.target.value);
+                      }}
+                      className="input-field w-full"
+                  />
+
+                  {/* Lista de sugerencias */}
+                  {busqueda && !selectedCliente && (
+                      <ul className="absolute z-10 w-full bg-white border rounded shadow-md max-h-48 overflow-y-auto mt-1">
+                        {clientes
+                            .filter(c =>
+                                c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+                            )
+                            .slice(0, 10)
+                            .map(c => (
+                                <li
+                                    key={c.id}
+                                    onClick={() => {
+                                      setSelectedCliente(c.id);
+                                      setBusqueda('');
+                                    }}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                >
+                                  {c.nombre}
+                                </li>
+                            ))}
+                        {clientes.filter(c =>
+                            c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+                        ).length === 0 && (
+                            <li className="px-3 py-2 text-gray-500">No se encontraron resultados</li>
+                        )}
+                      </ul>
+                  )}
                 </div>
+              </div>
 
                 <div className="flex items-center">
                   <input
