@@ -26,6 +26,7 @@ const NuevaVenta = () => {
   const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
   const [esDeuda, setEsDeuda] = useState(false)
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -222,62 +223,64 @@ const NuevaVenta = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Cliente + deuda */}
             <div className="card w-full">
-              <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3 relative">
-                <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
-                <div className="w-full md:max-w-sm relative">
-                  <input
-                      type="text"
-                      placeholder="Buscar cliente..."
-                      value={
-                        selectedCliente
-                            ? clientes.find(c => c.id === selectedCliente)?.nombre || ''
-                            : ''
-                      }
-                      onChange={(e) => {
-                        setSelectedCliente(''); // resetea selección
-                        setBusqueda(e.target.value);
-                      }}
-                      className="input-field w-full"
-                  />
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3 relative">
+                  <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
+                  <div className="w-full md:max-w-sm relative">
+                    <input
+                        type="text"
+                        value={
+                          selectedCliente
+                              ? clientes.find(c => c.id === selectedCliente)?.nombre || ''
+                              : ''
+                        }
+                        onChange={(e) => {
+                          const texto = e.target.value
+                          const coincidencia = clientes.find(c =>
+                              c.nombre.toLowerCase().includes(texto.toLowerCase())
+                          )
+                          if (coincidencia) {
+                            setSelectedCliente(coincidencia.id)
+                          } else {
+                            setSelectedCliente('')
+                          }
+                        }}
+                        placeholder="Escribí para buscar cliente..."
+                        className="input-field w-full"
+                        onFocus={() => setMostrarSugerencias(true)}
+                        onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}/>
 
-                  {/* Lista de sugerencias */}
-                  {busqueda && !selectedCliente && (
-                      <ul className="absolute z-10 w-full bg-white border rounded shadow-md max-h-48 overflow-y-auto mt-1">
-                        {clientes
-                            .filter(c =>
-                                c.nombre.toLowerCase().includes(busqueda.toLowerCase())
-                            )
-                            .slice(0, 10)
-                            .map(c => (
-                                <li
-                                    key={c.id}
-                                    onClick={() => {
-                                      setSelectedCliente(c.id);
-                                      setBusqueda('');
-                                    }}
-                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                >
-                                  {c.nombre}
-                                </li>
-                            ))}
-                        {clientes.filter(c =>
-                            c.nombre.toLowerCase().includes(busqueda.toLowerCase())
-                        ).length === 0 && (
-                            <li className="px-3 py-2 text-gray-500">No se encontraron resultados</li>
-                        )}
-                      </ul>
-                  )}
+                    {/* Lista de sugerencias */}
+                    {mostrarSugerencias && (
+                        <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto">
+                          {clientes
+                              .filter(c =>
+                                  c.nombre.toLowerCase().includes(
+                                      clientes.find(x => x.id === selectedCliente)?.nombre.toLowerCase() || ''
+                                  )
+                              )
+                              .map(c => (
+                                  <li
+                                      key={c.id}
+                                      onMouseDown={() => {
+                                        setSelectedCliente(c.id)
+                                        setMostrarSugerencias(false)
+                                      }}
+                                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
+                                    {c.nombre}
+                                  </li>
+                              ))}
+                        </ul>
+                    )}
+                  </div>
                 </div>
-              </div>
-
                 <div className="flex items-center">
                   <input
                       id="toggle-deuda"
                       type="checkbox"
                       checked={esDeuda}
                       onChange={() => setEsDeuda(!esDeuda)}
-                      className="h-4 w-4"
-                  />
+                      className="h-4 w-4"/>
                   <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700">
                     Marcar venta como <strong>pendiente / deuda</strong>
                   </label>
@@ -293,8 +296,7 @@ const NuevaVenta = () => {
                     placeholder="Buscar producto por nombre o código..."
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
-                    className="input-field w-full md:w-1/2"
-                />
+                    className="input-field w-full md:w-1/2"/>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {productos
@@ -345,8 +347,7 @@ const NuevaVenta = () => {
                       value={importeDirecto}
                       onChange={e => setImporteDirecto(e.target.value)}
                       className="input-field flex-1"
-                      placeholder="Monto"
-                  />
+                      placeholder="Monto"/>
                   <button onClick={addImporteDirecto} className="btn-primary">
                     Agregar
                   </button>
