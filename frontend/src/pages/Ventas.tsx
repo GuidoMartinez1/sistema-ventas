@@ -275,6 +275,9 @@ const Ventas = () => {
                         <div>
                           <span className="font-medium">Estado:</span> {selectedVenta.estado || 'Completada'}
                         </div>
+                        <div>
+                          <span className="font-medium">Método de Pago:</span> {selectedVenta.metodo_pago || 'No especificado'}
+                        </div>
                       </div>
                     </div>
                     <div>
