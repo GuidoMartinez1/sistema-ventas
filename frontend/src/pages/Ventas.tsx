@@ -166,47 +166,23 @@ const Ventas = () => {
               <div className="card p-4 flex flex-wrap gap-4 items-end">
                 <div>
                   <label className="block text-sm font-medium">Desde</label>
-                  <input
-                      type="date"
-                      value={fechaDesde}
-                      onChange={(e) => setFechaDesde(e.target.value)}
-                      className="input-field"
-                  />
+                  <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Hasta</label>
-                  <input
-                      type="date"
-                      value={fechaHasta}
-                      onChange={(e) => setFechaHasta(e.target.value)}
-                      className="input-field"
-                  />
+                  <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} className="input-field" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium">Estado</label>
-                  <select
-                      value={estado}
-                      onChange={(e) => setEstado(e.target.value)}
-                      className="input-field"
-                  >
+                  <select value={estado} onChange={(e) => setEstado(e.target.value)} className="input-field">
                     <option value="todos">Todos</option>
                     <option value="completada">Completada</option>
                     <option value="adeuda">Adeuda</option>
                   </select>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                      onClick={hoy}
-                      className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-500"
-                  >
-                    Hoy
-                  </button>
-                  <button
-                      onClick={limpiarFiltros}
-                      className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                  >
-                    Limpiar
-                  </button>
+                  <button onClick={hoy} className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-500">Hoy</button>
+                  <button onClick={limpiarFiltros} className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Limpiar</button>
                 </div>
               </div>
 
@@ -243,10 +219,7 @@ const Ventas = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatPrice(venta.total.toLocaleString())}</td>
                           <td className="px-6 py-4 whitespace-nowrap">{getEstadoBadge(venta.estado || 'completada')}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                                onClick={() => handleViewVenta(venta.id!)}
-                                className="text-primary-600 hover:text-primary-900"
-                            >
+                            <button onClick={() => handleViewVenta(venta.id!)} className="text-primary-600 hover:text-primary-900">
                               <Eye className="h-4 w-4" />
                             </button>
                           </td>
@@ -373,16 +346,16 @@ const Ventas = () => {
                   <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Vendida</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                   {productosVendidos.map((prod: any, index: number) => (
                       <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{prod.producto_nombre}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prod.cantidad_vendida}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatPrice(prod.total)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{prod.nombre}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{prod.categoria}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{prod.cantidad}</td>
                       </tr>
                   ))}
                   </tbody>
@@ -392,6 +365,7 @@ const Ventas = () => {
         )}
       </div>
   )
+
 
 }
 
