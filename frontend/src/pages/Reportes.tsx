@@ -60,6 +60,10 @@ const Reportes = () => {
       return true
     })
   }
+  const formatPrice = (value: number | string | undefined) => {
+    if (value === null || value === undefined || value === '') return '$0';
+    return '$' + Number(value).toLocaleString("es-AR");
+  };
 
   const filtrarVentas = () => {
     let ventasFiltradas = filtrarPorFecha(ventas)
@@ -266,7 +270,7 @@ const Reportes = () => {
                       <tr key={v.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{v.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{v.cliente_nombre || 'Sin cliente'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${v.total.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{formatPrice(v.total)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                           v.metodo_pago === 'efectivo' ? 'bg-green-100 text-green-800' :
@@ -333,7 +337,7 @@ const Reportes = () => {
                       <tr key={c.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{c.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{c.proveedor_nombre || 'Sin proveedor'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${c.total.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">{formatPrice(c.total)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">{c.estado}</span>
                         </td>
