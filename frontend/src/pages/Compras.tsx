@@ -177,7 +177,7 @@ const Compras = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${formatPrice(compra.total)}
+                    {formatPrice(compra.total)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -280,7 +280,7 @@ const Compras = () => {
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg">
                   <p className="text-sm text-green-600 font-medium">Total</p>
-                  <p className="text-green-900 font-bold">${formatPrice(compraSeleccionada.total)}</p>
+                  <p className="text-green-900 font-bold">{formatPrice(compraSeleccionada.total)}</p>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg">
                   <p className="text-sm text-purple-600 font-medium">Fecha</p>
@@ -305,8 +305,8 @@ const Compras = () => {
                         <tr key={detalle.id} className="hover:bg-gray-50">
                           <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{detalle.producto_nombre}</td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{detalle.cantidad}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${formatPrice(detalle.precio_unitario)}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">${formatPrice(detalle.subtotal)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{formatPrice(detalle.precio_unitario)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">{formatPrice(detalle.subtotal)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -317,7 +317,7 @@ const Compras = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total de la Compra:</span>
-                  <span className="text-green-600">${formatPrice(compraSeleccionada.total)}</span>
+                  <span className="text-green-600">{formatPrice(compraSeleccionada.total)}</span>
                 </div>
               </div>
             </div>
