@@ -53,6 +53,8 @@ const Compras = () => {
     setNuevaCantidad('')
   }
 
+
+
   const eliminarFuturo = (id: number) => {
     setFuturosPedidos(prev => prev.filter(p => p.id !== id))
   }
@@ -82,6 +84,10 @@ const Compras = () => {
       minute: '2-digit'
     })
   }
+  const formatPrice = (value: number | string | undefined) => {
+    if (value === null || value === undefined || value === '') return '$0';
+    return '$' + Number(value).toLocaleString("es-AR");
+  };
 
   const verDetalles = async (compraId: number) => {
     setCargandoDetalles(true)
@@ -114,15 +120,13 @@ const Compras = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setMostrarFuturos(true)}
-            className="btn-secondary flex items-center"
-          >
+            className="btn-secondary flex items-center">
             <ClipboardList className="h-5 w-5 mr-2" />
             Futuros Pedidos
           </button>
           <button
             onClick={() => navigate('/nueva-compra')}
-            className="btn-primary flex items-center"
-          >
+            className="btn-primary flex items-center">
             <Plus className="h-5 w-5 mr-2" />
             Nueva Compra
           </button>
@@ -173,7 +177,7 @@ const Compras = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${compra.total.toLocaleString()}
+                    ${formatPrice(compra.total)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -184,8 +188,7 @@ const Compras = () => {
                     <button
                       onClick={() => verDetalles(compra.id!)}
                       disabled={cargandoDetalles}
-                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
                       <Eye className="h-4 w-4 mr-1" />
                       {cargandoDetalles ? 'Cargando...' : 'Ver Detalles'}
                     </button>
@@ -216,19 +219,16 @@ const Compras = () => {
                 placeholder="Producto"
                 value={nuevoProducto}
                 onChange={(e) => setNuevoProducto(e.target.value)}
-                className="border rounded px-3 py-2 flex-1"
-              />
+                className="border rounded px-3 py-2 flex-1"/>
               <input
                 type="text"
                 placeholder="Cantidad"
                 value={nuevaCantidad}
                 onChange={(e) => setNuevaCantidad(e.target.value)}
-                className="border rounded px-3 py-2 w-28"
-              />
+                className="border rounded px-3 py-2 w-28"/>
               <button
                 onClick={agregarFuturo}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-              >
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                 Agregar
               </button>
             </div>
@@ -245,8 +245,7 @@ const Compras = () => {
                     </div>
                     <button
                       onClick={() => eliminarFuturo(item.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
+                      className="text-red-500 hover:text-red-700">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </li>
@@ -281,7 +280,7 @@ const Compras = () => {
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg">
                   <p className="text-sm text-green-600 font-medium">Total</p>
-                  <p className="text-green-900 font-bold">${compraSeleccionada.total.toLocaleString()}</p>
+                  <p className="text-green-900 font-bold">${formatPrice(compraSeleccionada.total)}</p>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg">
                   <p className="text-sm text-purple-600 font-medium">Fecha</p>
@@ -306,8 +305,8 @@ const Compras = () => {
                         <tr key={detalle.id} className="hover:bg-gray-50">
                           <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{detalle.producto_nombre}</td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{detalle.cantidad}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${Number(detalle.precio_unitario ?? 0).toFixed(2)}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">${Number(detalle.subtotal ?? 0).toFixed(2)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${formatPrice(detalle.precio_unitario)}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">${formatPrice(detalle.subtotal)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -318,7 +317,7 @@ const Compras = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Total de la Compra:</span>
-                  <span className="text-green-600">${compraSeleccionada.total.toLocaleString()}</span>
+                  <span className="text-green-600">${formatPrice(compraSeleccionada.total)}</span>
                 </div>
               </div>
             </div>
