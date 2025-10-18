@@ -234,8 +234,8 @@ export const futurosPedidosAPI = {
 }
 
 export const gastosAPI = {
-  getAll: () => api.get<Gasto[]>('/api/gastos'),
-  create: (gasto: Omit<Gasto, 'id' | 'created_at'>) => api.post('/api/gastos', gasto),
-  delete: (id: number) => api.delete(`/api/gastos/${id}`),
+  getAll: () => api.get<Gasto[]>('/gastos'),
+  create: (gasto: Omit<Gasto, 'id' | 'created_at'>) => api.post('/gastos', gasto),
+  delete: (id: number) => api.delete(`/gastos/${id}`),
 }
 export default api
