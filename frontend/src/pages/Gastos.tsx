@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp } from 'lucide-react'
+import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon } from 'lucide-react' // Renombramos DollarSign para evitar conflictos
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -21,6 +21,7 @@ const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | '
 
 
 // --- CotizacionForm Component (Gestión de la cotización diaria) ---
+// (Este componente permanece sin cambios)
 const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA')) // yyyy-mm-dd
     const [valor, setValor] = useState('')
@@ -32,7 +33,7 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
         try {
             await cotizacionesAPI.create({
                 fecha,
-                valor: safeNumber(valor), // Aseguramos que se envía como número
+                valor: safeNumber(valor),
             })
             toast.success(`Cotización de ${new Date(fecha).toLocaleDateString()} guardada.`)
             setValor('')
@@ -78,7 +79,7 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Registro de un nuevo gasto) ---
+// --- GastoForm Component (Registro de un nuevo gasto - MODIFICADO ESTÉTICAMENTE) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
@@ -87,17 +88,16 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [cotizacionActual, setCotizacionActual] = useState(1)
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
-    // Efecto para buscar la cotización
+    // Efecto para buscar la cotización (se mantiene la lógica)
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
                 setCotizacionLoading(true)
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
-                    // Usar safeNumber para manejar {valor: null} o {valor: '1000'}
                     const valor = safeNumber(response.data.valor)
 
-                    if (valor < 1) { // Menor a 1 se considera no disponible
+                    if (valor < 1) {
                         toast.error(`No hay cotización USD registrada para la fecha ${new Date(fecha).toLocaleDateString()}.`)
                         setCotizacionActual(0)
                     } else {
@@ -109,7 +109,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     setCotizacionLoading(false)
                 }
             } else {
-                setCotizacionActual(1) // ARS es 1
+                setCotizacionActual(1)
             }
         }
         fetchCotizacion()
@@ -156,18 +156,31 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <label className="block text-sm font-medium text-gray-700">Concepto</label>
                     <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className="input-field" required />
                 </div>
+
+                {/* --- CAMBIO ESTÉTICO AQUÍ: Selector de Moneda como Toggle Buttons --- */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Moneda</label>
-                    <select
-                        value={moneda}
-                        onChange={e => setMoneda(e.target.value as 'ARS' | 'USD')}
-                        className="input-field">
-                        <option value="ARS">ARS ($)</option>
-                        <option value="USD">USD (u$d)</option>
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
+                    <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full">
+                        {['ARS', 'USD'].map((m) => (
+                            <button
+                                key={m}
+                                type="button" // IMPORTANTE: Para que no haga submit del formulario
+                                onClick={() => setMoneda(m as 'ARS' | 'USD')}
+                                className={`flex-1 py-2 text-sm font-medium transition-colors duration-200 
+                                    ${moneda === m
+                                    ? 'bg-red-600 text-white shadow-md'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                {m} ({m === 'ARS' ? '$' : 'u$d'})
+                            </button>
+                        ))}
+                    </div>
                 </div>
+                {/* ------------------------------------------------------------------ */}
+
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Monto</label>
+                    <label className="block text-sm font-medium text-gray-700">Monto ({moneda === 'ARS' ? '$' : 'u$d'})</label>
                     <input
                         type="number"
                         value={monto}
@@ -192,7 +205,6 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                         <p className="text-sm text-gray-500">Consultando...</p>
                     ) : cotizacionActual >= 1 ? (
                         <>
-                            {/* CORREGIDO: Usamos safeNumber antes de toFixed */}
                             <p className="text-lg font-bold" style={{ color: '#388E3C' }}>{safeNumber(cotizacionActual).toFixed(2)} ARS</p>
                             {esMontoValido && (
                                 <p className="text-sm text-gray-600 mt-1">
@@ -212,8 +224,8 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
             <button
                 type="submit"
                 className="btn-primary flex items-center bg-red-600 hover:bg-red-700"
-                disabled={moneda === 'USD' && cotizacionActual < 1}> {/* Condición de deshabilitación ajustada */}
-                <DollarSign className="h-4 w-4 mr-2" />
+                disabled={moneda === 'USD' && cotizacionActual < 1}>
+                <DollarIcon className="h-4 w-4 mr-2" />
                 Guardar Gasto
             </button>
         </form>
@@ -221,6 +233,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 }
 
 // --- Gastos Component (Listado principal) ---
+// (Este componente permanece sin cambios)
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
@@ -238,7 +251,6 @@ const Gastos = () => {
         }
     }
 
-    // Usamos cotizacionKey para forzar un refresh si se guarda una cotización (por si afecta el cálculo del formulario)
     useEffect(() => {
         fetchData()
     }, [cotizacionKey])
@@ -254,7 +266,6 @@ const Gastos = () => {
         }
     }
 
-    // CORREGIDO: Usamos safeNumber para calcular el total
     const totalGastosARS = gastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
 
     return (
@@ -262,12 +273,11 @@ const Gastos = () => {
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <DollarSign className="h-7 w-7 mr-2 text-red-600" />
+                        <DollarIcon className="h-7 w-7 mr-2 text-red-600" />
                         Gestión de Gastos
                     </h1>
                     <p className="text-gray-600">Registro y control de egresos operativos del negocio.</p>
                 </div>
-                {/* 2. Coloca el formulario de cotización en la esquina superior derecha */}
                 <div className="w-96">
                     <CotizacionForm onCotizacionSaved={() => setCotizacionKey(prev => prev + 1)} />
                 </div>
@@ -306,13 +316,11 @@ const Gastos = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{g.concepto}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        {/* CORREGIDO: Usamos el helper formatCurrency que aplica safeNumber */}
                                         <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
                                             {formatCurrency(g.monto, g.moneda)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                        {/* CORREGIDO: Usamos safeNumber */}
                                         ${safeNumber(g.monto_ars).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(g.fecha).toLocaleDateString()}</td>
