@@ -19,6 +19,8 @@ import deudasRoutes from './routes/deudas.js';
 import statsRoutes from './routes/stats.js'
 import futurosPedidosRoutes from './routes/futurosPedidos.js'
 import gastosRouter from './routes/gastos.js';
+import cotizacionesRouter from './routes/cotizaciones.js';
+
 
 const app = express()
 
@@ -84,6 +86,7 @@ const mount = (prefix) => {
   app.use(`${prefix}/stats`, statsRoutes)
   app.use(`${prefix}/futuros-pedidos`, futurosPedidosRoutes)
   app.use(`${prefix}/gastos`, gastosRouter);
+  app.use(`${prefix}/cotizaciones`, cotizacionesRouter);
 
 }
 

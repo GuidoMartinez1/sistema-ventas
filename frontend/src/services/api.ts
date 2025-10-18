@@ -140,12 +140,21 @@ export interface FuturoPedido {
   created_at?: string
 }
 
+
 export interface Gasto {
   id?: number
   concepto: string
-  monto: number // Nota: Podría ser string en el formulario, pero numérico aquí
-  fecha: string // Formato 'yyyy-mm-dd'
+  monto: number // Monto original
+  moneda: 'ARS' | 'USD'
+  monto_ars: number // Monto normalizado
+  fecha: string
   created_at?: string
+}
+
+export interface Cotizacion {
+  id?: number
+  fecha: string
+  valor: number
 }
 
 // ----------------------
@@ -238,4 +247,11 @@ export const gastosAPI = {
   create: (gasto: Omit<Gasto, 'id' | 'created_at'>) => api.post('/gastos', gasto),
   delete: (id: number) => api.delete(`/gastos/${id}`),
 }
+
+export const cotizacionesAPI = {
+  getAll: () => api.get<Cotizacion[]>('/cotizaciones'),
+  getByDate: (fecha: string) => api.get<{ valor: number }>(`/cotizaciones/fecha/${fecha}`), // Nuevo endpoint para el formulario
+  create: (cotizacion: Omit<Cotizacion, 'id'>) => api.post('/cotizaciones', cotizacion),
+}
+
 export default api
