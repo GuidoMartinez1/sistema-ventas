@@ -1,10 +1,26 @@
 import { useEffect, useState } from 'react'
 import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp } from 'lucide-react'
-// Asegúrate de que cotizacionesAPI se importe
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
-// --- 1. Nuevo Componente: CotizacionForm ---
+// Helper para asegurar que el monto es un número, usando 0 si es nulo o string no válido
+const safeNumber = (value: number | string | undefined): number => {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+}
+
+// Helper para formatear (usado en la tabla)
+const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | 'USD') => {
+    const numAmount = safeNumber(amount);
+
+    if (currency === 'USD') {
+        return `u$d ${numAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    }
+    return `$${numAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+};
+
+
+// --- CotizacionForm Component (Gestión de la cotización diaria) ---
 const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA')) // yyyy-mm-dd
     const [valor, setValor] = useState('')
@@ -16,10 +32,11 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
         try {
             await cotizacionesAPI.create({
                 fecha,
-                valor: parseFloat(valor),
+                valor: safeNumber(valor), // Aseguramos que se envía como número
             })
             toast.success(`Cotización de ${new Date(fecha).toLocaleDateString()} guardada.`)
-            onCotizacionSaved() // Opcional: para refrescar cualquier vista que muestre la cotización actual
+            setValor('')
+            onCotizacionSaved()
         } catch (error) {
             const msg = (error as any).response?.data?.error || 'Error al guardar la cotización. Revise si ya existe un registro para esa fecha.'
             toast.error(msg)
@@ -61,7 +78,7 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Ligeramente simplificado para que no repita código de Gasto.tsx) ---
+// --- GastoForm Component (Registro de un nuevo gasto) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
@@ -70,16 +87,17 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [cotizacionActual, setCotizacionActual] = useState(1)
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
-    // Función para obtener la cotización (se mantiene la lógica de la respuesta anterior)
+    // Efecto para buscar la cotización
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
                 setCotizacionLoading(true)
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
-                    const valor = response.data.valor || 0
+                    // Usar safeNumber para manejar {valor: null} o {valor: '1000'}
+                    const valor = safeNumber(response.data.valor)
 
-                    if (valor <= 1) {
+                    if (valor < 1) { // Menor a 1 se considera no disponible
                         toast.error(`No hay cotización USD registrada para la fecha ${new Date(fecha).toLocaleDateString()}.`)
                         setCotizacionActual(0)
                     } else {
@@ -91,7 +109,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     setCotizacionLoading(false)
                 }
             } else {
-                setCotizacionActual(1)
+                setCotizacionActual(1) // ARS es 1
             }
         }
         fetchCotizacion()
@@ -100,9 +118,9 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        const montoNum = parseFloat(monto)
+        const montoNum = safeNumber(monto)
 
-        if (moneda === 'USD' && (cotizacionActual <= 1 || cotizacionLoading)) {
+        if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) {
             toast.error('Debe haber una cotización USD válida registrada para esta fecha.')
             return
         }
@@ -118,6 +136,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
             setConcepto('')
             setMonto('')
             setMoneda('ARS')
+            setFecha(new Date().toLocaleDateString('en-CA'))
             onSave()
         } catch (error) {
             const msg = (error as any).response?.data?.error || 'Error al registrar el gasto.'
@@ -125,7 +144,8 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
         }
     }
 
-    const montoFinalARS = parseFloat(monto) * cotizacionActual
+    const montoFinalARS = safeNumber(monto) * cotizacionActual
+    const esMontoValido = safeNumber(monto) > 0
 
     return (
         <form onSubmit={handleSubmit} className="card p-6 space-y-4 bg-gray-50">
@@ -164,18 +184,21 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 
             {/* Panel de Cotización y Previsualización */}
             {moneda === 'USD' && (
-                <div className="p-3 border rounded-lg" style={{ borderColor: cotizacionActual > 1 ? '#4CAF50' : '#F44336', backgroundColor: cotizacionActual > 1 ? '#E8F5E9' : '#FFEBEE' }}>
-                    <label className="block text-sm font-medium" style={{ color: cotizacionActual > 1 ? '#388E3C' : '#D32F2F' }}>
+                <div className="p-3 border rounded-lg" style={{ borderColor: cotizacionActual >= 1 ? '#4CAF50' : '#F44336', backgroundColor: cotizacionActual >= 1 ? '#E8F5E9' : '#FFEBEE' }}>
+                    <label className="block text-sm font-medium" style={{ color: cotizacionActual >= 1 ? '#388E3C' : '#D32F2F' }}>
                         Cotización USD aplicada:
                     </label>
                     {cotizacionLoading ? (
                         <p className="text-sm text-gray-500">Consultando...</p>
-                    ) : cotizacionActual > 1 ? (
+                    ) : cotizacionActual >= 1 ? (
                         <>
-                            <p className="text-lg font-bold" style={{ color: '#388E3C' }}>{cotizacionActual.toFixed(2)} ARS</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                                Gasto final en ARS: **${ montoFinalARS.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }**
-                            </p>
+                            {/* CORREGIDO: Usamos safeNumber antes de toFixed */}
+                            <p className="text-lg font-bold" style={{ color: '#388E3C' }}>{safeNumber(cotizacionActual).toFixed(2)} ARS</p>
+                            {esMontoValido && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Gasto final estimado en ARS: **${ montoFinalARS.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }**
+                                </p>
+                            )}
                         </>
                     ) : (
                         <p className="text-sm font-semibold text-red-600">
@@ -189,7 +212,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
             <button
                 type="submit"
                 className="btn-primary flex items-center bg-red-600 hover:bg-red-700"
-                disabled={moneda === 'USD' && cotizacionActual <= 1}>
+                disabled={moneda === 'USD' && cotizacionActual < 1}> {/* Condición de deshabilitación ajustada */}
                 <DollarSign className="h-4 w-4 mr-2" />
                 Guardar Gasto
             </button>
@@ -197,12 +220,10 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
     )
 }
 
-// --- Gastos Component (MODIFICADO para integrar CotizacionForm) ---
+// --- Gastos Component (Listado principal) ---
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
-
-    // Estado dummy para forzar el refresco de cotizaciones (si fuera necesario)
     const [cotizacionKey, setCotizacionKey] = useState(0);
 
     const fetchData = async () => {
@@ -217,12 +238,13 @@ const Gastos = () => {
         }
     }
 
+    // Usamos cotizacionKey para forzar un refresh si se guarda una cotización (por si afecta el cálculo del formulario)
     useEffect(() => {
         fetchData()
-    }, [cotizacionKey]) // Refresca la lista de gastos si se guarda una nueva cotización (opcional)
+    }, [cotizacionKey])
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('¿Está seguro de eliminar este gasto? Esto no revertirá el cálculo de reportes.')) return
+        if (!window.confirm('¿Está seguro de eliminar este gasto?')) return
         try {
             await gastosAPI.delete(id)
             toast.success('Gasto eliminado.')
@@ -232,14 +254,8 @@ const Gastos = () => {
         }
     }
 
-    const totalGastosARS = gastos.reduce((sum, g) => sum + Number(g.monto_ars || 0), 0);
-
-    const formatCurrency = (amount: number, currency: 'ARS' | 'USD') => {
-        if (currency === 'USD') {
-            return `u$d ${Number(amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-        }
-        return `$${Number(amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-    };
+    // CORREGIDO: Usamos safeNumber para calcular el total
+    const totalGastosARS = gastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
 
     return (
         <div className="space-y-6">
@@ -251,7 +267,7 @@ const Gastos = () => {
                     </h1>
                     <p className="text-gray-600">Registro y control de egresos operativos del negocio.</p>
                 </div>
-                {/* 2. Coloca el nuevo formulario en la esquina superior derecha */}
+                {/* 2. Coloca el formulario de cotización en la esquina superior derecha */}
                 <div className="w-96">
                     <CotizacionForm onCotizacionSaved={() => setCotizacionKey(prev => prev + 1)} />
                 </div>
@@ -290,12 +306,14 @@ const Gastos = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{g.concepto}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        {/* CORREGIDO: Usamos el helper formatCurrency que aplica safeNumber */}
                                         <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
-                                            {formatCurrency(Number(g.monto), g.moneda)}
+                                            {formatCurrency(g.monto, g.moneda)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                        ${Number(g.monto_ars).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                        {/* CORREGIDO: Usamos safeNumber */}
+                                        ${safeNumber(g.monto_ars).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(g.fecha).toLocaleDateString()}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
