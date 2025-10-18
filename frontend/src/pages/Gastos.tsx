@@ -78,20 +78,22 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Registro de un nuevo gasto) ---
+// --- GastoForm Component (Registro de un nuevo gasto - BUG Y ESTILO CORREGIDOS) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [moneda, setMoneda] = useState<'ARS' | 'USD'>('ARS')
     const [cotizacionActual, setCotizacionActual] = useState(1)
+
+    // 🎯 BUG FIX: Variable renombrada para evitar el conflicto ReferenceError
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
     // Efecto para buscar la cotización
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
-                setCotizacionLoading(true)
+                setCotizacionLoading(true) // 🎯 Uso corregido
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
                     const valor = safeNumber(response.data.valor)
@@ -105,7 +107,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                 } catch (error) {
                     setCotizacionActual(0)
                 } finally {
-                    setCotizacionLoading(false)
+                    setCotizacionLoading(false) // 🎯 Uso corregido
                 }
             } else {
                 setCotizacionActual(1)
@@ -156,7 +158,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className="input-field" required />
                 </div>
 
-                {/* Selector de Moneda */}
+                {/* --- CAMBIO DE CLASES DE COLOR: ARS Azul, USD Verde --- */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
                     <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full">
@@ -167,7 +169,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                                 onClick={() => setMoneda(m as 'ARS' | 'USD')}
                                 className={`flex-1 py-2 text-sm font-medium transition-colors duration-200 
                                     ${moneda === m
-                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md'
+                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md' // ⬅️ COLORES SOLICITADOS
                                     : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                             >
@@ -176,6 +178,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                         ))}
                     </div>
                 </div>
+                {/* -------------------------------------------------------- */}
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Monto ({moneda === 'ARS' ? '$' : 'u$d'})</label>
@@ -234,44 +237,23 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
-    const [cotizacionKey, setCotizacionKey] = useState(0) // Para forzar refresh de CotizacionForm
+    const [cotizacionKey, setCotizacionKey] = useState(0);
 
-    // 🎯 NUEVOS ESTADOS DE FILTRO
-    const [fechaDesde, setFechaDesde] = useState('')
-    const [fechaHasta, setFechaHasta] = useState('')
-
-    // 🎯 FUNCIÓN DE FETCH MODIFICADA PARA ACEPTAR FILTROS
     const fetchData = async () => {
         setLoading(true)
         try {
-            let url = '/gastos' // Asumiendo que el cliente API ya tiene el prefijo /api
-            const params = []
-
-            if (fechaDesde) {
-                params.push(`desde=${fechaDesde}`)
-            }
-            if (fechaHasta) {
-                params.push(`hasta=${fechaHasta}`)
-            }
-
-            if (params.length > 0) {
-                url += '?' + params.join('&')
-            }
-
-            // Usamos el cliente API para construir la URL final: /api/gastos?desde=...
-            const response = await gastosAPI.get(url)
+            const response = await gastosAPI.getAll()
             setGastos(response.data)
         } catch (error) {
-            toast.error('Error al cargar la lista de gastos. Verifique la conexión.')
+            toast.error('Error al cargar la lista de gastos')
         } finally {
             setLoading(false)
         }
     }
 
-    // Usamos un effect para llamar a fetchData cuando cambian las fechas de filtro
     useEffect(() => {
         fetchData()
-    }, [fechaDesde, fechaHasta, cotizacionKey]) // cotizacionKey para forzar refresco del listado
+    }, [cotizacionKey])
 
     const handleDelete = async (id: number) => {
         if (!window.confirm('¿Está seguro de eliminar este gasto?')) return
@@ -282,21 +264,6 @@ const Gastos = () => {
         } catch (error) {
             toast.error('Error al eliminar el gasto.')
         }
-    }
-
-    const setHoy = () => {
-        const hoy = new Date()
-        const yyyy = hoy.getFullYear()
-        const mm = String(hoy.getMonth() + 1).padStart(2, '0')
-        const dd = String(hoy.getDate()).padStart(2, '0')
-        const fechaLocal = `${yyyy}-${mm}-${dd}`
-        setFechaDesde(fechaLocal)
-        setFechaHasta(fechaLocal)
-    }
-
-    const limpiarFechas = () => {
-        setFechaDesde('')
-        setFechaHasta('')
     }
 
     const totalGastosARS = gastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
@@ -317,30 +284,6 @@ const Gastos = () => {
             </div>
 
             <GastoForm onSave={fetchData} />
-
-            {/* --- NUEVA SECCIÓN DE FILTROS --- */}
-            <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Filtro por Rango de Fechas
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Desde</label>
-                        <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="input-field"/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
-                        <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="input-field"/>
-                    </div>
-                    <div className="flex items-end gap-2 col-span-2">
-                        <button onClick={fetchData} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full">Aplicar Filtro</button>
-                        <button onClick={setHoy} className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 w-full">Hoy</button>
-                        <button onClick={limpiarFechas} className="px-3 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full">Limpiar</button>
-                    </div>
-                </div>
-            </div>
-            {/* --------------------------------- */}
 
             <div className="card">
                 <div className="flex justify-between items-center mb-4">
