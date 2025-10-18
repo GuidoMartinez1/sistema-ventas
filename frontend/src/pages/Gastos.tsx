@@ -78,20 +78,21 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Registro de un nuevo gasto - CORRECCIÓN DE COLORES) ---
+// --- GastoForm Component (Registro de un nuevo gasto - CORRECCIÓN DE BUG) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [moneda, setMoneda] = useState<'ARS' | 'USD'>('ARS')
     const [cotizacionActual, setCotizacionActual] = useState(1)
-    const [cotizacionLoading, setLoading] = useState(false)
+    // 🎯 BUG FIX: Renombrado de 'loading' a 'cotizacionLoading' para evitar conflicto
+    const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
-    // Efecto para buscar la cotización (se mantiene la lógica)
+    // Efecto para buscar la cotización
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
-                setLoading(true)
+                setCotizacionLoading(true) // 🎯 CORREGIDO
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
                     const valor = safeNumber(response.data.valor)
@@ -105,7 +106,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                 } catch (error) {
                     setCotizacionActual(0)
                 } finally {
-                    setLoading(false)
+                    setCotizacionLoading(false) // 🎯 CORREGIDO
                 }
             } else {
                 setCotizacionActual(1)
@@ -119,7 +120,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 
         const montoNum = safeNumber(monto)
 
-        if (moneda === 'USD' && (cotizacionActual < 1 || loading)) {
+        if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) { // Usamos cotizacionLoading
             toast.error('Debe haber una cotización USD válida registrada para esta fecha.')
             return
         }
@@ -200,7 +201,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <label className="block text-sm font-medium" style={{ color: cotizacionActual >= 1 ? '#388E3C' : '#D32F2F' }}>
                         Cotización USD aplicada:
                     </label>
-                    {loading ? (
+                    {cotizacionLoading ? ( // Usamos cotizacionLoading aquí
                         <p className="text-sm text-gray-500">Consultando...</p>
                     ) : cotizacionActual >= 1 ? (
                         <>
@@ -234,6 +235,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 // --- Gastos Component (Listado principal) ---
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
+    // Mantenemos este 'loading' para el listado general
     const [loading, setLoading] = useState(true)
     const [cotizacionKey, setCotizacionKey] = useState(0);
 
@@ -293,7 +295,7 @@ const Gastos = () => {
                         <span className="text-lg font-bold text-red-900">${totalGastosARS.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                     </div>
                 </div>
-                {loading ? (
+                {loading ? ( // Usamos el 'loading' del componente principal aquí
                     <div className="text-center py-4">Cargando...</div>
                 ) : (
                     <div className="overflow-x-auto">
