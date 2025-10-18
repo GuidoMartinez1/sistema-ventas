@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon } from 'lucide-react' // Renombramos DollarSign para evitar conflictos
+import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon } from 'lucide-react'
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -22,7 +22,7 @@ const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | '
 
 // --- CotizacionForm Component (Gestión de la cotización diaria) ---
 const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
-    const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA')) // yyyy-mm-dd
+    const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [valor, setValor] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -78,21 +78,22 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Registro de un nuevo gasto - CORRECCIÓN DE BUG) ---
+// --- GastoForm Component (Registro de un nuevo gasto - BUG Y ESTILO CORREGIDOS) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [moneda, setMoneda] = useState<'ARS' | 'USD'>('ARS')
     const [cotizacionActual, setCotizacionActual] = useState(1)
-    // 🎯 BUG FIX: Renombrado de 'loading' a 'cotizacionLoading' para evitar conflicto
+
+    // 🎯 BUG FIX: Variable renombrada para evitar el conflicto ReferenceError
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
     // Efecto para buscar la cotización
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
-                setCotizacionLoading(true) // 🎯 CORREGIDO
+                setCotizacionLoading(true) // 🎯 Uso corregido
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
                     const valor = safeNumber(response.data.valor)
@@ -106,7 +107,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                 } catch (error) {
                     setCotizacionActual(0)
                 } finally {
-                    setCotizacionLoading(false) // 🎯 CORREGIDO
+                    setCotizacionLoading(false) // 🎯 Uso corregido
                 }
             } else {
                 setCotizacionActual(1)
@@ -120,7 +121,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 
         const montoNum = safeNumber(monto)
 
-        if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) { // Usamos cotizacionLoading
+        if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) {
             toast.error('Debe haber una cotización USD válida registrada para esta fecha.')
             return
         }
@@ -168,7 +169,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                                 onClick={() => setMoneda(m as 'ARS' | 'USD')}
                                 className={`flex-1 py-2 text-sm font-medium transition-colors duration-200 
                                     ${moneda === m
-                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md'
+                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md' // ⬅️ COLORES SOLICITADOS
                                     : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                             >
@@ -201,7 +202,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <label className="block text-sm font-medium" style={{ color: cotizacionActual >= 1 ? '#388E3C' : '#D32F2F' }}>
                         Cotización USD aplicada:
                     </label>
-                    {cotizacionLoading ? ( // Usamos cotizacionLoading aquí
+                    {cotizacionLoading ? (
                         <p className="text-sm text-gray-500">Consultando...</p>
                     ) : cotizacionActual >= 1 ? (
                         <>
@@ -235,7 +236,6 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 // --- Gastos Component (Listado principal) ---
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
-    // Mantenemos este 'loading' para el listado general
     const [loading, setLoading] = useState(true)
     const [cotizacionKey, setCotizacionKey] = useState(0);
 
@@ -295,7 +295,7 @@ const Gastos = () => {
                         <span className="text-lg font-bold text-red-900">${totalGastosARS.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                     </div>
                 </div>
-                {loading ? ( // Usamos el 'loading' del componente principal aquí
+                {loading ? (
                     <div className="text-center py-4">Cargando...</div>
                 ) : (
                     <div className="overflow-x-auto">
