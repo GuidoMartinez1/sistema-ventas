@@ -7,13 +7,40 @@ const router = express.Router()
 // GET: Obtener todos los gastos
 router.get('/', async (req, res) => {
     try {
-        const allGastos = await pool.query("SELECT * FROM gastos ORDER BY fecha DESC, created_at DESC")
-        res.json(allGastos.rows)
+        const { desde, hasta } = req.query; // Capturar los parámetros
+
+        let query = "SELECT * FROM gastos";
+        const values = [];
+        const conditions = [];
+
+        // 1. Condición de Fecha Desde
+        if (desde) {
+            conditions.push(`fecha >= $${values.length + 1}`);
+            values.push(desde);
+        }
+
+        // 2. Condición de Fecha Hasta
+        if (hasta) {
+            conditions.push(`fecha <= $${values.length + 1}`);
+            values.push(hasta);
+        }
+
+        // 3. Construir la consulta completa
+        if (conditions.length > 0) {
+            query += " WHERE " + conditions.join(" AND ");
+        }
+
+        query += " ORDER BY fecha DESC, created_at DESC"; // Ordenar al final
+
+        // Ejecutar la consulta con los valores dinámicos
+        const allGastos = await pool.query(query, values);
+        res.json(allGastos.rows);
+
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Error del Servidor")
+        console.error(err.message);
+        res.status(500).send("Error del Servidor al obtener gastos");
     }
-})
+});
 
 // POST: Crear un nuevo gasto
 router.post('/', async (req, res) => {
