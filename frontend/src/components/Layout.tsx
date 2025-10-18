@@ -1,20 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import {
-  Home,
-  Package,
-  Users,
-  ShoppingCart,
-  Plus,
-  TrendingUp,
-  Tag,
-  DollarSign,
-  Building,
-  Truck,
-  BarChart3,
-  AlertTriangle,
-  Menu,
-  X
+import {Home,  Package,  Users,  ShoppingCart,  Plus,  TrendingUp,  Tag,  DollarSign,  Building,  Truck,  BarChart3,  AlertTriangle,  Menu,  X
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -36,7 +22,12 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
     { name: 'Compras', href: '/compras', icon: Truck },
     { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
+    // --- NUEVA FUNCIONALIDAD: GASTOS ---
+    // Usamos el mismo icono DollarSign, pero separamos la lógica de Deudas
+    { name: 'Gastos', href: '/gastos', icon: DollarSign },
+    // La sección de Deudas puede seguir aquí o también usar el ícono DollarSign si representa cuentas por cobrar/pagar
     { name: 'Deudas', href: '/deudas', icon: DollarSign },
+    // ------------------------------------
     { name: 'Reportes', href: '/reportes', icon: BarChart3 },
     { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
   ]

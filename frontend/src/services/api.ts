@@ -140,6 +140,13 @@ export interface FuturoPedido {
   created_at?: string
 }
 
+export interface Gasto {
+  id?: number
+  concepto: string
+  monto: number // Nota: Podría ser string en el formulario, pero numérico aquí
+  fecha: string // Formato 'yyyy-mm-dd'
+  created_at?: string
+}
 
 // ----------------------
 // ENDPOINTS
@@ -226,4 +233,9 @@ export const futurosPedidosAPI = {
   delete: (id: number) => api.delete(`/futuros-pedidos/${id}`),
 }
 
+export const gastosAPI = {
+  getAll: () => api.get<Gasto[]>('/api/gastos'),
+  create: (gasto: Omit<Gasto, 'id' | 'created_at'>) => api.post('/api/gastos', gasto),
+  delete: (id: number) => api.delete(`/api/gastos/${id}`),
+}
 export default api
