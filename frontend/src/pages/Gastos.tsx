@@ -21,7 +21,6 @@ const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | '
 
 
 // --- CotizacionForm Component (Gestión de la cotización diaria) ---
-// (Este componente permanece sin cambios)
 const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA')) // yyyy-mm-dd
     const [valor, setValor] = useState('')
@@ -79,20 +78,20 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
 }
 
 
-// --- GastoForm Component (Registro de un nuevo gasto - MODIFICADO ESTÉTICAMENTE) ---
+// --- GastoForm Component (Registro de un nuevo gasto - CORRECCIÓN DE COLORES) ---
 const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const [concepto, setConcepto] = useState('')
     const [monto, setMonto] = useState('')
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [moneda, setMoneda] = useState<'ARS' | 'USD'>('ARS')
     const [cotizacionActual, setCotizacionActual] = useState(1)
-    const [cotizacionLoading, setCotizacionLoading] = useState(false)
+    const [cotizacionLoading, setLoading] = useState(false)
 
     // Efecto para buscar la cotización (se mantiene la lógica)
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
-                setCotizacionLoading(true)
+                setLoading(true)
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
                     const valor = safeNumber(response.data.valor)
@@ -106,7 +105,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                 } catch (error) {
                     setCotizacionActual(0)
                 } finally {
-                    setCotizacionLoading(false)
+                    setLoading(false)
                 }
             } else {
                 setCotizacionActual(1)
@@ -120,7 +119,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 
         const montoNum = safeNumber(monto)
 
-        if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) {
+        if (moneda === 'USD' && (cotizacionActual < 1 || loading)) {
             toast.error('Debe haber una cotización USD válida registrada para esta fecha.')
             return
         }
@@ -157,18 +156,18 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className="input-field" required />
                 </div>
 
-                {/* --- CAMBIO ESTÉTICO AQUÍ: Selector de Moneda como Toggle Buttons --- */}
+                {/* --- CAMBIO DE CLASES DE COLOR: ARS Azul, USD Verde --- */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
                     <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full">
                         {['ARS', 'USD'].map((m) => (
                             <button
                                 key={m}
-                                type="button" // IMPORTANTE: Para que no haga submit del formulario
+                                type="button"
                                 onClick={() => setMoneda(m as 'ARS' | 'USD')}
                                 className={`flex-1 py-2 text-sm font-medium transition-colors duration-200 
                                     ${moneda === m
-                                    ? 'bg-red-600 text-white shadow-md'
+                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md'
                                     : 'bg-white text-gray-700 hover:bg-gray-100'
                                 }`}
                             >
@@ -177,7 +176,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                         ))}
                     </div>
                 </div>
-                {/* ------------------------------------------------------------------ */}
+                {/* -------------------------------------------------------- */}
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Monto ({moneda === 'ARS' ? '$' : 'u$d'})</label>
@@ -201,7 +200,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     <label className="block text-sm font-medium" style={{ color: cotizacionActual >= 1 ? '#388E3C' : '#D32F2F' }}>
                         Cotización USD aplicada:
                     </label>
-                    {cotizacionLoading ? (
+                    {loading ? (
                         <p className="text-sm text-gray-500">Consultando...</p>
                     ) : cotizacionActual >= 1 ? (
                         <>
@@ -233,7 +232,6 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
 }
 
 // --- Gastos Component (Listado principal) ---
-// (Este componente permanece sin cambios)
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
