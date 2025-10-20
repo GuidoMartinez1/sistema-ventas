@@ -220,8 +220,8 @@ const Deudas = () => {
                             {deuda.detalles.map((detalle, index) => (
                                 <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border">
 
-                                  {/* CORRECCIÓN: Contenedor del nombre (flex-1 y truncate) */}
-                                  <div className='min-w-0 flex-1 pr-4'>
+                                  {/* CORRECCIÓN: Contenedor del nombre con w-full y min-w-0 para que truncate funcione siempre */}
+                                  <div className='min-w-0 w-full sm:w-auto flex-1 pr-4'>
                                     <span className="font-medium text-gray-900 truncate block">
                                       {detalle.producto_nombre || detalle.descripcion}
                                     </span>
@@ -230,8 +230,8 @@ const Deudas = () => {
                                     </span>
                                   </div>
 
-                                  {/* Contenedor de precios y cantidad (flex-shrink-0) */}
-                                  <div className="flex-shrink-0 text-left sm:text-right flex justify-between w-full sm:w-auto mt-2 sm:mt-0 pt-2 border-t sm:border-none sm:pt-0">
+                                  {/* Contenedor de precios y cantidad: se ajusta a ser una línea simple en móvil */}
+                                  <div className="flex-shrink-0 text-left sm:text-right flex justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0 pt-2 border-t sm:border-none sm:pt-0">
                                     <div className="text-sm text-gray-600">
                                       Cant: {detalle.cantidad}
                                     </div>
