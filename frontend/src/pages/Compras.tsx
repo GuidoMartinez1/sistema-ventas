@@ -130,7 +130,7 @@ const Compras = () => {
             </button>
             <button
                 onClick={() => navigate('/nueva-compra')}
-                className="w-full sm:w-auto btn-primary flex items-center justify-center bg-green-600 hover:bg-green-700">
+                className="w-full sm:w-auto btn-primary flex items-center justify-center bg-orange-600 hover:bg-orange-700">
               <Plus className="h-5 w-5 mr-2" />
               Nueva Compra
             </button>
