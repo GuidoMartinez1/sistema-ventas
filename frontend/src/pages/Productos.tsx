@@ -245,8 +245,8 @@ const Productos = () => {
       .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.codigo?.toLowerCase().includes(busqueda.toLowerCase()))
       .filter(p => {
         if (!stockFiltro) return true
-        if (stockFiltro === '>4') return p.stock > 4
-        return p.stock === parseInt(stockFiltro)
+        if (stockFiltro === '>4') return (p.stock || 0) > 4
+        return (p.stock || 0) === parseInt(stockFiltro)
       })
       .filter(p =>
           categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
@@ -324,32 +324,33 @@ const Productos = () => {
         {/* TABLA / CARD VIEW */}
         <div className={cardClass}>
           {/* VISTA DE TABLA (ESCRITORIO) */}
+          {/* CORRECCIÓN: Se envuelve la tabla en un div con overflow-x-auto para que aparezca el scroll si es necesario. */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Producto
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Categoría
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio Venta
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio x Kg
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio Costo
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Costo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ganancia %
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stock
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -357,38 +358,38 @@ const Productos = () => {
               <tbody className="bg-white divide-y divide-gray-200">
               {productosFiltrados.map((producto) => (
                   <tr key={producto.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-orange-600" />
+                        <div className="flex-shrink-0 h-8 w-8">
+                          <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-orange-600" />
                           </div>
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">
                             {producto.nombre}
                           </div>
                           {producto.descripcion && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-xs text-gray-500">
                                 {producto.descripcion}
                               </div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                       {getCategoriaNombre(producto.categoria_id)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatPrice(producto.precio)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatPrice(producto.precio_kg)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatPrice(producto.precio_costo)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.porcentaje_ganancia || 0) >= 50
                             ? 'bg-green-100 text-green-800'
@@ -399,17 +400,17 @@ const Productos = () => {
                       {producto.porcentaje_ganancia || 0}%
                     </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.stock || 0) <= 4
                             ? 'bg-red-100 text-red-800'
                             : 'bg-green-100 text-green-800'
                     }`}>
-                      {producto.stock} unidades
+                      {producto.stock} uds
                     </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                    <td className="px-3 py-4 text-sm font-medium">
+                      <div className="flex space-x-1">
                         <button
                             onClick={() => handleEdit(producto)}
                             className="text-indigo-600 hover:text-indigo-900 p-1"
@@ -448,10 +449,13 @@ const Productos = () => {
                   {/* Título y Acciones */}
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 pr-4">
-                      <h3 className="text-lg font-bold text-gray-900 truncate">{producto.nombre}</h3>
+                      {/* CORRECCIÓN: Se agrega 'truncate' al nombre */}
+                      <h3 className="text-lg font-bold text-gray-900 truncate">
+                        {producto.nombre}
+                      </h3>
                       {producto.descripcion && <p className="text-xs text-gray-500 truncate mt-1">{producto.descripcion}</p>}
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 flex-shrink-0">
                       <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
                         <Edit className="h-4 w-4" />
                       </button>
