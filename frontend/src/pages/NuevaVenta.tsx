@@ -6,6 +6,10 @@ import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 
+// Clases de utilidad
+const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
+const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
+
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
@@ -44,12 +48,12 @@ const NuevaVenta = () => {
     load()
   }, [])
 
-    // Si vengo desde el botón flotante, enfoco el campo "Importe directo"
-    useEffect(() => {
-        if (location.state?.focusMonto && montoRef.current) {
-            montoRef.current.focus()
-          }
-      }, [location.state])
+  // Si vengo desde el botón flotante, enfoco el campo "Importe directo"
+  useEffect(() => {
+    if (location.state?.focusMonto && montoRef.current) {
+      montoRef.current.focus()
+    }
+  }, [location.state])
 
   const addProducto = (producto: Producto) => {
     if (!producto?.id) {
@@ -212,22 +216,23 @@ const NuevaVenta = () => {
   }
 
   return (
-      <div className="space-y-6">
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Nueva Venta</h1>
           <p className="text-gray-600">Vendé productos o cobrá importes directos</p>
         </div>
 
-        {/* Grid principal con 2 columnas */}
+        {/* Grid principal con 2 columnas (lg:grid-cols-3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Columna izquierda: Cliente + Productos */}
+          {/* Columna izquierda: Cliente + Productos (lg:col-span-2) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cliente + deuda */}
-            <div className="card w-full">
+            <div className={`${cardClass} w-full`}>
+              {/* RESPONSIVE: Apilar en móvil, en línea en md */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-2/3 relative">
-                  <label className="block text-sm font-medium text-gray-700">Cliente (opcional)</label>
-                  <div className="w-full md:max-w-sm relative">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-2/3 relative">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Cliente (opcional)</label>
+                  <div className="w-full relative">
                     <input
                         type="text"
                         value={nombreClienteInput}
@@ -246,7 +251,7 @@ const NuevaVenta = () => {
                           }
                         }}
                         placeholder="Escribí para buscar cliente..."
-                        className="input-field w-full"
+                        className={inputFieldClass}
                         onFocus={() => setMostrarSugerencias(true)}
                         onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}
                     />
@@ -276,6 +281,7 @@ const NuevaVenta = () => {
                   </div>
                 </div>
 
+                {/* Toggle de Deuda */}
                 <div className="flex items-center">
                   <input
                       id="toggle-deuda"
@@ -283,7 +289,7 @@ const NuevaVenta = () => {
                       checked={esDeuda}
                       onChange={() => setEsDeuda(!esDeuda)}
                       className="h-4 w-4"/>
-                  <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700 whitespace-nowrap">
                     Marcar venta como <strong>pendiente / deuda</strong>
                   </label>
                 </div>
@@ -291,16 +297,17 @@ const NuevaVenta = () => {
             </div>
 
             {/* Productos */}
-            <div className="card">
+            <div className={cardClass}>
               <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
                 <input
                     type="text"
                     placeholder="Buscar producto por nombre o código..."
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
-                    className="input-field w-full md:w-1/2"/>
+                    className={`${inputFieldClass} w-full md:w-1/2`}/>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* RESPONSIVE: Grid de productos 1 columna en móvil, 2 en md */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {productos
                     .filter(p =>
                         (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -330,9 +337,9 @@ const NuevaVenta = () => {
             </div>
           </div>
 
-          {/* Columna derecha: carrito sticky */}
+          {/* Columna derecha: carrito */}
           <div className="lg:col-span-1">
-            <div className="card space-y-4 sticky top-6">
+            <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}> {/* Se aplica sticky solo en lg+ */}
               <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
               {/* Importe directo */}
@@ -348,9 +355,9 @@ const NuevaVenta = () => {
                       step="0.01"
                       value={importeDirecto}
                       onChange={e => setImporteDirecto(e.target.value)}
-                      className="input-field flex-1"
+                      className={`${inputFieldClass} flex-1`}
                       placeholder="Monto"/>
-                  <button onClick={addImporteDirecto} className="btn-primary">
+                  <button onClick={addImporteDirecto} className="btn-primary flex-shrink-0">
                     Agregar
                   </button>
                 </div>
@@ -364,45 +371,46 @@ const NuevaVenta = () => {
                     {cartItems.map((it, idx) => (
                         <div key={idx} className="border rounded p-3 bg-gray-50">
                           <div className="flex justify-between items-start mb-2">
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 text-sm"> {/* Fuente más pequeña */}
                               {it.es_custom ? (it.descripcion || 'Ítem') : (it.producto_nombre || 'Producto')}
                             </div>
                             <button onClick={() => removeItem(idx)} className="text-red-600 hover:text-red-800">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
-                          <div className="grid grid-cols-3 gap-3 bg-white p-3 rounded border">
+                          {/* RESPONSIVE: Grid de 3 columnas para móvil */}
+                          <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border">
                             <div className="text-center">
-                              <span className="text-xs text-gray-600 block">Cantidad</span>
-                              <div className="flex items-center justify-center space-x-2 mt-1">
+                              <span className="text-xs text-gray-600 block">Cant</span>
+                              <div className="flex items-center justify-center space-x-1 mt-1">
                                 <button
                                     onClick={() => updateCantidad(idx, it.cantidad - 1)}
-                                    className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                    className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
                                 >
                                   <Minus className="h-3 w-3" />
                                 </button>
-                                <span className="w-8 text-center font-medium">{it.cantidad}</span>
+                                <span className="w-6 text-center text-sm font-medium">{it.cantidad}</span>
                                 <button
                                     onClick={() => updateCantidad(idx, it.cantidad + 1)}
-                                    className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                    className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
                                 >
                                   <Plus className="h-3 w-3" />
                                 </button>
                               </div>
                             </div>
                             <div className="text-center">
-                              <span className="text-xs text-gray-600 block">Precio unitario</span>
+                              <span className="text-xs text-gray-600 block">Precio/u</span>
                               <input
                                   type="number"
                                   step="0.01"
                                   value={it.precio_unitario}
                                   onChange={(e) => updatePrecio(idx, Number(e.target.value || 0))}
-                                  className="w-full text-center border rounded px-2 py-1 text-sm mt-1"
+                                  className="w-full text-center border rounded px-1 py-0.5 text-xs mt-1"
                               />
                             </div>
                             <div className="text-center">
                               <span className="text-xs text-gray-600 block">Subtotal</span>
-                              <span className="font-bold text-lg text-green-600">
+                              <span className="font-bold text-sm text-green-600">
                           {formatPrice(Number(it.subtotal).toFixed(2))}
                         </span>
                             </div>
@@ -421,7 +429,7 @@ const NuevaVenta = () => {
                     <select
                         value={metodoPago}
                         onChange={(e) => setMetodoPago(e.target.value as 'efectivo' | 'tarjeta' | 'mercadopago')}
-                        className="input-field w-full"
+                        className={inputFieldClass}
                     >
                       <option value="efectivo">Efectivo</option>
                       <option value="tarjeta">Tarjeta</option>
