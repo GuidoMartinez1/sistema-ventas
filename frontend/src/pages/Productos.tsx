@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package, Download } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, Download, DollarSign, Tag, TrendingUp } from 'lucide-react'
 import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { ClipboardList, X } from 'lucide-react'
+
+// Clases de utilidad
+const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
+const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
@@ -237,7 +241,16 @@ const Productos = () => {
     })
   }
 
-
+  const productosFiltrados = productos
+      .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.codigo?.toLowerCase().includes(busqueda.toLowerCase()))
+      .filter(p => {
+        if (!stockFiltro) return true
+        if (stockFiltro === '>4') return p.stock > 4
+        return p.stock === parseInt(stockFiltro)
+      })
+      .filter(p =>
+          categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
+      )
 
   if (loading) {
     return (
@@ -247,23 +260,24 @@ const Productos = () => {
     )
   }
   return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Productos - AliMar</h1>
             <p className="text-gray-600">Gestiona tu inventario de productos para mascotas</p>
           </div>
-          <div className="flex gap-2">
+          {/* RESPONSIVE: Botones apilados en móvil, en línea en escritorio */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <button
                 onClick={exportarProductosExcel}
-                className="btn-secondary flex items-center"
+                className="w-full sm:w-auto btn-secondary flex items-center justify-center"
             >
               <Download className="h-5 w-5 mr-2" />
               Exportar Excel
             </button>
             <button
                 onClick={openModal}
-                className="btn-primary flex items-center"
+                className="w-full sm:w-auto btn-primary flex items-center justify-center"
             >
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Producto
@@ -271,32 +285,32 @@ const Productos = () => {
           </div>
         </div>
 
-        {/* filtros */}
-        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+        {/* FILTROS: Usa grid en móvil para mejor distribución */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre o código..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="input-field w-full md:w-1/3"
+              className={inputFieldClass}
           />
           <select
               value={stockFiltro}
               onChange={(e) => setStockFiltro(e.target.value)}
-              className="input-field w-full md:w-1/4"
+              className={inputFieldClass}
           >
             <option value="">Todos los Stocks</option>
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value=">4">&gt;4</option>
+            <option value="0">Stock: 0</option>
+            <option value="1">Stock: 1</option>
+            <option value="2">Stock: 2</option>
+            <option value="3">Stock: 3</option>
+            <option value=">4">Stock: &gt;4</option>
           </select>
 
           <select
               value={categoriaFiltro}
               onChange={(e) => setCategoriaFiltro(e.target.value)}
-              className="input-field w-full md:w-1/4"
+              className={inputFieldClass}
           >
             <option value="">Todas las categorías</option>
             {categorias.map((categoria) => (
@@ -307,9 +321,10 @@ const Productos = () => {
           </select>
         </div>
 
-        {/* tabla */}
-        <div className="card">
-          <div className="overflow-x-auto">
+        {/* TABLA / CARD VIEW */}
+        <div className={cardClass}>
+          {/* VISTA DE TABLA (ESCRITORIO) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
               <tr>
@@ -340,105 +355,161 @@ const Productos = () => {
               </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-              {productos
-                  .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()))
-                  .filter(p => {
-                    if (!stockFiltro) return true
-                    if (stockFiltro === '>4') return p.stock > 4
-                    return p.stock === parseInt(stockFiltro)
-                  })
-                  .filter(p =>
-                      categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
-                  )
-                  .map((producto) => (
-                      <tr key={producto.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                <Package className="h-6 w-6 text-orange-600" />
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {producto.nombre}
-                              </div>
-                              {producto.descripcion && (
-                                  <div className="text-sm text-gray-500">
-                                    {producto.descripcion}
-                                  </div>
-                              )}
-                            </div>
+              {productosFiltrados.map((producto) => (
+                  <tr key={producto.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-orange-600" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {getCategoriaNombre(producto.categoria_id)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {formatPrice(producto.precio)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {formatPrice(producto.precio_kg)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatPrice(producto.precio_costo)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          (producto.porcentaje_ganancia || 0) >= 50
-                              ? 'bg-green-100 text-green-800'
-                              : (producto.porcentaje_ganancia || 0) >= 30
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                      }`}>
-                        {producto.porcentaje_ganancia || 0}%
-                      </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          producto.stock <= 4
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-green-100 text-green-800'
-                      }`}>
-                        {producto.stock} unidades
-                      </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                                onClick={() => handleEdit(producto)}
-                                className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(producto.id!)}
-                                className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                            {producto.stock > 0 && (
-                                <button
-                                    onClick={() => handleAbrirBolsa(producto.id!)}
-                                    className="text-orange-600 hover:text-orange-900"
-                                    title="Abrir bolsa (restar 1 unidad)"
-                                >
-                                  📦
-                                </button>
-                            )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {producto.nombre}
                           </div>
-                        </td>
-                      </tr>
-                  ))}
+                          {producto.descripcion && (
+                              <div className="text-sm text-gray-500">
+                                {producto.descripcion}
+                              </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getCategoriaNombre(producto.categoria_id)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {formatPrice(producto.precio)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {formatPrice(producto.precio_kg)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatPrice(producto.precio_costo)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        (producto.porcentaje_ganancia || 0) >= 50
+                            ? 'bg-green-100 text-green-800'
+                            : (producto.porcentaje_ganancia || 0) >= 30
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                    }`}>
+                      {producto.porcentaje_ganancia || 0}%
+                    </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        (producto.stock || 0) <= 4
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-green-100 text-green-800'
+                    }`}>
+                      {producto.stock} unidades
+                    </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                            onClick={() => handleEdit(producto)}
+                            className="text-indigo-600 hover:text-indigo-900 p-1"
+                            title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => handleDelete(producto.id!)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        {(producto.stock || 0) > 0 && (
+                            <button
+                                onClick={() => handleAbrirBolsa(producto.id!)}
+                                className="text-orange-600 hover:text-orange-900 p-1"
+                                title="Abrir bolsa (restar 1 unidad)"
+                            >
+                              📦
+                            </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+              ))}
               </tbody>
             </table>
           </div>
+
+          {/* VISTA DE TARJETA (MÓVIL) */}
+          <div className="md:hidden space-y-4">
+            {productosFiltrados.map((producto) => (
+                <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
+                  {/* Título y Acciones */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 pr-4">
+                      <h3 className="text-lg font-bold text-gray-900 truncate">{producto.nombre}</h3>
+                      {producto.descripcion && <p className="text-xs text-gray-500 truncate mt-1">{producto.descripcion}</p>}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleDelete(producto.id!)} className="text-red-600 hover:text-red-900 p-1">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      {(producto.stock || 0) > 0 && (
+                          <button onClick={() => handleAbrirBolsa(producto.id!)} className="text-orange-600 hover:text-orange-900 p-1">
+                            📦
+                          </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Precios y Stock (Grid 2 columnas) */}
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t pt-3">
+                    <div>
+                      <span className="text-xs text-gray-500 block">Precio Venta</span>
+                      <span className="font-bold text-base text-gray-900">{formatPrice(producto.precio)}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block">Costo / Ganancia</span>
+                      <span className="font-bold text-base text-gray-900">{formatPrice(producto.precio_costo)} /
+                    <span className={`ml-1 text-xs font-medium ${
+                        (producto.porcentaje_ganancia || 0) >= 50 ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                      {producto.porcentaje_ganancia || 0}%
+                    </span>
+                  </span>
+                    </div>
+                    <div className="col-span-1">
+                      <span className="text-xs text-gray-500 block">Stock</span>
+                      <span className={`font-bold text-base ${
+                          (producto.stock || 0) <= 4 ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                    {producto.stock} uds
+                  </span>
+                    </div>
+                    <div className="col-span-1">
+                      <span className="text-xs text-gray-500 block">Categoría</span>
+                      <span className="text-sm font-medium text-gray-700">{getCategoriaNombre(producto.categoria_id)}</span>
+                    </div>
+                    {producto.precio_kg ? (
+                        <div className="col-span-2">
+                          <span className="text-xs text-gray-500 block">Precio x Kg</span>
+                          <span className="text-sm font-medium text-gray-700">{formatPrice(producto.precio_kg)}</span>
+                        </div>
+                    ) : null}
+                  </div>
+                </div>
+            ))}
+          </div>
         </div>
 
-        {/* Modal */}
+        {/* Modal - Se mantiene el tamaño responsive del Modal de Clientes */}
         {showModal && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-              <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
                 <div className="mt-3">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     {editingProducto ? 'Editar Producto' : 'Nuevo Producto'}
@@ -453,7 +524,7 @@ const Productos = () => {
                           required
                           value={formData.nombre}
                           onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                          className="input-field"
+                          className={inputFieldClass}
                       />
                     </div>
                     <div>
@@ -463,7 +534,7 @@ const Productos = () => {
                       <textarea
                           value={formData.descripcion}
                           onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                          className="input-field"
+                          className={inputFieldClass}
                           rows={3}
                       />
                     </div>
@@ -476,10 +547,11 @@ const Productos = () => {
                           step="0.01"
                           value={formData.precio_kg}
                           onChange={(e) => setFormData({...formData, precio_kg: e.target.value})}
-                          className="input-field"
+                          className={inputFieldClass}
                           placeholder="0.00"
                       />
                     </div>
+                    {/* RESPONSIVE: Grid de 2 columnas para Precio de Costo y Ganancia */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
@@ -490,7 +562,7 @@ const Productos = () => {
                             step="0.01"
                             value={formData.precio_costo}
                             onChange={(e) => handlePrecioCostoChange(e.target.value)}
-                            className="input-field"
+                            className={inputFieldClass}
                             placeholder="0.00"
                         />
                       </div>
@@ -504,7 +576,7 @@ const Productos = () => {
                               step="0.01"
                               value={formData.porcentaje_ganancia}
                               onChange={(e) => handlePorcentajeChange(e.target.value)}
-                              className="input-field rounded-r-none"
+                              className={`${inputFieldClass} rounded-r-none`}
                               placeholder="30"
                           />
                           <button
@@ -517,6 +589,7 @@ const Productos = () => {
                         </div>
                       </div>
                     </div>
+                    {/* RESPONSIVE: Grid de 2 columnas para Precio de Venta y Stock */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
@@ -528,7 +601,7 @@ const Productos = () => {
                             required
                             value={formData.precio}
                             onChange={(e) => handlePrecioVentaChange(e.target.value)}
-                            className="input-field"
+                            className={inputFieldClass}
                             placeholder="0.00"
                         />
                       </div>
@@ -540,10 +613,11 @@ const Productos = () => {
                             type="number"
                             value={formData.stock}
                             onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                            className="input-field"
+                            className={inputFieldClass}
                         />
                       </div>
                     </div>
+                    {/* RESPONSIVE: Grid de 2 columnas para Categoría y Código */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
@@ -552,7 +626,7 @@ const Productos = () => {
                         <select
                             value={formData.categoria_id}
                             onChange={(e) => setFormData({...formData, categoria_id: e.target.value})}
-                            className="input-field"
+                            className={inputFieldClass}
                         >
                           <option value="">Seleccione</option>
                           {categorias.map((c) => (
@@ -570,7 +644,7 @@ const Productos = () => {
                             type="text"
                             value={formData.codigo}
                             onChange={(e) => setFormData({...formData, codigo: e.target.value})}
-                            className="input-field"
+                            className={inputFieldClass}
                         />
                       </div>
                     </div>
