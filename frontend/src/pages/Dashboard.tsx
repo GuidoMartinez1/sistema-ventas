@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   CreditCard,
   Calendar,
+  X, // Asegurar que X esté importado para el botón Limpiar
   Zap,
   Package,
 } from 'lucide-react'
@@ -115,6 +116,7 @@ const Dashboard = () => {
     )
   }
 
+  // CORRECCIÓN APLICADA: Usar formatPrice para todos los valores monetarios
   const cards = [
     { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700' },
     { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600' },
