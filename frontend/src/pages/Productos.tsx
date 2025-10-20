@@ -448,14 +448,15 @@ const Productos = () => {
                 <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
                   {/* Título y Acciones */}
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 pr-4">
-                      {/* CORRECCIÓN: Se agrega 'truncate' al nombre */}
+                    {/* CORRECCIÓN: Contenedor con overflow hidden y truncate forzado */}
+                    <div className="min-w-0 flex-1 pr-2">
                       <h3 className="text-lg font-bold text-gray-900 truncate">
                         {producto.nombre}
                       </h3>
                       {producto.descripcion && <p className="text-xs text-gray-500 truncate mt-1">{producto.descripcion}</p>}
                     </div>
-                    <div className="flex space-x-2 flex-shrink-0">
+                    {/* El grupo de botones mantiene su espacio fijo */}
+                    <div className="flex space-x-2 flex-shrink-0 ml-auto">
                       <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
                         <Edit className="h-4 w-4" />
                       </button>
