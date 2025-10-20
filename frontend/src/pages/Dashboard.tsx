@@ -117,14 +117,14 @@ const Dashboard = () => {
   }
 
   const cards = [
-    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700' },
-    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600' },
-    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500' },
-    { title: 'Ingresos (Sin Deudas)', value: formatPrice(totalVentasMonto), icon: DollarSign, color: 'bg-green-500' },
-    { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600' },
-    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500' },
-    { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600' },
-    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-orange-500' },
+    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700', iconColor: 'text-orange-700' },
+    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600', iconColor: 'text-orange-600' },
+    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500', iconColor: 'text-blue-500' },
+    { title: 'Ingresos (Sin Deudas)', value: formatPrice(totalVentasMonto), icon: DollarSign, color: 'bg-green-500', iconColor: 'text-green-500' },
+    { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600', iconColor: 'text-green-600' },
+    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500', iconColor: 'text-yellow-500' },
+    { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600', iconColor: 'text-yellow-600' },
+    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-orange-500', iconColor: 'text-orange-500' },
   ]
 
   return (
@@ -171,35 +171,24 @@ const Dashboard = () => {
         </div>
 
         {/* Tarjetas de Totales */}
-        {/* RESPONSIVE: 2 columnas en móvil, 4 o 5 en desktop */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+        {/* RESPONSIVE: 2 columnas en móvil, 4 o 5 en desktop. Se reduce el gap a gap-3. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {cards.map((card) => (
-              <div key={card.title} className={`${cardClass} p-3 sm:p-4`}>
-                {/* CORRECCIÓN: Estructura interna para mejor visibilidad y evitar truncate */}
-                <div className="flex items-start">
-                  <div className={`p-3 rounded-lg ${card.color} flex-shrink-0`}>
-                    <card.icon className="h-5 w-5 text-white" />
+              <div key={card.title} className={`${cardClass} p-4 flex flex-col justify-between h-full`}>
+                {/* CORRECCIÓN: Estructura interna simplificada y con ícono más grande */}
+                <div className="flex flex-col">
+                  <div className={`p-2 rounded-lg mb-2 w-fit bg-opacity-10 ${card.iconColor}`}>
+                    {/* Ícono más grande en móvil */}
+                    <card.icon className={`h-6 w-6 ${card.iconColor}`} />
                   </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 leading-tight">
-                      {card.title} {/* Título completo */}
-                    </p>
-                    <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight mt-1">
-                      {card.value} {/* Valor completo */}
-                    </p>
-                  </div>
+
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 leading-tight">
+                    {card.title}
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mt-1">
+                    {card.value}
+                  </p>
                 </div>
-                {/* Si el espacio horizontal es muy limitado, una alternativa (aunque no usada aquí) es forzar vertical en móvil:
-            <div className="flex flex-col gap-2">
-                <div className={`p-3 rounded-lg ${card.color} w-fit`}>
-                    <card.icon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                    <p className="text-sm font-medium text-gray-600">{card.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-                </div>
-            </div>
-            */}
               </div>
           ))}
         </div>
