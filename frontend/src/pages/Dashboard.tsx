@@ -117,14 +117,14 @@ const Dashboard = () => {
   }
 
   const cards = [
-    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700', iconColor: 'text-orange-700' },
-    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600', iconColor: 'text-orange-600' },
-    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500', iconColor: 'text-blue-500' },
-    { title: 'Ingresos (Sin Deudas)', value: formatPrice(totalVentasMonto), icon: DollarSign, color: 'bg-green-500', iconColor: 'text-green-500' },
-    { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600', iconColor: 'text-green-600' },
-    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500', iconColor: 'text-yellow-500' },
-    { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600', iconColor: 'text-yellow-600' },
-    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-orange-500', iconColor: 'text-orange-500' },
+    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700', iconColor: 'text-orange-700', borderColor: 'border-orange-700' },
+    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600', iconColor: 'text-orange-600', borderColor: 'border-orange-600' },
+    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500', iconColor: 'text-blue-500', borderColor: 'border-blue-500' },
+    { title: 'Ingresos (Sin Deudas)', value: formatPrice(totalVentasMonto), icon: DollarSign, color: 'bg-green-500', iconColor: 'text-green-500', borderColor: 'border-green-500' },
+    { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600', iconColor: 'text-green-600', borderColor: 'border-green-600' },
+    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500', iconColor: 'text-yellow-500', borderColor: 'border-yellow-500' },
+    { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600', iconColor: 'text-yellow-600', borderColor: 'border-yellow-600' },
+    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-red-500', iconColor: 'text-red-500', borderColor: 'border-red-500' }, // Usamos red para alertas de stock/bolsas
   ]
 
   return (
@@ -174,18 +174,18 @@ const Dashboard = () => {
         {/* RESPONSIVE: 2 columnas en móvil, 4 o 5 en desktop. Se reduce el gap a gap-3. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {cards.map((card) => (
-              <div key={card.title} className={`${cardClass} p-4 flex flex-col justify-between h-full`}>
-                {/* CORRECCIÓN: Estructura interna simplificada y con ícono más grande */}
-                <div className="flex flex-col">
-                  <div className={`p-2 rounded-lg mb-2 w-fit bg-opacity-10 ${card.iconColor}`}>
-                    {/* Ícono más grande en móvil */}
-                    <card.icon className={`h-6 w-6 ${card.iconColor}`} />
+              // CORRECCIÓN: Se aplica el borde y se mantiene la altura mínima para el diseño.
+              <div key={card.title} className={`bg-white shadow-lg rounded-xl border-t-4 ${card.borderColor} p-4 flex flex-col justify-between h-full hover:shadow-xl transition duration-300`}>
+
+                <div className="flex flex-col gap-1">
+                  <div className={`p-2 rounded-lg mb-2 w-fit ${card.color} text-white flex-shrink-0`}>
+                    <card.icon className="h-6 w-6 text-white" />
                   </div>
 
                   <p className="text-xs sm:text-sm font-medium text-gray-600 leading-tight">
                     {card.title}
                   </p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mt-1">
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">
                     {card.value}
                   </p>
                 </div>
