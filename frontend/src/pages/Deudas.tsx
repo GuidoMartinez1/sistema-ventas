@@ -1,266 +1,277 @@
 import { useEffect, useState } from 'react'
-import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle } from 'lucide-react'
-import { deudasAPI } from '../services/api'
-import { Deuda } from '../services/api'
-import toast from 'react-hot-toast'
+import {
+  ShoppingCart,
+  DollarSign,
+  AlertTriangle,
+  ShoppingBag,
+  CreditCard,
+  Calendar,
+  X,
+  Zap,
+  Package,
+} from 'lucide-react'
+import { ventasAPI, comprasAPI, productosAPI, bolsasAbiertasAPI, statsAPI } from '../services/api'
+import { Venta, Compra, Producto, BolsaAbierta, Stats } from '../services/api'
+import { Link } from 'react-router-dom'
+
+// Clases de utilidad
+const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
+const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
+
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
   return '$' + Number(value).toLocaleString("es-AR");
 };
 
-const Deudas = () => {
-  const [deudas, setDeudas] = useState<Deuda[]>([])
+
+const Dashboard = () => {
+  const [ventas, setVentas] = useState<Venta[]>([])
+  const [compras, setCompras] = useState<Compra[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [bajoStock, setBajoStock] = useState<Producto[]>([])
+  const [bolsasAbiertas, setBolsasAbiertas] = useState<BolsaAbierta[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
-
-  // modal / selección de pago
-  const [deudaSeleccionada, setDeudaSeleccionada] = useState<number | null>(null)
-  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('efectivo')
-  const [confirmLoading, setConfirmLoading] = useState(false)
-  const [tipoPago, setTipoPago] = useState<'total' | 'parcial'>('total')
-  const [montoParcial, setMontoParcial] = useState("")
-
-
-  const [search, setSearch] = useState("")
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
+  const [mostrarTodoBajoStock, setMostrarTodoBajoStock] = useState(false)
 
   useEffect(() => {
-    fetchDeudas()
+    fetchData()
   }, [])
 
-  const fetchDeudas = async () => {
+  const fetchData = async () => {
     try {
-      setLoading(true)
-      const response = await deudasAPI.getAll()
-      setDeudas(response.data)
+      const [ventasResponse, comprasResponse, statsResponse, bajoStockResponse, bolsasResponse] = await Promise.all([
+        ventasAPI.getAll(),
+        comprasAPI.getAll(),
+        statsAPI.getStats(),
+        productosAPI.getBajoStock(),
+        bolsasAbiertasAPI.getAll()
+      ])
+      setVentas(ventasResponse.data)
+      setCompras(comprasResponse.data)
+      setStats(statsResponse.data)
+      setBajoStock(bajoStockResponse.data)
+      setBolsasAbiertas(bolsasResponse.data)
     } catch (error) {
-      toast.error('Error al cargar las deudas')
+      console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredDeudas = deudas.filter((d) =>
-      d.cliente_nombre?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtrarPorRango = <T extends { fecha?: string }>(items: T[]) => {
+    return items.filter(item => {
+      if (!item.fecha) return false
 
-  const openModalPago = (deudaId: number) => {
-    setDeudaSeleccionada(deudaId)
-    setMetodoPagoSeleccionado('efectivo') // default
-  }
+      const fechaItem = new Date(item.fecha)
+      const fechaStr = fechaItem.toLocaleDateString('en-CA') // normalizamos a yyyy-mm-dd
 
+      if (fechaDesde && fechaStr < fechaDesde) return false
+      if (fechaHasta && fechaStr > fechaHasta) return false
 
-  const handleConfirmarPago = async () => {
-    if (!deudaSeleccionada) return
-
-    try {
-      setConfirmLoading(true)
-      await deudasAPI.marcarComoPagada(
-          deudaSeleccionada,
-          metodoPagoSeleccionado,
-          tipoPago,
-          montoParcial
-      )
-
-      toast.success(tipoPago === 'total'
-          ? 'Deuda pagada en su totalidad'
-          : 'Pago parcial registrado')
-
-      setDeudaSeleccionada(null)
-      fetchDeudas()
-    } catch (error) {
-      toast.error('Error al registrar el pago')
-    } finally {
-      setConfirmLoading(false)
-    }
-  }
-
-  const toggleExpanded = (deudaId: number) => {
-    setExpandedDeuda(expandedDeuda === deudaId ? null : deudaId)
-  }
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      return true
     })
   }
 
 
+  const ventasFiltradas = filtrarPorRango(ventas)
+  const comprasFiltradas = filtrarPorRango(compras)
+
+  const ventasCompletadas = ventasFiltradas.filter(v => v.estado !== 'adeuda')
+  const ventasAdeudadas = ventasFiltradas.filter(v => v.estado === 'adeuda')
+
+  const totalVentas = ventasCompletadas.length
+  const totalVentasConDeudas = ventasFiltradas.length
+  const totalCompras = comprasFiltradas.length
+
+  const totalVentasMonto = ventasCompletadas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+  const totalVentasConDeudasMonto = ventasFiltradas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+
+  const totalDeudas = ventasAdeudadas.length
+  const totalDeudasMonto = ventasAdeudadas.reduce((acc, v) => acc + Number(v.total || 0), 0)
+
+  const setHoy = () => {
+    const hoy = new Date()
+    const yyyy = hoy.getFullYear()
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0')
+    const dd = String(hoy.getDate()).padStart(2, '0')
+    const fechaLocal = `${yyyy}-${mm}-${dd}`
+    setFechaDesde(fechaLocal)
+    setFechaHasta(fechaLocal)
+  }
+
+
+  const limpiarFechas = () => {
+    setFechaDesde('')
+    setFechaHasta('')
+  }
 
   if (loading) {
     return (
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
         </div>
     )
   }
 
+  const cards = [
+    { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700', iconColor: 'text-orange-700', borderColor: 'border-orange-700' },
+    { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600', iconColor: 'text-orange-600', borderColor: 'border-orange-600' },
+    { title: 'Total Compras', value: totalCompras, icon: ShoppingBag, color: 'bg-blue-500', iconColor: 'text-blue-500', borderColor: 'border-blue-500' },
+    { title: 'Ingresos (Sin Deudas)', value: formatPrice(totalVentasMonto), icon: DollarSign, color: 'bg-green-500', iconColor: 'text-green-500', borderColor: 'border-green-500' },
+    { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600', iconColor: 'text-green-600', borderColor: 'border-green-600' },
+    { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500', iconColor: 'text-yellow-500', borderColor: 'border-yellow-500' },
+    { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600', iconColor: 'text-yellow-600', borderColor: 'border-yellow-600' },
+    { title: 'Bolsas Abiertas', value: bolsasAbiertas.length, icon: AlertTriangle, color: 'bg-red-500', iconColor: 'text-red-500', borderColor: 'border-red-500' }, // Usamos red para alertas de stock/bolsas
+  ]
+
   return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-            <DollarSign className="h-8 w-8 mr-3 text-orange-600" />
-            Deudas Pendientes
-          </h1>
-          <p className="text-gray-600">
-            Gestiona las ventas registradas como deudas y marca como pagadas cuando corresponda
-          </p>
-        </div>
-        <div className="mb-6">
-          <input
-              type="text"
-              placeholder="Buscar por cliente..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full md:w-1/2 border border-gray-300 rounded-lg px-3 py-2
-               focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-        </div>
-        {deudas.length === 0 ? (
-            <div className="text-center py-12">
-              <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay deudas pendientes</h3>
-              <p className="text-gray-500">Todas las ventas están al día</p>
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard - AliMar</h1>
+            <p className="text-gray-600">Resumen de tu negocio de mascotas</p>
+          </div>
+
+          {/* RESPONSIVE: Filtros en grid en móvil */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full md:w-auto">
+            <label className='hidden sm:inline-flex items-center gap-1 text-gray-600 text-sm'>
+              <Calendar className="h-5 w-5" />
+            </label>
+            <input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className={`${inputFieldClass} w-full sm:w-36`}
+            />
+            <span className="hidden sm:inline text-gray-500">-</span>
+            <input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className={`${inputFieldClass} w-full sm:w-36`}
+            />
+            <div className='col-span-2 flex gap-2'>
+              <button
+                  onClick={setHoy}
+                  className="px-3 py-2 bg-orange-500 text-white rounded-lg shadow hover:bg-orange-600 transition w-full"
+              >
+                Hoy
+              </button>
+              <button
+                  onClick={limpiarFechas}
+                  className="px-3 py-2 border border-gray-400 text-gray-700 rounded-lg hover:bg-gray-100 transition flex items-center gap-1 w-full"
+              >
+                <X className='h-4 w-4' /> Limpiar
+              </button>
             </div>
-        ) : (
-            <div className="space-y-4">
-              {filteredDeudas.map((deuda) => (
-                  <div key={deuda.id} className="bg-white rounded-lg shadow-md border border-gray-200">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2 gap-4 flex-wrap">
-                            <User className="h-5 w-5 text-gray-500 mr-2" />
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {deuda.cliente_nombre || 'Cliente sin nombre'}
-                            </h3>
-                            <span className="ml-3 px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                        Deuda Pendiente
-                      </span>
-                          </div>
+          </div>
+        </div>
 
-                          <div className="flex flex-col md:flex-row md:items-center gap-2 text-sm text-gray-600 mb-2">
-                            {deuda.telefono && (
-                                <span className="flex items-center"><Phone className="h-4 w-4 mr-1" />{deuda.telefono}</span>
-                            )}
-                            {deuda.direccion && (
-                                <span className="flex items-center"><span className="font-semibold mr-1">Dirección:</span>{deuda.direccion}</span>
-                            )}
-                          </div>
+        {/* Tarjetas de Totales */}
+        {/* RESPONSIVE: 2 columnas en móvil, 4 o 5 en desktop. Se reduce el gap a gap-3. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          {cards.map((card) => (
+              // CORRECCIÓN: Se aplica el borde y se mantiene la altura mínima para el diseño.
+              <div key={card.title} className={`bg-white shadow-lg rounded-xl border-t-4 ${card.borderColor} p-4 flex flex-col justify-between h-full hover:shadow-xl transition duration-300`}>
 
-                          {/* Fecha de la venta / deuda */}
-                          <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>{formatDate(deuda.fecha)}</span>
-                          </div>
-                        </div>
-
-                        <div className="text-right ml-4">
-                          <div className="text-2xl font-bold text-orange-600">
-                            {formatPrice(deuda.total)}
-                          </div>
-                          <button
-                              onClick={() => openModalPago(deuda.id!)}
-                              className="mt-2 flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Marcar como pagada
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                          onClick={() => toggleExpanded(deuda.id!)}
-                          className="mt-4 flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        <Package className="h-4 w-4 mr-1" />
-                        {expandedDeuda === deuda.id ? 'Ocultar' : 'Ver'} productos ({deuda.detalles.length})
-                      </button>
-                    </div>
-
-                    {expandedDeuda === deuda.id && (
-                        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
-                          <h4 className="font-medium text-gray-900 mb-3">Productos adeudados:</h4>
-                          <div className="space-y-2">
-                            {deuda.detalles.map((detalle, index) => (
-                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg border">
-                                  <div>
-                                    <span className="font-medium text-gray-900">{detalle.producto_nombre}</span>
-                                    <span className="text-sm text-gray-500 ml-2">
-                            ${detalle.precio_unitario} c/u
-                          </span>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-sm text-gray-600">
-                                      Cantidad: {detalle.cantidad}
-                                    </div>
-                                    <div className="font-medium text-gray-900">
-                                      {formatPrice(detalle.subtotal)}
-                                    </div>
-                                  </div>
-                                </div>
-                            ))}
-                          </div>
-                        </div>
-                    )}
+                <div className="flex flex-col gap-1">
+                  <div className={`p-2 rounded-lg mb-2 w-fit ${card.color} text-white flex-shrink-0`}>
+                    <card.icon className="h-6 w-6 text-white" />
                   </div>
-              ))}
+
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 leading-tight">
+                    {card.title}
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">
+                    {card.value}
+                  </p>
+                </div>
+              </div>
+          ))}
+        </div>
+
+        {bajoStock.length > 0 && (
+            <div className={cardClass}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Productos con Bajo Stock ({bajoStock.filter(p => p.stock === 0 || p.stock === 1).length})
+                  </h2>
+                </div>
+                {!mostrarTodoBajoStock && (
+                    <button
+                        onClick={() => setMostrarTodoBajoStock(true)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    >
+                      Ver todos →
+                    </button>
+                )}
+              </div>
+
+              {/* RESPONSIVE: Grilla de 1, 2 o 3 columnas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(mostrarTodoBajoStock
+                        ? bajoStock.filter(p => p.stock === 0 || p.stock === 1)
+                        : bajoStock.filter(p => p.stock === 0 || p.stock === 1).slice(0, 6)
+                ).map((producto) => (
+                    <div
+                        key={producto.id}
+                        className="flex items-center justify-between p-3 bg-red-50 rounded-lg"
+                    >
+                      <div className='min-w-0 pr-2'>
+                        <h3 className="font-medium text-gray-900 truncate">{producto.nombre}</h3>
+                        <p className="text-sm text-gray-500">Stock: {producto.stock}</p>
+                      </div>
+                      <span className="text-red-600 font-bold flex-shrink-0">{producto.stock} uds</span>
+                    </div>
+                ))}
+              </div>
+
+              {mostrarTodoBajoStock && (
+                  <div className="mt-2 flex justify-end">
+                    <button
+                        onClick={() => setMostrarTodoBajoStock(false)}
+                        className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                    >
+                      Mostrar menos ↑
+                    </button>
+                  </div>
+              )}
             </div>
         )}
 
-        {/* Modal de método de pago */}
-        {deudaSeleccionada && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                <h2 className="text-lg font-bold mb-4">Seleccionar método de pago</h2>
-                <p className="text-sm text-gray-700 mb-3">Podés cambiar la forma de pago con la que se registró originalmente la venta.</p>
-                <select
-                    value={metodoPagoSeleccionado}
-                    onChange={(e) => setMetodoPagoSeleccionado(e.target.value)}
-                    className="w-full border p-2 rounded mb-4">
-                  <option value="efectivo">Efectivo</option>
-                  <option value="mercadopago">MercadoPago</option>
-                  <option value="tarjeta">Tarjeta</option>
-                </select>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de pago</label>
-                  <select
-                      value={tipoPago}
-                      onChange={(e) => setTipoPago(e.target.value as 'total' | 'parcial')}
-                      className="w-full border p-2 rounded">
-                    <option value="total">Total</option>
-                    <option value="parcial">Parcial</option>
-                  </select>
+        {bolsasAbiertas.length > 0 && (
+            <div className={cardClass}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-orange-500 mr-2" />
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Bolsas Abiertas ({bolsasAbiertas.length})
+                  </h2>
                 </div>
-                {tipoPago === 'parcial' && (
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Monto a pagar
-                      </label>
-                      <input
-                          type="number"
-                          value={montoParcial}
-                          onChange={(e) => setMontoParcial(e.target.value)}
-                          className="w-full border p-2 rounded"
-                          placeholder="Ingrese monto"
-                      />
+                <Link to="/bolsas-abiertas" className="text-orange-600 hover:text-orange-700 text-sm font-medium">
+                  Ver todas →
+                </Link>
+              </div>
+              {/* RESPONSIVE: Grilla de 1, 2 o 3 columnas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bolsasAbiertas.slice(0, 6).map((bolsa) => (
+                    <div key={bolsa.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                      <div className='min-w-0 pr-2'>
+                        <h3 className="font-medium text-gray-900 truncate">{bolsa.producto_nombre}</h3>
+                        <p className="text-sm text-gray-500">
+                          Abierta: {new Date(bolsa.fecha_apertura!).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="text-orange-600 font-bold flex-shrink-0">
+                  {new Date(bolsa.fecha_apertura!).toLocaleDateString()}
+                </span>
                     </div>
-                )}
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-1 bg-gray-300 rounded">Cancelar</button>
-                  <button
-                      onClick={handleConfirmarPago}
-                      className="bg-orange-500 hover:bg-orange-600 text-white rounded flex items-center"
-                      disabled={confirmLoading}>
-                    {confirmLoading ? 'Procesando...' : 'Confirmar'}
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
         )}
@@ -268,4 +279,4 @@ const Deudas = () => {
   )
 }
 
-export default Deudas
+export default Dashboard
