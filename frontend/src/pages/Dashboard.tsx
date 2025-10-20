@@ -6,7 +6,7 @@ import {
   ShoppingBag,
   CreditCard,
   Calendar,
-  X, // Asegurar que X esté importado para el botón Limpiar
+  X,
   Zap,
   Package,
 } from 'lucide-react'
@@ -116,7 +116,6 @@ const Dashboard = () => {
     )
   }
 
-  // CORRECCIÓN APLICADA: Usar formatPrice para todos los valores monetarios
   const cards = [
     { title: 'Total Ventas', value: totalVentas, icon: ShoppingCart, color: 'bg-orange-700' },
     { title: 'Ventas + Deudas', value: totalVentasConDeudas, icon: ShoppingCart, color: 'bg-orange-600' },
@@ -175,16 +174,32 @@ const Dashboard = () => {
         {/* RESPONSIVE: 2 columnas en móvil, 4 o 5 en desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {cards.map((card) => (
-              <div key={card.title} className={cardClass}>
-                <div className="flex items-center">
+              <div key={card.title} className={`${cardClass} p-3 sm:p-4`}>
+                {/* CORRECCIÓN: Estructura interna para mejor visibilidad y evitar truncate */}
+                <div className="flex items-start">
                   <div className={`p-3 rounded-lg ${card.color} flex-shrink-0`}>
-                    <card.icon className="h-6 w-6 text-white" />
+                    <card.icon className="h-5 w-5 text-white" />
                   </div>
-                  <div className="ml-4 min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{card.title}</p>
-                    <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{card.value}</p>
+                  <div className="ml-3 flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 leading-tight">
+                      {card.title} {/* Título completo */}
+                    </p>
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight mt-1">
+                      {card.value} {/* Valor completo */}
+                    </p>
                   </div>
                 </div>
+                {/* Si el espacio horizontal es muy limitado, una alternativa (aunque no usada aquí) es forzar vertical en móvil:
+            <div className="flex flex-col gap-2">
+                <div className={`p-3 rounded-lg ${card.color} w-fit`}>
+                    <card.icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-gray-600">{card.title}</p>
+                    <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                </div>
+            </div>
+            */}
               </div>
           ))}
         </div>
