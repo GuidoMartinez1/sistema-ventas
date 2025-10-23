@@ -72,9 +72,16 @@ router.post("/", async (req, res) => {
           // Recalculamos la ganancia con el nuevo precio de costo
           nuevoPorcentajeGanancia =
               ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
+
+          // INSERTAR EN HISTORIAL DE COSTOS (NUEVO)
+          await client.query(
+              `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo)
+               VALUES ($1, $2, $3, $4)`,
+              [prod.producto_id, compraId, costoActual, nuevoPrecioCosto]
+          );
         }
 
-        // El stock SIEMPRE se actualiza, pero el precio_costo solo si se cumplió la condición.
+        // El stock SIEMPRE se actualiza, pero el precio_costo y porcentaje_ganancia solo si se cumplió la condición.
         await client.query(
             `UPDATE productos 
            SET stock = stock + $1,
@@ -130,6 +137,115 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener compra:", error);
     res.status(500).json({ error: "Error al obtener compra" });
+  }
+});
+
+// 📌 Eliminar una compra y revertir stock/costo (NUEVO)
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Obtener detalles de la compra
+    const detallesResult = await client.query(
+        `SELECT producto_id, cantidad, precio_unitario 
+       FROM detalles_compra 
+       WHERE compra_id = $1`,
+        [id]
+    );
+
+    if (detallesResult.rows.length === 0) {
+      // Revertir solo si la compra existe, pero puede que no tenga detalles
+      const compraCheck = await client.query(`SELECT 1 FROM compras WHERE id = $1`, [id]);
+      if (compraCheck.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "Compra no encontrada" });
+      }
+      // Si la encontró, pero sin detalles, seguimos al paso 3 para eliminarla
+    }
+
+    // 2. Revertir stock y costo para cada producto
+    for (const detalle of detallesResult.rows) {
+      const { producto_id, cantidad } = detalle;
+
+      // ************** REVERTIR COSTO (si aplica) **************
+      // Verificar si esta compra CAUSÓ un cambio de costo
+      const historialResult = await client.query(
+          `SELECT precio_costo_anterior 
+         FROM historial_costos 
+         WHERE compra_id = $1 AND producto_id = $2`,
+          [id, producto_id]
+      );
+
+      let nuevoCostoParaProducto = null;
+      let ganancia = null;
+      let costoRevertido = false;
+
+      // Si la compra modificó el costo, revertimos al costo anterior
+      if (historialResult.rows.length > 0) {
+        const costoAnterior = historialResult.rows[0].precio_costo_anterior;
+        nuevoCostoParaProducto = costoAnterior;
+        costoRevertido = true;
+
+        // **IMPORTANTE**: Eliminamos el registro del historial
+        await client.query(
+            `DELETE FROM historial_costos 
+           WHERE compra_id = $1 AND producto_id = $2`,
+            [id, producto_id]
+        );
+      }
+
+      // Obtenemos el precio de venta para recalcular la ganancia o para mantener el costo actual
+      const currentProd = await client.query(
+          `SELECT precio, precio_costo FROM productos WHERE id = $1`,
+          [producto_id]
+      );
+
+      if (currentProd.rows.length > 0) {
+        const { precio: precioVenta, precio_costo: costoActualDB } = currentProd.rows[0];
+
+        if (!costoRevertido) {
+          // Si el costo NO cambió, mantenemos el costo actual de la BD
+          nuevoCostoParaProducto = costoActualDB;
+        }
+
+        // Recalculamos la ganancia con el costo que vamos a aplicar
+        ganancia = ((parseFloat(precioVenta) - parseFloat(nuevoCostoParaProducto)) / parseFloat(nuevoCostoParaProducto)) * 100;
+      }
+
+
+      // ************** REVERTIR STOCK Y ACTUALIZAR COSTO **************
+      await client.query(
+          `UPDATE productos 
+         SET stock = stock - $1,
+             precio_costo = $2,
+             porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $4`,
+          [cantidad, nuevoCostoParaProducto, ganancia, producto_id]
+      );
+    }
+
+    // 3. Eliminar la compra y sus detalles
+    // (Asumiendo que detalles_compra se borra en cascada o lo borramos explícitamente)
+    await client.query(`DELETE FROM detalles_compra WHERE compra_id = $1`, [id]);
+    const compraResult = await client.query(`DELETE FROM compras WHERE id = $1 RETURNING *`, [id]);
+
+    if (compraResult.rows.length === 0) {
+      throw new Error("Compra no encontrada después de revertir.");
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "Compra eliminada y stock/costo revertido con éxito" });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error al eliminar compra y revertir:", error);
+    res.status(500).json({ error: "Error al eliminar compra y revertir" });
+  } finally {
+    client.release();
   }
 });
 
