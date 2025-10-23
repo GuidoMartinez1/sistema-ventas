@@ -200,7 +200,7 @@ const Compras = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      <DollarIcon className="h-4 w-4 text-red-600 inline mr-1" />
+                      {/* CÓDIGO CORREGIDO: Eliminamos el DollarIcon */}
                       <span className='text-red-600 font-bold'>{formatPrice(compra.total)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
