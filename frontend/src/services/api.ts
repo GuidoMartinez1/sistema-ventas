@@ -131,6 +131,8 @@ export interface BolsaAbierta {
   estado?: string
   producto_nombre?: string
   stock_actual?: number
+  is_duplicate?: boolean;        // <-- NUEVO: true si hay más de una bolsa abierta para el producto
+  total_open_bags?: number;      // <-- NUEVO: número total de bolsas abiertas para el producto
 }
 
 export interface FuturoPedido {

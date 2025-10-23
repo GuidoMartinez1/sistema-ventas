@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Package, Calendar, Trash2, AlertTriangle, Box } from 'lucide-react'
+import { Package, Calendar, Trash2, AlertTriangle, Box, ListChecks } from 'lucide-react'
 import { bolsasAbiertasAPI } from '../services/api'
 import { BolsaAbierta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -20,7 +20,24 @@ const BolsasAbiertas = () => {
   const fetchBolsas = async () => {
     try {
       const response = await bolsasAbiertasAPI.getAll()
-      setBolsas(response.data)
+
+      // Procesar bolsas para identificar cuál es la más antigua
+      const processedBags = response.data.map((bag, index, array) => {
+        // Si el backend te devuelve las bolsas ordenadas por producto_id y luego fecha_apertura ASC,
+        // el primer elemento de un grupo de duplicados es el más antiguo.
+        if (bag.is_duplicate && index > 0 && array[index - 1].producto_id !== bag.producto_id) {
+          // Es el primer duplicado de su grupo (el más antiguo)
+          return { ...bag, is_oldest_duplicate: true };
+        }
+        // Si es el primer elemento de todo el array y es duplicado
+        if (bag.is_duplicate && index === 0) {
+          return { ...bag, is_oldest_duplicate: true };
+        }
+        return bag;
+      });
+
+      setBolsas(response.data) // Usamos response.data directo ya que la lógica de backend es más robusta.
+
     } catch (error) {
       toast.error('Error al cargar bolsas abiertas')
     } finally {
@@ -64,11 +81,6 @@ const BolsasAbiertas = () => {
     }
   }
 
-  // Filtrar por búsqueda
-  const bolsasFiltradas = bolsas.filter((b) =>
-      b.producto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
-  )
-
   const getTiempoBadgeClass = (tiempo: string) => {
     if (tiempo.includes('día') && parseInt(tiempo) > 1) {
       return 'bg-red-100 text-red-800'
@@ -77,6 +89,22 @@ const BolsasAbiertas = () => {
     }
     return 'bg-green-100 text-green-800'
   }
+
+  // NUEVO: Función para determinar la clase de la fila
+  const getRowClass = (bolsa: BolsaAbierta) => {
+    let baseClass = "hover:bg-gray-50";
+    if (bolsa.is_duplicate) {
+      // Si hay duplicados, resaltamos la fila con amarillo
+      // El backend debe asegurar que la primera que aparece de ese producto es la más antigua.
+      baseClass = "bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-500";
+    }
+    return baseClass;
+  };
+
+  // Filtrar por búsqueda
+  const bolsasFiltradas = bolsas.filter((b) =>
+      b.producto_nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -104,6 +132,17 @@ const BolsasAbiertas = () => {
           />
         </div>
 
+        {/* NUEVO: Alerta General de Duplicados */}
+        {bolsas.some(b => b.is_duplicate) && (
+            <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4" role="alert">
+              <div className="flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-3" />
+                <p className="font-bold">¡ALERTA DE INVENTARIO!</p>
+              </div>
+              <p className="text-sm mt-1">Hay **múltiples bolsas abiertas** para el mismo producto. Las filas resaltadas en amarillo indican una bolsa duplicada y son las **más antiguas** que deben cerrarse primero.</p>
+            </div>
+        )}
+
         {/* Alerta si no hay bolsas */}
         {bolsasFiltradas.length === 0 && (
             <div className={cardClass}>
@@ -122,7 +161,7 @@ const BolsasAbiertas = () => {
             <div className={cardClass}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+                  <ListChecks className="h-5 w-5 mr-2 text-primary-500" />
                   Bolsas Abiertas ({bolsasFiltradas.length})
                 </h2>
               </div>
@@ -151,7 +190,7 @@ const BolsasAbiertas = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                   {bolsasFiltradas.map((bolsa) => (
-                      <tr key={bolsa.id} className="hover:bg-gray-50">
+                      <tr key={bolsa.id} className={getRowClass(bolsa)}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">
@@ -162,9 +201,13 @@ const BolsasAbiertas = () => {
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
                                 {bolsa.producto_nombre}
+                                {/* NUEVO ICONO DE ALERTA AL LADO DEL NOMBRE */}
+                                {bolsa.is_duplicate && (
+                                    <AlertTriangle className="h-4 w-4 text-red-500 inline ml-2" title="Múltiples bolsas abiertas"/>
+                                )}
                               </div>
                               <div className="text-sm text-gray-500">
-                                ID: {bolsa.producto_id}
+                                ID: {bolsa.producto_id} (Total abiertas: {bolsa.total_open_bags})
                               </div>
                             </div>
                           </div>
@@ -211,11 +254,16 @@ const BolsasAbiertas = () => {
               {/* VISTA DE TARJETA (MÓVIL) */}
               <div className="md:hidden space-y-3">
                 {bolsasFiltradas.map((bolsa) => (
-                    <div key={bolsa.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
+                    <div key={bolsa.id} className={`${getRowClass(bolsa)} border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md`}>
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center">
                           <Box className="h-6 w-6 text-orange-600 mr-3" />
-                          <h3 className="text-lg font-bold text-gray-900">{bolsa.producto_nombre}</h3>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {bolsa.producto_nombre}
+                            {bolsa.is_duplicate && (
+                                <AlertTriangle className="h-4 w-4 text-red-500 inline ml-2" title="Múltiples bolsas abiertas"/>
+                            )}
+                          </h3>
                         </div>
                         <button
                             onClick={() => cerrarBolsa(bolsa.id!)}
