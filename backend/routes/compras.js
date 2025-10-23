@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT c.*, p.nombre AS proveedor_nombre
+        `SELECT c.*, p.nombre AS proveedor_nombre
        FROM compras c
        LEFT JOIN proveedores p ON c.proveedor_id = p.id
        ORDER BY c.fecha DESC`
@@ -34,10 +34,10 @@ router.post("/", async (req, res) => {
 
     // Insertar compra
     const compraResult = await client.query(
-      `INSERT INTO compras (proveedor_id, total) 
+        `INSERT INTO compras (proveedor_id, total) 
        VALUES ($1, $2) 
        RETURNING *`,
-      [proveedor_id, total]
+        [proveedor_id, total]
     );
 
     const compraId = compraResult.rows[0].id;
@@ -45,37 +45,44 @@ router.post("/", async (req, res) => {
     // Insertar detalles y actualizar stock / precio_costo / ganancia
     for (const prod of productos) {
       await client.query(
-        `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal) 
+          `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal) 
          VALUES ($1, $2, $3, $4, $5)`,
-        [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
+          [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
       );
 
       // Ver precio actual
       const productoDB = await client.query(
-        `SELECT precio, precio_costo FROM productos WHERE id = $1`,
-        [prod.producto_id]
+          `SELECT precio, precio_costo FROM productos WHERE id = $1`,
+          [prod.producto_id]
       );
 
       if (productoDB.rows.length > 0) {
         const { precio, precio_costo } = productoDB.rows[0];
-        let nuevoPrecioCosto = precio_costo;
+        let nuevoPrecioCosto = parseFloat(precio_costo); // Mantenemos el costo actual por defecto
         let nuevoPorcentajeGanancia = null;
 
-        // Si cambió el precio de costo, lo actualizamos y recalculamos ganancia
-        if (parseFloat(prod.precio_unitario) !== parseFloat(precio_costo)) {
-          nuevoPrecioCosto = parseFloat(prod.precio_unitario);
+        // Convertimos a números para la comparación
+        const costoActual = parseFloat(precio_costo);
+        const costoNuevo = parseFloat(prod.precio_unitario);
+
+        // La condición para actualizar es: SOLO si el nuevo costo es SUPERIOR al actual.
+        if (costoNuevo > costoActual) {
+          nuevoPrecioCosto = costoNuevo; // Establecemos el nuevo costo
+
+          // Recalculamos la ganancia con el nuevo precio de costo
           nuevoPorcentajeGanancia =
-            ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
+              ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
         }
 
+        // El stock SIEMPRE se actualiza, pero el precio_costo solo si se cumplió la condición.
         await client.query(
-          `UPDATE productos 
+            `UPDATE productos 
            SET stock = stock + $1,
                precio_costo = $2,
                porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $4`,
-          [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
+            [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
         );
       }
     }
@@ -97,11 +104,11 @@ router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const compraResult = await pool.query(
-      `SELECT c.*, p.nombre AS proveedor_nombre
+        `SELECT c.*, p.nombre AS proveedor_nombre
        FROM compras c
        LEFT JOIN proveedores p ON c.proveedor_id = p.id
        WHERE c.id = $1`,
-      [id]
+        [id]
     );
 
     if (compraResult.rows.length === 0) {
@@ -109,11 +116,11 @@ router.get("/:id", async (req, res) => {
     }
 
     const detallesResult = await pool.query(
-      `SELECT dc.*, pr.nombre AS producto_nombre
+        `SELECT dc.*, pr.nombre AS producto_nombre
        FROM detalles_compra dc
        LEFT JOIN productos pr ON dc.producto_id = pr.id
        WHERE dc.compra_id = $1`,
-      [id]
+        [id]
     );
 
     res.json({
