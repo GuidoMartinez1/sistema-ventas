@@ -188,6 +188,7 @@ export const comprasAPI = {
   create: (compra: { proveedor_id: number; productos: DetalleCompra[]; total: number }) =>
     api.post("/compras", compra),
   getById: (id: number) => api.get<CompraCompleta>(`/compras/${id}`),
+  delete: (id: number) => api.delete(`/compras/${id}`),
 }
 
 export const bolsasAbiertasAPI = {
