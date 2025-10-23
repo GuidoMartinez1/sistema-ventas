@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Tag, DollarSign as DollarIcon } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon } from 'lucide-react'
 import { comprasAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -105,6 +105,24 @@ const Compras = () => {
       setCargandoDetalles(false)
     }
   }
+
+  // NUEVA FUNCIÓN: Eliminar compra
+  const handleEliminarCompra = async (compraId: number) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar esta compra? Esta acción revertirá el stock y el costo del producto si se modificó.")) {
+      return;
+    }
+
+    try {
+      await comprasAPI.delete(compraId);
+      toast.success("Compra eliminada y stock/costo revertido correctamente. ¡Revisa tu inventario!");
+      setMostrarDetalles(false); // Cierra el modal
+      setCompraSeleccionada(null); // Limpia la selección
+      fetchCompras(); // Recarga la lista de compras
+    } catch (error) {
+      console.error("Error al eliminar la compra:", error);
+      toast.error("Error al eliminar la compra. Verifica la consola.");
+    }
+  };
 
   if (loading) {
     return (
@@ -318,6 +336,8 @@ const Compras = () => {
               {/* RESPONSIVE: w-11/12 max-w-2xl */}
               <div className="relative top-4 md:top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
                 <div className="mt-3">
+
+                  {/* TÍTULO Y BOTÓN CERRAR */}
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium text-gray-900">
                       Detalles de Compra #{compraSeleccionada.id}
@@ -327,6 +347,17 @@ const Compras = () => {
                         className="text-gray-400 hover:text-gray-600 p-1"
                     >
                       <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  {/* BOTÓN ELIMINAR (AÑADIDO) */}
+                  <div className="flex gap-2 mb-4 border-b pb-4">
+                    <button
+                        onClick={() => handleEliminarCompra(compraSeleccionada.id!)}
+                        className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-150 ease-in-out text-sm font-medium"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar Compra
                     </button>
                   </div>
 
