@@ -22,14 +22,11 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Nueva Venta', href: '/nueva-venta', icon: Plus },
     { name: 'Compras', href: '/compras', icon: Truck },
     { name: 'Nueva Compra', href: '/nueva-compra', icon: Plus },
-    // --- NUEVA FUNCIONALIDAD: GASTOS ---
-    // Usamos el mismo icono DollarSign, pero separamos la lógica de Deudas
     { name: 'Gastos', href: '/gastos', icon: MinusCircle },
-    // La sección de Deudas puede seguir aquí o también usar el ícono DollarSign si representa cuentas por cobrar/pagar
     { name: 'Deudas', href: '/deudas', icon: DollarSign },
-    // ------------------------------------
     { name: 'Reportes', href: '/reportes', icon: BarChart3 },
     { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
+    { name: 'Stock en Depósito', href: '/stock-deposito', icon: Truck }, // Usamos Truck o Package/Warehouse
   ]
 
   return (

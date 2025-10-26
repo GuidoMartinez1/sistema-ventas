@@ -124,6 +124,23 @@ export interface CompraCompleta extends Compra {
   detalles: DetalleCompra[]
 }
 
+export interface StockDeposito {
+  producto_id: number;
+  producto_nombre: string;
+  codigo: string;
+  categoria_nombre: string;
+  stock_total: number;       // Stock total del sistema
+  stock_en_deposito: number; // Stock actual en el depósito
+  stock_en_tienda: number;   // Stock en la tienda (calculado)
+  ultima_fecha_ingreso: string;
+}
+
+export interface LoteDeposito {
+  id: number;
+  cantidad_actual: number;
+  fecha_ingreso: string;
+}
+
 export interface BolsaAbierta {
   id?: number
   producto_id: number
@@ -255,6 +272,13 @@ export const cotizacionesAPI = {
   getAll: () => api.get<Cotizacion[]>('/cotizaciones'),
   getByDate: (fecha: string) => api.get<{ valor: number }>(`/cotizaciones/fecha/${fecha}`), // Nuevo endpoint para el formulario
   create: (cotizacion: Omit<Cotizacion, 'id'>) => api.post('/cotizaciones', cotizacion),
+}
+
+export const stockDepositoAPI = {
+  getAll: () => api.get<StockDeposito[]>("/stock-deposito"),
+  getLotes: (productoId: number) => api.get<LoteDeposito[]>(`/stock-deposito/lotes/${productoId}`),
+  transferir: (producto_id: number, cantidad_a_mover: number) =>
+      api.post("/stock-deposito/transferir", { producto_id, cantidad_a_mover }),
 }
 
 export default api

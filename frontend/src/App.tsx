@@ -14,6 +14,7 @@ import NuevaCompra from './pages/NuevaCompra'
 import Reportes from './pages/Reportes'
 import BolsasAbiertas from './pages/BolsasAbiertas'
 import Gastos from './pages/Gastos'
+import StockDeposito from './pages/StockDeposito'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/bolsas-abiertas" element={<BolsasAbiertas />} />
             <Route path="/gastos" element={<Gastos />} />
+            <Route path="/stock-deposito" element={<StockDeposito />} />
           </Routes>
         </Layout>
         <Toaster position="top-right" />

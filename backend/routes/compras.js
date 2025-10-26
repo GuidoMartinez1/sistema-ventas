@@ -91,6 +91,13 @@ router.post("/", async (req, res) => {
            WHERE id = $4`,
             [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
         );
+        // 2. Insertar el nuevo lote en stock_deposito_detalle (Todo el stock nuevo entra al depósito)
+        await client.query(
+            `INSERT INTO stock_deposito_detalle (producto_id, compra_id, cantidad_actual, fecha_ingreso)
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+            [prod.producto_id, compraId, prod.cantidad] // prod.cantidad es la cantidad comprada
+        );
+
       }
     }
 
