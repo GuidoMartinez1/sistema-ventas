@@ -237,6 +237,7 @@ router.delete("/:id", async (req, res) => {
 
     // 3. Eliminar la compra y sus detalles
     // (Asumiendo que detalles_compra se borra en cascada o lo borramos explícitamente)
+    await client.query(`DELETE FROM stock_deposito_detalle WHERE compra_id = $1`, [id]);
     await client.query(`DELETE FROM detalles_compra WHERE compra_id = $1`, [id]);
     const compraResult = await client.query(`DELETE FROM compras WHERE id = $1 RETURNING *`, [id]);
 
