@@ -27,8 +27,8 @@ router.get('/', async (req, res) => {
       FROM bolsas_abiertas b
       LEFT JOIN productos p ON b.producto_id = p.id
       WHERE b.estado = 'abierta'
-      ORDER BY b.producto_id, b.fecha_apertura ASC 
-      -- 👆 Ordenamos por producto y luego por fecha ASC (la más antigua primero)
+      ORDER BY b.fecha_apertura, b.fecha_apertura DESC 
+      -- 👆 luego por fecha ASC (la más nueva primero)
     `);
 
     // Combinamos la información: agregamos el campo 'is_duplicate' a cada bolsa
