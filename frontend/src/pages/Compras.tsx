@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon } from 'lucide-react'
 import { comprasAPI } from '../services/api'
-import { Compra, CompraCompleta } from '../services/api'
+import { Compra, CompraCompleta } from '../services/api' // <-- ¡REVISA ESTA LÍNEA!
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
@@ -14,6 +14,7 @@ const Compras = () => {
   const navigate = useNavigate()
   const [compras, setCompras] = useState<Compra[]>([])
   const [loading, setLoading] = useState(true)
+  // ESTADOS QUE DEBEN ESTAR DECLARADOS CORRECTAMENTE AQUÍ:
   const [compraSeleccionada, setCompraSeleccionada] = useState<CompraCompleta | null>(null)
   const [mostrarDetalles, setMostrarDetalles] = useState(false)
   const [cargandoDetalles, setCargandoDetalles] = useState(false)
@@ -272,11 +273,11 @@ const Compras = () => {
           </div>
         </div>
 
-        {/* MODAL FUTUROS PEDIDOS */}
+        {/* MODAL FUTUROS PEDIDOS (MODIFICADO PARA SER MÁS GRANDE) */}
         {mostrarFuturos && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20">
-              {/* RESPONSIVE: Ancho adaptable y max-w-md */}
-              <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6">
+              {/* ✅ CAMBIO 1: max-w-md CAMBIADO a max-w-2xl (Más Ancho) */}
+              <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold flex items-center">
                     <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
@@ -310,28 +311,29 @@ const Compras = () => {
                 {futurosPedidos.length === 0 ? (
                     <p className="text-gray-500">No hay productos en la lista.</p>
                 ) : (
-                    <ul className="divide-y divide-gray-200 max-h-80 overflow-y-auto">
-                      {futurosPedidos.map((item) => (
-                          <li key={item.id} className="flex justify-between items-center py-2">
-                            <div className='min-w-0 pr-4'>
-                              <span className="font-medium text-sm block truncate">{item.producto}</span>
-                              {item.cantidad && <span className="text-gray-500 text-xs">Cant: {item.cantidad}</span>}
-                            </div>
-                            <button
-                                onClick={() => eliminarFuturo(item.id)}
-                                className="text-red-500 hover:text-red-700 flex-shrink-0 p-1">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </li>
-                      ))}
-                    </ul>
-                )}
+                    {/* ✅ CAMBIO 2: max-h-80 CAMBIADO a max-h-[75vh] (Más Alto y adaptable para ver más registros) */}
+                  <ul className="divide-y divide-gray-200 max-h-[75vh] overflow-y-auto">
+                {futurosPedidos.map((item) => (
+                  <li key={item.id} className="flex justify-between items-center py-2">
+                  <div className='min-w-0 pr-4'>
+                  <span className="font-medium text-sm block truncate">{item.producto}</span>
+                {item.cantidad && <span className="text-gray-500 text-xs">Cant: {item.cantidad}</span>}
+                  </div>
+                  <button
+                  onClick={() => eliminarFuturo(item.id)}
+                  className="text-red-500 hover:text-red-700 flex-shrink-0 p-1">
+                  <Trash2 className="h-4 w-4" />
+                  </button>
+                  </li>
+                  ))}
+                  </ul>
+                  )}
               </div>
             </div>
         )}
 
         {/* MODAL DETALLES */}
-        {mostrarDetalles && compraSeleccionada && (
+        {mostrarDetalles && compraSeleccionada && ( // <-- Las variables están disponibles aquí.
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
               {/* RESPONSIVE: w-11/12 max-w-2xl */}
               <div className="relative top-4 md:top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
