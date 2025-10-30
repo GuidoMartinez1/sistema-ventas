@@ -311,23 +311,26 @@ const Compras = () => {
                 {futurosPedidos.length === 0 ? (
                     <p className="text-gray-500">No hay productos en la lista.</p>
                 ) : (
-                    {/* ✅ CAMBIO 2: max-h-80 CAMBIADO a max-h-[75vh] (Más Alto y adaptable para ver más registros) */}
-                  <ul className="divide-y divide-gray-200 max-h-[75vh] overflow-y-auto">
-                {futurosPedidos.map((item) => (
-                  <li key={item.id} className="flex justify-between items-center py-2">
-                  <div className='min-w-0 pr-4'>
-                  <span className="font-medium text-sm block truncate">{item.producto}</span>
-                {item.cantidad && <span className="text-gray-500 text-xs">Cant: {item.cantidad}</span>}
-                  </div>
-                  <button
-                  onClick={() => eliminarFuturo(item.id)}
-                  className="text-red-500 hover:text-red-700 flex-shrink-0 p-1">
-                  <Trash2 className="h-4 w-4" />
-                  </button>
-                  </li>
-                  ))}
-                  </ul>
-                  )}
+                    // La etiqueta <ul> debe ir directamente después del paréntesis de apertura.
+                    <ul className="divide-y divide-gray-200 max-h-[75vh] overflow-y-auto">
+                      {futurosPedidos.map((item) => (
+                          <li key={item.id} className="flex justify-between items-center py-2">
+                            <div className='min-w-0 pr-4'>
+                              <span className="font-medium text-sm block truncate">{item.producto}</span>
+                              {item.cantidad && <span className="text-gray-500 text-xs">Cant: {item.cantidad}</span>}
+                            </div>
+                            <button
+                                onClick={() => eliminarFuturo(item.id)}
+                                className="text-red-500 hover:text-red-700 flex-shrink-0 p-1">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </li>
+                      ))}
+                    </ul>
+                )}
+              </div>
+            </div>
+              )}
               </div>
             </div>
         )}
