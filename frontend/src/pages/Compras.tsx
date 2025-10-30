@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon } from 'lucide-react'
 import { comprasAPI } from '../services/api'
-import { Compra, CompraCompleta } from '../services/api' // <-- ¡REVISA ESTA LÍNEA!
+import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
@@ -14,7 +14,6 @@ const Compras = () => {
   const navigate = useNavigate()
   const [compras, setCompras] = useState<Compra[]>([])
   const [loading, setLoading] = useState(true)
-  // ESTADOS QUE DEBEN ESTAR DECLARADOS CORRECTAMENTE AQUÍ:
   const [compraSeleccionada, setCompraSeleccionada] = useState<CompraCompleta | null>(null)
   const [mostrarDetalles, setMostrarDetalles] = useState(false)
   const [cargandoDetalles, setCargandoDetalles] = useState(false)
@@ -311,7 +310,7 @@ const Compras = () => {
                 {futurosPedidos.length === 0 ? (
                     <p className="text-gray-500">No hay productos en la lista.</p>
                 ) : (
-                    // La etiqueta <ul> debe ir directamente después del paréntesis de apertura.
+                    // ✅ CAMBIO 2: max-h-80 CAMBIADO a max-h-[75vh] (Más Alto y adaptable para ver más registros)
                     <ul className="divide-y divide-gray-200 max-h-[75vh] overflow-y-auto">
                       {futurosPedidos.map((item) => (
                           <li key={item.id} className="flex justify-between items-center py-2">
@@ -330,13 +329,10 @@ const Compras = () => {
                 )}
               </div>
             </div>
-              )}
-              </div>
-            </div>
         )}
 
         {/* MODAL DETALLES */}
-        {mostrarDetalles && compraSeleccionada && ( // <-- Las variables están disponibles aquí.
+        {mostrarDetalles && compraSeleccionada && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
               {/* RESPONSIVE: w-11/12 max-w-2xl */}
               <div className="relative top-4 md:top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
