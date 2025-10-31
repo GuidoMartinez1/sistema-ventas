@@ -61,7 +61,6 @@ const StockDeposito = () => {
         return stockList.reduce((sum, item) => sum + (Number(item.stock_en_deposito) || 0), 0);
     }, [stockList]);
 
-    // Calcula el stock total solo de los ítems seleccionados
     const totalSelectedStock = useMemo(() => {
         return stockList.reduce((sum, item) => {
             if (selectedItems.has(item.producto_id)) {
@@ -71,7 +70,6 @@ const StockDeposito = () => {
         }, 0);
     }, [stockList, selectedItems]);
 
-    // Maneja la selección individual de checkboxes
     const handleSelectItem = (productId: number) => {
         setSelectedItems(prev => {
             const newSet = new Set(prev);
@@ -84,11 +82,13 @@ const StockDeposito = () => {
         });
     };
 
-    // Maneja la selección de todos los ítems (solo aquellos con stock > 0)
+    // DECLARACIONES FALTANTES AQUÍ: Se asegura que estas variables existan antes del JSX
+    const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             const allProductIdsWithStock = new Set(
-                filteredStock // Solo selecciona los que están actualmente visibles
+                filteredStock
                     .filter(item => Number(item.stock_en_deposito) > 0)
                     .map(item => item.producto_id)
             );
@@ -113,7 +113,6 @@ const StockDeposito = () => {
         }
     };
 
-    // FUNCION 1: TRASLADO GLOBAL (Vaciar todo el depósito)
     const handleMassTransferAll = async () => {
         if (totalStockInDeposito <= 0) {
             return toast.error("El depósito ya está vacío. No hay stock para trasladar.");
@@ -145,7 +144,7 @@ const StockDeposito = () => {
 
             if (successCount > 0) {
                 toast.success(`Traslado masivo global completado: ${successCount} productos vaciados. ${failCount} errores.`);
-                setSelectedItems(new Set()); // Limpiar selección por si acaso
+                setSelectedItems(new Set());
             } else if (failCount > 0) {
                 toast.error(`El traslado masivo falló para ${failCount} productos.`);
             } else {
@@ -161,7 +160,6 @@ const StockDeposito = () => {
         }
     };
 
-    // FUNCION 2: TRASLADO MASIVO POR SELECCIÓN
     const handleMassTransferSelected = async () => {
         if (selectedItems.size === 0) {
             return toast.error("No hay productos seleccionados para trasladar.");
@@ -196,7 +194,7 @@ const StockDeposito = () => {
 
             if (successCount > 0) {
                 toast.success(`Traslado masivo completado: ${successCount} de ${count} productos seleccionados vaciados.`);
-                setSelectedItems(new Set()); // Limpiar selección después del éxito
+                setSelectedItems(new Set());
             } else {
                 toast.error(`El traslado masivo falló para todos los productos seleccionados (${failCount} errores).`);
             }
@@ -211,7 +209,6 @@ const StockDeposito = () => {
     };
 
 
-    // FUNCION 3: TRASLADO INDIVIDUAL (Modal)
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProduct) return;
@@ -274,14 +271,14 @@ const StockDeposito = () => {
         }
     };
 
-    // Determina si todos los items visibles con stock están seleccionados
+    // La variable que estaba causando el error:
     const allFilteredItemsWithStockSelected = filteredStock
         .filter(item => Number(item.stock_en_deposito) > 0)
         .every(item => selectedItems.has(item.producto_id));
 
-    // Número total de ítems visibles con stock
-    const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
-
+    // Esta variable se usa en el header de la tabla y en el selector de mobile
+    // ya estaba declarada arriba, se mantiene el uso
+    // const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
 
     if (loading) {
         return (
@@ -359,9 +356,9 @@ const StockDeposito = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
-                                    {/* Nueva columna Checkbox */}
+                                    {/* Nueva columna para Checkbox de selección masiva */}
                                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {totalItemsWithStock > 0 && (
+                                        {totalFilteredItemsWithStock > 0 && ( // Usa la variable corregida
                                             <input
                                                 type="checkbox"
                                                 checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
@@ -424,7 +421,7 @@ const StockDeposito = () => {
                         {/* LISTA DE TARJETAS (Mobile) */}
                         <div className="md:hidden space-y-3">
                             {/* Selector masivo para mobile, si hay stock visible */}
-                            {totalFilteredItemsWithStock > 0 && (
+                            {totalFilteredItemsWithStock > 0 && ( // Usa la variable corregida
                                 <div className="flex items-center space-x-2 pb-2 border-b">
                                     <input
                                         type="checkbox"
@@ -477,7 +474,7 @@ const StockDeposito = () => {
                 )}
             </div>
 
-            {/* Modal de Traslado y Detalle de Lotes (Se mantiene la lógica individual) */}
+            {/* Modal de Traslado y Detalle de Lotes */}
             {showModal && selectedProduct && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
                     <div className="relative top-4 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-xl bg-white">
