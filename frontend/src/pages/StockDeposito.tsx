@@ -296,7 +296,7 @@ const StockDeposito = () => {
                 <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
                     <button
                         onClick={handleMassTransferSelected}
-                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
+                        className="bg-purple-600 hover:bg-orange-600 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
                         disabled={isMassTransferring || totalSelectedStock === 0}
                     >
                         {isMassTransferring ? (
