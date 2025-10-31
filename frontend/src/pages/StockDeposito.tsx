@@ -3,7 +3,7 @@ import { stockDepositoAPI, StockDeposito, LoteDeposito } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2 } from 'lucide-react';
 
-// Clases de utilidad (Ajustadas para responsive)
+// Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
 const formatDate = (dateString: string | undefined) => {
@@ -22,6 +22,9 @@ const StockDeposito = () => {
     const [selectedProduct, setSelectedProduct] = useState<StockDeposito | null>(null);
     const [lotes, setLotes] = useState<LoteDeposito[]>([]);
     const [isTransferring, setIsTransferring] = useState(false);
+
+    // ESTADOS PARA TRASLADO MASIVO
+    const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
     const [isMassTransferring, setIsMassTransferring] = useState(false);
 
     const [cantidadInput, setCantidadInput] = useState<number | string>('');
@@ -58,6 +61,43 @@ const StockDeposito = () => {
         return stockList.reduce((sum, item) => sum + (Number(item.stock_en_deposito) || 0), 0);
     }, [stockList]);
 
+    // Calcula el stock total solo de los ítems seleccionados
+    const totalSelectedStock = useMemo(() => {
+        return stockList.reduce((sum, item) => {
+            if (selectedItems.has(item.producto_id)) {
+                return sum + (Number(item.stock_en_deposito) || 0);
+            }
+            return sum;
+        }, 0);
+    }, [stockList, selectedItems]);
+
+    // Maneja la selección individual de checkboxes
+    const handleSelectItem = (productId: number) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(productId)) {
+                newSet.delete(productId);
+            } else {
+                newSet.add(productId);
+            }
+            return newSet;
+        });
+    };
+
+    // Maneja la selección de todos los ítems (solo aquellos con stock > 0)
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            const allProductIdsWithStock = new Set(
+                filteredStock // Solo selecciona los que están actualmente visibles
+                    .filter(item => Number(item.stock_en_deposito) > 0)
+                    .map(item => item.producto_id)
+            );
+            setSelectedItems(allProductIdsWithStock);
+        } else {
+            setSelectedItems(new Set());
+        }
+    };
+
 
     const handleOpenModal = async (product: StockDeposito) => {
         setSelectedProduct(product);
@@ -73,6 +113,7 @@ const StockDeposito = () => {
         }
     };
 
+    // FUNCION 1: TRASLADO GLOBAL (Vaciar todo el depósito)
     const handleMassTransferAll = async () => {
         if (totalStockInDeposito <= 0) {
             return toast.error("El depósito ya está vacío. No hay stock para trasladar.");
@@ -103,7 +144,8 @@ const StockDeposito = () => {
             }
 
             if (successCount > 0) {
-                toast.success(`Traslado masivo completado: ${successCount} productos vaciados. ${failCount} errores.`);
+                toast.success(`Traslado masivo global completado: ${successCount} productos vaciados. ${failCount} errores.`);
+                setSelectedItems(new Set()); // Limpiar selección por si acaso
             } else if (failCount > 0) {
                 toast.error(`El traslado masivo falló para ${failCount} productos.`);
             } else {
@@ -119,7 +161,57 @@ const StockDeposito = () => {
         }
     };
 
+    // FUNCION 2: TRASLADO MASIVO POR SELECCIÓN
+    const handleMassTransferSelected = async () => {
+        if (selectedItems.size === 0) {
+            return toast.error("No hay productos seleccionados para trasladar.");
+        }
+        if (totalSelectedStock === 0) {
+            return toast.error("Los productos seleccionados no tienen stock en depósito.");
+        }
 
+        const count = selectedItems.size;
+
+        if (!window.confirm(`⚠️ ADVERTENCIA: Esta acción trasladará TODO el stock de los ${count} productos seleccionados, vaciando su depósito (Total: ${totalSelectedStock} unidades). ¿Confirmar?`)) {
+            return;
+        }
+
+        const itemsToTransfer = stockList.filter(item => selectedItems.has(item.producto_id) && Number(item.stock_en_deposito) > 0);
+        let successCount = 0;
+        let failCount = 0;
+
+        setIsMassTransferring(true);
+
+        try {
+            for (const item of itemsToTransfer) {
+                const cantidadTotal = Number(item.stock_en_deposito);
+                try {
+                    await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
+                    successCount++;
+                } catch (error) {
+                    failCount++;
+                    console.error(`Error al trasladar ${item.producto_nombre}:`, error);
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Traslado masivo completado: ${successCount} de ${count} productos seleccionados vaciados.`);
+                setSelectedItems(new Set()); // Limpiar selección después del éxito
+            } else {
+                toast.error(`El traslado masivo falló para todos los productos seleccionados (${failCount} errores).`);
+            }
+
+            await fetchData();
+
+        } catch (error) {
+            toast.error('Error crítico durante el proceso de traslado masivo.');
+        } finally {
+            setIsMassTransferring(false);
+        }
+    };
+
+
+    // FUNCION 3: TRASLADO INDIVIDUAL (Modal)
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProduct) return;
@@ -182,6 +274,15 @@ const StockDeposito = () => {
         }
     };
 
+    // Determina si todos los items visibles con stock están seleccionados
+    const allFilteredItemsWithStockSelected = filteredStock
+        .filter(item => Number(item.stock_en_deposito) > 0)
+        .every(item => selectedItems.has(item.producto_id));
+
+    // Número total de ítems visibles con stock
+    const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
+
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -191,9 +292,27 @@ const StockDeposito = () => {
     }
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto relative">
 
-            {/* ENCABEZADO Y BOTÓN MAESTRO DE TRASLADO: Ahora usa flex-col en mobile (sm) */}
+            {/* Botón Flotante para Traslado Masivo por Selección */}
+            {selectedItems.size > 0 && (
+                <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+                    <button
+                        onClick={handleMassTransferSelected}
+                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
+                        disabled={isMassTransferring || totalSelectedStock === 0}
+                    >
+                        {isMassTransferring ? (
+                            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        ) : (
+                            <Maximize2 className="h-5 w-5 mr-2" />
+                        )}
+                        Vaciar Depósito de {selectedItems.size} {selectedItems.size === 1 ? 'Ítem Seleccionado' : 'Ítems Seleccionados'} ({totalSelectedStock} uds.)
+                    </button>
+                </div>
+            )}
+
+            {/* ENCABEZADO Y BOTÓN MAESTRO GLOBAL */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
@@ -203,10 +322,9 @@ const StockDeposito = () => {
                     <p className="text-sm text-gray-600">Control de la mercadería almacenada y traslados a la tienda física.</p>
                 </div>
 
-                {/* Botón Maestro Trasladar Todo: Color NARANJA y Responsive */}
+                {/* Botón Maestro Trasladar Todo GLOBAL (Naranja) */}
                 <button
                     onClick={handleMassTransferAll}
-                    // Usando los colores primarios naranja de tu botón 'Trasladar'
                     className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400"
                     disabled={isMassTransferring || totalStockInDeposito === 0}
                 >
@@ -220,7 +338,6 @@ const StockDeposito = () => {
             </div>
 
             <div className={cardClass}>
-                {/* Búsqueda en una línea separada y responsive */}
                 <div className="mb-4">
                     <input
                         type="text"
@@ -242,6 +359,18 @@ const StockDeposito = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
+                                    {/* Nueva columna Checkbox */}
+                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {totalItemsWithStock > 0 && (
+                                            <input
+                                                type="checkbox"
+                                                checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
+                                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                                className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                title="Seleccionar todos los productos visibles con stock"
+                                            />
+                                        )}
+                                    </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cód. / Cat.</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
@@ -252,6 +381,18 @@ const StockDeposito = () => {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredStock.map((item) => (
                                     <tr key={item.producto_id}>
+                                        {/* Columna Checkbox */}
+                                        <td className="px-3 py-4 whitespace-nowrap text-sm text-center">
+                                            {Number(item.stock_en_deposito) > 0 && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedItems.has(item.producto_id)}
+                                                    onChange={() => handleSelectItem(item.producto_id)}
+                                                    className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                    disabled={isMassTransferring || isTransferring}
+                                                />
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {item.producto_nombre}
                                         </td>
@@ -269,7 +410,7 @@ const StockDeposito = () => {
                                             <button
                                                 onClick={() => handleOpenModal(item)}
                                                 className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
-                                                disabled={isMassTransferring}
+                                                disabled={isMassTransferring || isTransferring}
                                             >
                                                 <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
                                             </button>
@@ -282,26 +423,50 @@ const StockDeposito = () => {
 
                         {/* LISTA DE TARJETAS (Mobile) */}
                         <div className="md:hidden space-y-3">
+                            {/* Selector masivo para mobile, si hay stock visible */}
+                            {totalFilteredItemsWithStock > 0 && (
+                                <div className="flex items-center space-x-2 pb-2 border-b">
+                                    <input
+                                        type="checkbox"
+                                        checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
+                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                        className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                    />
+                                    <span className="text-sm font-semibold text-gray-700">Seleccionar todos los {totalFilteredItemsWithStock} ítems visibles con stock</span>
+                                </div>
+                            )}
+
                             {filteredStock.map((item) => (
                                 <div key={item.producto_id} className="p-3 border rounded-lg shadow-sm">
                                     <div className="flex justify-between items-start mb-2">
-                                        <div className="text-sm font-bold text-gray-900">{item.producto_nombre}</div>
+                                        <div className="flex items-center space-x-2">
+                                            {Number(item.stock_en_deposito) > 0 && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedItems.has(item.producto_id)}
+                                                    onChange={() => handleSelectItem(item.producto_id)}
+                                                    className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                    disabled={isMassTransferring || isTransferring}
+                                                />
+                                            )}
+                                            <span className="text-sm font-bold text-gray-900">{item.producto_nombre}</span>
+                                        </div>
                                         <button
                                             onClick={() => handleOpenModal(item)}
                                             className="bg-orange-500 hover:bg-orange-600 text-white text-xs py-1 px-3 rounded-lg flex items-center"
-                                            disabled={isMassTransferring}
+                                            disabled={isMassTransferring || isTransferring}
                                         >
                                             <ArrowRight className="h-3 w-3 mr-1" /> Trasladar
                                         </button>
                                     </div>
-                                    <div className="text-xs text-gray-600 mb-2">
+                                    <div className="text-xs text-gray-600 mb-2 pl-6">
                                         Cód.: {item.codigo} | Cat.: {item.categoria_nombre}
                                     </div>
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Depósito:</span>
                                         <span className="font-semibold text-orange-600">{item.stock_en_deposito}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Tienda:</span>
                                         <span className="text-gray-600">{item.stock_en_tienda}</span>
                                     </div>
@@ -312,7 +477,7 @@ const StockDeposito = () => {
                 )}
             </div>
 
-            {/* Modal de Traslado y Detalle de Lotes */}
+            {/* Modal de Traslado y Detalle de Lotes (Se mantiene la lógica individual) */}
             {showModal && selectedProduct && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
                     <div className="relative top-4 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-xl bg-white">
@@ -327,7 +492,6 @@ const StockDeposito = () => {
                             </button>
                         </div>
 
-                        {/* El grid ya es responsive, se mantendrá en una columna en móvil */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Columna 1: Formulario de Transferencia */}
                             <div>
