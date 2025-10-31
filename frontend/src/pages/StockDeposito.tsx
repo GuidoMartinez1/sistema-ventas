@@ -5,7 +5,7 @@ import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2 } from 
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
-const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
+const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-AR', {
@@ -296,7 +296,7 @@ const StockDeposito = () => {
                 <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
                     <button
                         onClick={handleMassTransferSelected}
-                        className="bg-purple-600 hover:bg-orange-600 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
+                        className="bg-orange-600 hover:bg-orange-600 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
                         disabled={isMassTransferring || totalSelectedStock === 0}
                     >
                         {isMassTransferring ? (
@@ -363,7 +363,7 @@ const StockDeposito = () => {
                                                 type="checkbox"
                                                 checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                                className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                className="form-checkbox h-4 w-4 text-orange-600 rounded"
                                                 title="Seleccionar todos los productos visibles con stock"
                                             />
                                         )}
@@ -385,7 +385,7 @@ const StockDeposito = () => {
                                                     type="checkbox"
                                                     checked={selectedItems.has(item.producto_id)}
                                                     onChange={() => handleSelectItem(item.producto_id)}
-                                                    className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                    className="form-checkbox h-4 w-4 text-orange-600 rounded"
                                                     disabled={isMassTransferring || isTransferring}
                                                 />
                                             )}
@@ -427,7 +427,7 @@ const StockDeposito = () => {
                                         type="checkbox"
                                         checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
                                         onChange={(e) => handleSelectAll(e.target.checked)}
-                                        className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                        className="form-checkbox h-4 w-4 text-orange-600 rounded"
                                     />
                                     <span className="text-sm font-semibold text-gray-700">Seleccionar todos los {totalFilteredItemsWithStock} ítems visibles con stock</span>
                                 </div>
@@ -442,7 +442,7 @@ const StockDeposito = () => {
                                                     type="checkbox"
                                                     checked={selectedItems.has(item.producto_id)}
                                                     onChange={() => handleSelectItem(item.producto_id)}
-                                                    className="form-checkbox h-4 w-4 text-purple-600 rounded"
+                                                    className="form-checkbox h-4 w-4 text-orange-600 rounded"
                                                     disabled={isMassTransferring || isTransferring}
                                                 />
                                             )}
@@ -510,7 +510,7 @@ const StockDeposito = () => {
                                                 value="trasladar"
                                                 checked={modoTransferencia === 'trasladar'}
                                                 onChange={() => { setModoTransferencia('trasladar'); setCantidadInput(''); }}
-                                                className="form-radio h-4 w-4 text-purple-600"
+                                                className="form-radio h-4 w-4 text-orange-600"
                                             />
                                             <span className="ml-2">Cantidad a Trasladar</span>
                                         </label>
@@ -521,7 +521,7 @@ const StockDeposito = () => {
                                                 value="quedar"
                                                 checked={modoTransferencia === 'quedar'}
                                                 onChange={() => { setModoTransferencia('quedar'); setCantidadInput(''); }}
-                                                className="form-radio h-4 w-4 text-purple-600"
+                                                className="form-radio h-4 w-4 text-orange-600"
                                             />
                                             <span className="ml-2">Cantidad que Queda</span>
                                         </label>
