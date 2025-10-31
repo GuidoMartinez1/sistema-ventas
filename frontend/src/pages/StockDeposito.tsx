@@ -23,7 +23,6 @@ const StockDeposito = () => {
     const [selectedProduct, setSelectedProduct] = useState<StockDeposito | null>(null);
     const [lotes, setLotes] = useState<LoteDeposito[]>([]);
     const [isTransferring, setIsTransferring] = useState(false);
-    // Nuevo estado para el traslado masivo
     const [isMassTransferring, setIsMassTransferring] = useState(false);
 
     // Estado para la transferencia en el modal
@@ -34,7 +33,12 @@ const StockDeposito = () => {
         setLoading(true);
         try {
             const response = await stockDepositoAPI.getAll();
-            setStockList(response.data);
+            // Asegurarse de que stock_en_deposito sea un número (puede venir como string o nulo)
+            const safeStockList = response.data.map((item: StockDeposito) => ({
+                ...item,
+                stock_en_deposito: Number(item.stock_en_deposito) || 0,
+            }));
+            setStockList(safeStockList);
         } catch {
             toast.error('Error al cargar el stock del depósito.');
         } finally {
@@ -53,17 +57,17 @@ const StockDeposito = () => {
         );
     }, [stockList, busqueda]);
 
-    // Calcula el stock total en depósito (para habilitar/deshabilitar el botón maestro)
+    // CORRECCIÓN CLAVE: Calcula el stock total en depósito usando Number() para evitar concatenación o errores.
     const totalStockInDeposito = useMemo(() => {
-        return stockList.reduce((sum, item) => sum + item.stock_en_deposito, 0);
+        return stockList.reduce((sum, item) => sum + (Number(item.stock_en_deposito) || 0), 0);
     }, [stockList]);
 
 
     const handleOpenModal = async (product: StockDeposito) => {
         setSelectedProduct(product);
         setShowModal(true);
-        setCantidadInput(''); // Se mantiene vacío por defecto
-        setModoTransferencia('trasladar'); // Poner modo por defecto
+        setCantidadInput('');
+        setModoTransferencia('trasladar');
         try {
             const lotesResponse = await stockDepositoAPI.getLotes(product.producto_id);
             setLotes(lotesResponse.data);
@@ -73,7 +77,6 @@ const StockDeposito = () => {
         }
     };
 
-    // NUEVA FUNCIÓN MAESTRA: Trasladar TODO el stock de TODO el depósito
     const handleMassTransferAll = async () => {
         if (totalStockInDeposito <= 0) {
             return toast.error("El depósito ya está vacío. No hay stock para trasladar.");
@@ -83,25 +86,23 @@ const StockDeposito = () => {
             return;
         }
 
-        // Filtrar solo los productos con stock > 0
-        const itemsToTransfer = stockList.filter(item => item.stock_en_deposito > 0);
+        const itemsToTransfer = stockList.filter(item => Number(item.stock_en_deposito) > 0);
         let successCount = 0;
         let failCount = 0;
 
         setIsMassTransferring(true);
 
         try {
-            // Se asume que la API de transferencia es idempotente y puede procesarse por producto.
-            // Si tu backend tiene un endpoint masivo, sería mejor usarlo, pero usaremos el existente:
             for (const item of itemsToTransfer) {
-                const cantidadTotal = item.stock_en_deposito;
-                try {
-                    // Usamos la API existente, trasladando la cantidad total
-                    await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
-                    successCount++;
-                } catch (error) {
-                    failCount++;
-                    console.error(`Error al trasladar ${item.producto_nombre}:`, error);
+                const cantidadTotal = Number(item.stock_en_deposito);
+                if (cantidadTotal > 0) {
+                    try {
+                        await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
+                        successCount++;
+                    } catch (error) {
+                        failCount++;
+                        console.error(`Error al trasladar ${item.producto_nombre}:`, error);
+                    }
                 }
             }
 
@@ -113,7 +114,7 @@ const StockDeposito = () => {
                 toast.success("Depósito ya vacío.");
             }
 
-            await fetchData(); // Refrescar datos después del traslado masivo
+            await fetchData();
 
         } catch (error) {
             toast.error('Error crítico durante el proceso de traslado masivo.');
@@ -128,7 +129,7 @@ const StockDeposito = () => {
         if (!selectedProduct) return;
 
         let cantidadAMover = 0;
-        const stockActual = selectedProduct.stock_en_deposito;
+        const stockActual = Number(selectedProduct.stock_en_deposito);
         const inputNum = Number(cantidadInput);
 
         // Validación de número y cálculo
@@ -209,9 +210,11 @@ const StockDeposito = () => {
                     <p className="text-gray-600">Control de la mercadería almacenada y traslados a la tienda física.</p>
                 </div>
 
-                {/* Botón Maestro Trasladar Todo */}
+                {/* Botón Maestro Trasladar Todo (Estilos Corregidos) */}
                 <button
                     onClick={handleMassTransferAll}
+                    // Aplicamos la clase del botón primario (naranja) o un color que se ajuste a tu sistema (púrpura o naranja)
+                    // Usaré un púrpura más oscuro para diferenciarlo y mantener un color de sistema.
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-lg py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-lg hover:shadow-xl disabled:bg-gray-400"
                     disabled={isMassTransferring || totalStockInDeposito === 0}
                 >
@@ -220,6 +223,7 @@ const StockDeposito = () => {
                     ) : (
                         <Maximize2 className="h-6 w-6 mr-2" />
                     )}
+                    {/* Sumatoria Corregida */}
                     {isMassTransferring ? 'Vaciando Depósito...' : `Vaciar Depósito Completo (${totalStockInDeposito} uds.)`}
                 </button>
             </div>
@@ -272,12 +276,10 @@ const StockDeposito = () => {
                                         <button
                                             onClick={() => handleOpenModal(item)}
                                             className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
-                                            disabled={isMassTransferring} // Deshabilitar durante traslado masivo
+                                            disabled={isMassTransferring}
                                         >
                                             <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
                                         </button>
-
-                                        {/* NOTA: Eliminamos el botón individual "Trasladar TODO (Stock 0)" de aquí */}
                                     </td>
                                 </tr>
                             ))}
@@ -287,7 +289,7 @@ const StockDeposito = () => {
                 )}
             </div>
 
-            {/* Modal de Traslado y Detalle de Lotes (Sin cambios relevantes en la lógica de 0) */}
+            {/* Modal de Traslado y Detalle de Lotes */}
             {showModal && selectedProduct && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-xl bg-white">
@@ -322,7 +324,7 @@ const StockDeposito = () => {
                                                 name="modo"
                                                 value="trasladar"
                                                 checked={modoTransferencia === 'trasladar'}
-                                                onChange={() => { setModoTransferencia('trasladar'); setCantidadInput(''); }} // Limpiar input al cambiar
+                                                onChange={() => { setModoTransferencia('trasladar'); setCantidadInput(''); }}
                                                 className="form-radio h-4 w-4 text-purple-600"
                                             />
                                             <span className="ml-2">Cantidad a Trasladar</span>
@@ -333,7 +335,7 @@ const StockDeposito = () => {
                                                 name="modo"
                                                 value="quedar"
                                                 checked={modoTransferencia === 'quedar'}
-                                                onChange={() => { setModoTransferencia('quedar'); setCantidadInput(''); }} // Limpiar input al cambiar
+                                                onChange={() => { setModoTransferencia('quedar'); setCantidadInput(''); }}
                                                 className="form-radio h-4 w-4 text-purple-600"
                                             />
                                             <span className="ml-2">Cantidad que Queda</span>
@@ -356,7 +358,6 @@ const StockDeposito = () => {
                                             value={cantidadInput}
                                             onChange={e => {
                                                 const value = parseInt(e.target.value);
-                                                // Permite input vacío (string) para que el usuario ingrese
                                                 setCantidadInput(isNaN(value) ? e.target.value : value);
                                             }}
                                             className={inputFieldClass}
@@ -365,16 +366,16 @@ const StockDeposito = () => {
                                     </div>
 
                                     {/* Resumen del Traslado (Cálculo Inverso) */}
-                                    {(Number(cantidadInput) > 0) || (modoTransferencia === 'quedar' && Number(cantidadInput) === 0 && selectedProduct.stock_en_deposito > 0) ? (
+                                    {(Number(cantidadInput) > 0) || (modoTransferencia === 'quedar' && Number(cantidadInput) === 0 && Number(selectedProduct.stock_en_deposito) > 0) ? (
                                         <div className="text-sm p-2 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
                                             {modoTransferencia === 'quedar' ? (
                                                 Number(cantidadInput) === 0 ? (
                                                     <p>Se trasladarán: <span className="font-bold">{selectedProduct.stock_en_deposito}</span> unidades. **Stock en depósito quedará en 0.**</p>
                                                 ) : (
-                                                    <p>Se trasladarán: <span className="font-bold">{selectedProduct.stock_en_deposito - Number(cantidadInput)}</span> unidades a la tienda.</p>
+                                                    <p>Se trasladarán: <span className="font-bold">{Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)}</span> unidades a la tienda.</p>
                                                 )
                                             ) : (
-                                                <p>Quedarán en depósito: <span className="font-bold">{selectedProduct.stock_en_deposito - Number(cantidadInput)}</span> unidades.</p>
+                                                <p>Quedarán en depósito: <span className="font-bold">{Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)}</span> unidades.</p>
                                             )}
                                         </div>
                                     ) : null}
@@ -383,7 +384,7 @@ const StockDeposito = () => {
                                         <button
                                             type="submit"
                                             className="btn-primary flex items-center justify-center px-6 py-2"
-                                            disabled={isTransferring || selectedProduct.stock_en_deposito === 0 || cantidadInput === '' || (modoTransferencia === 'quedar' && Number(cantidadInput) === selectedProduct.stock_en_deposito)}
+                                            disabled={isTransferring || Number(selectedProduct.stock_en_deposito) === 0 || cantidadInput === '' || (modoTransferencia === 'quedar' && Number(cantidadInput) === Number(selectedProduct.stock_en_deposito))}
                                         >
                                             {isTransferring ? (
                                                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
