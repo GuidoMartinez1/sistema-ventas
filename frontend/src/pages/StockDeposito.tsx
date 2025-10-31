@@ -3,7 +3,7 @@ import { stockDepositoAPI, StockDeposito, LoteDeposito } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2 } from 'lucide-react';
 
-// Clases de utilidad (tomadas de NuevaCompra.tsx para consistencia)
+// Clases de utilidad (Ajustadas para responsive)
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
 const formatDate = (dateString: string | undefined) => {
@@ -18,14 +18,12 @@ const StockDeposito = () => {
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
 
-    // Estado para el modal de transferencia/detalle
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<StockDeposito | null>(null);
     const [lotes, setLotes] = useState<LoteDeposito[]>([]);
     const [isTransferring, setIsTransferring] = useState(false);
     const [isMassTransferring, setIsMassTransferring] = useState(false);
 
-    // Estado para la transferencia en el modal
     const [cantidadInput, setCantidadInput] = useState<number | string>('');
     const [modoTransferencia, setModoTransferencia] = useState<'trasladar' | 'quedar'>('trasladar');
 
@@ -33,7 +31,6 @@ const StockDeposito = () => {
         setLoading(true);
         try {
             const response = await stockDepositoAPI.getAll();
-            // Asegurarse de que stock_en_deposito sea un número (puede venir como string o nulo)
             const safeStockList = response.data.map((item: StockDeposito) => ({
                 ...item,
                 stock_en_deposito: Number(item.stock_en_deposito) || 0,
@@ -57,7 +54,6 @@ const StockDeposito = () => {
         );
     }, [stockList, busqueda]);
 
-    // CORRECCIÓN CLAVE: Calcula el stock total en depósito usando Number() para evitar concatenación o errores.
     const totalStockInDeposito = useMemo(() => {
         return stockList.reduce((sum, item) => sum + (Number(item.stock_en_deposito) || 0), 0);
     }, [stockList]);
@@ -132,7 +128,6 @@ const StockDeposito = () => {
         const stockActual = Number(selectedProduct.stock_en_deposito);
         const inputNum = Number(cantidadInput);
 
-        // Validación de número y cálculo
         if (isNaN(inputNum) || (cantidadInput === '' && stockActual > 0)) {
             return toast.error("Debes ingresar una cantidad válida.");
         }
@@ -145,18 +140,16 @@ const StockDeposito = () => {
                 return toast.error(`Error: Intentas trasladar más stock del que tienes en depósito (${stockActual}).`);
             }
             cantidadAMover = inputNum;
-        } else { // modoTransferencia === 'quedar'
+        } else {
             if (inputNum < 0) {
                 return toast.error("La cantidad que queda no puede ser negativa.");
             }
             if (inputNum > stockActual) {
                 return toast.error(`Error: No puedes dejar más stock del que tienes (${stockActual}).`);
             }
-            // Esto permite 0 como opción válida (Stock actual - 0 = stock actual a mover)
             cantidadAMover = stockActual - inputNum;
         }
 
-        // Final guard: Si la cantidad a mover es 0 (cuando inputNum == stockActual)
         if (cantidadAMover <= 0) {
             if (stockActual > 0 && modoTransferencia === 'quedar' && inputNum === stockActual) {
                 return toast.error("El stock ya está en su cantidad final. No hay unidades para trasladar.");
@@ -200,42 +193,41 @@ const StockDeposito = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
 
-            {/* ENCABEZADO Y BOTÓN MAESTRO DE TRASLADO */}
-            <div className="flex justify-between items-start">
+            {/* ENCABEZADO Y BOTÓN MAESTRO DE TRASLADO: Ahora usa flex-col en mobile (sm) */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <Warehouse className="h-7 w-7 mr-2 text-orange-500" />
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
+                        <Warehouse className="h-6 w-6 md:h-7 md:w-7 mr-2 text-orange-500" />
                         Stock en Depósito
                     </h1>
-                    <p className="text-gray-600">Control de la mercadería almacenada y traslados a la tienda física.</p>
+                    <p className="text-sm text-gray-600">Control de la mercadería almacenada y traslados a la tienda física.</p>
                 </div>
 
-                {/* Botón Maestro Trasladar Todo (Estilos Corregidos) */}
+                {/* Botón Maestro Trasladar Todo: Color NARANJA y Responsive */}
                 <button
                     onClick={handleMassTransferAll}
-                    // Aplicamos la clase del botón primario (naranja) o un color que se ajuste a tu sistema (púrpura o naranja)
-                    // Usaré un púrpura más oscuro para diferenciarlo y mantener un color de sistema.
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-lg py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-lg hover:shadow-xl disabled:bg-gray-400"
+                    // Usando los colores primarios naranja de tu botón 'Trasladar'
+                    className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400"
                     disabled={isMassTransferring || totalStockInDeposito === 0}
                 >
                     {isMassTransferring ? (
-                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin mr-2" />
                     ) : (
-                        <Maximize2 className="h-6 w-6 mr-2" />
+                        <Maximize2 className="h-5 w-5 md:h-6 md:w-6 mr-2" />
                     )}
-                    {/* Sumatoria Corregida */}
                     {isMassTransferring ? 'Vaciando Depósito...' : `Vaciar Depósito Completo (${totalStockInDeposito} uds.)`}
                 </button>
             </div>
 
             <div className={cardClass}>
+                {/* Búsqueda en una línea separada y responsive */}
                 <div className="mb-4">
                     <input
                         type="text"
                         placeholder="Buscar producto por nombre o código..."
                         value={busqueda}
                         onChange={e => setBusqueda(e.target.value)}
-                        className={`${inputFieldClass} w-full md:w-1/3`}
+                        className={`${inputFieldClass} w-full`}
                     />
                 </div>
 
@@ -244,55 +236,86 @@ const StockDeposito = () => {
                         {busqueda ? 'No se encontraron productos con ese criterio en el depósito.' : 'No hay stock registrado actualmente en el depósito.'}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cód. / Cat.</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Tienda</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                            </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                    <>
+                        {/* TABLA GRANDE (Desktop) */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cód. / Cat.</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Tienda</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredStock.map((item) => (
+                                    <tr key={item.producto_id}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {item.producto_nombre}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {item.codigo} <br/>
+                                            <span className="text-xs text-gray-400">{item.categoria_nombre}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-orange-600">
+                                            {item.stock_en_deposito}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                            {item.stock_en_tienda}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-center space-y-1">
+                                            <button
+                                                onClick={() => handleOpenModal(item)}
+                                                className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
+                                                disabled={isMassTransferring}
+                                            >
+                                                <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* LISTA DE TARJETAS (Mobile) */}
+                        <div className="md:hidden space-y-3">
                             {filteredStock.map((item) => (
-                                <tr key={item.producto_id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {item.producto_nombre}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {item.codigo} <br/>
-                                        <span className="text-xs text-gray-400">{item.categoria_nombre}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-orange-600">
-                                        {item.stock_en_deposito}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                                        {item.stock_en_tienda}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-center space-y-1">
-                                        {/* Botón Trasladar: Abre el modal para traslado individual */}
+                                <div key={item.producto_id} className="p-3 border rounded-lg shadow-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="text-sm font-bold text-gray-900">{item.producto_nombre}</div>
                                         <button
                                             onClick={() => handleOpenModal(item)}
-                                            className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
+                                            className="bg-orange-500 hover:bg-orange-600 text-white text-xs py-1 px-3 rounded-lg flex items-center"
                                             disabled={isMassTransferring}
                                         >
-                                            <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
+                                            <ArrowRight className="h-3 w-3 mr-1" /> Trasladar
                                         </button>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    <div className="text-xs text-gray-600 mb-2">
+                                        Cód.: {item.codigo} | Cat.: {item.categoria_nombre}
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Depósito:</span>
+                                        <span className="font-semibold text-orange-600">{item.stock_en_deposito}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Tienda:</span>
+                                        <span className="text-gray-600">{item.stock_en_tienda}</span>
+                                    </div>
+                                </div>
                             ))}
-                            </tbody>
-                        </table>
-                    </div>
+                        </div>
+                    </>
                 )}
             </div>
 
             {/* Modal de Traslado y Detalle de Lotes */}
             {showModal && selectedProduct && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-xl bg-white">
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+                    <div className="relative top-4 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-xl bg-white">
                         <div className="flex justify-between items-start border-b pb-3 mb-4">
                             <h3 className="text-xl font-bold text-gray-900">
                                 Traslado: {selectedProduct.producto_nombre}
@@ -304,6 +327,7 @@ const StockDeposito = () => {
                             </button>
                         </div>
 
+                        {/* El grid ya es responsive, se mantendrá en una columna en móvil */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Columna 1: Formulario de Transferencia */}
                             <div>
@@ -317,7 +341,7 @@ const StockDeposito = () => {
 
                                 <form onSubmit={handleTransfer} className="space-y-4">
                                     {/* Selector de Modalidad */}
-                                    <div className="flex items-center space-x-4">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                                         <label className="flex items-center text-sm font-medium text-gray-700">
                                             <input
                                                 type="radio"
@@ -383,7 +407,7 @@ const StockDeposito = () => {
                                     <div className="flex justify-end pt-2">
                                         <button
                                             type="submit"
-                                            className="btn-primary flex items-center justify-center px-6 py-2"
+                                            className="btn-primary w-full sm:w-auto flex items-center justify-center px-6 py-2"
                                             disabled={isTransferring || Number(selectedProduct.stock_en_deposito) === 0 || cantidadInput === '' || (modoTransferencia === 'quedar' && Number(cantidadInput) === Number(selectedProduct.stock_en_deposito))}
                                         >
                                             {isTransferring ? (
