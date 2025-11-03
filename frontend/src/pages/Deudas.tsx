@@ -14,9 +14,20 @@ const formatPrice = (value: number | string | undefined) => {
   return '$' + Number(value).toLocaleString("es-AR");
 };
 
+// --- INTERFAZ PARA EL GRUPO DE DEUDAS POR CLIENTE ---
+interface DeudorGroup {
+  cliente_nombre: string,
+  telefono: string | undefined,
+  direccion: string | undefined,
+  deudas: Deuda[],
+  total_grupo: number
+}
+
+
 const Deudas = () => {
   const [deudas, setDeudas] = useState<Deuda[]>([])
   const [loading, setLoading] = useState(true)
+  // Mantenemos el estado de expansión basado en el ID de la deuda individual
   const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
 
   // modal / selección de pago
@@ -45,10 +56,37 @@ const Deudas = () => {
     }
   }
 
+  // 1. Filtrado de deudas
   const filteredDeudas = deudas.filter((d) =>
       d.cliente_nombre?.toLowerCase().includes(search.toLowerCase()) ||
       d.telefono?.toLowerCase().includes(search.toLowerCase())
   )
+
+  // 2. AGRUPACIÓN DE DEUDAS POR CLIENTE
+  const groupedDeudas = filteredDeudas.reduce((acc, deuda) => {
+    // Usamos el ID del cliente o el nombre como clave si no hay ID
+    const key = deuda.cliente_id?.toString() || deuda.cliente_nombre || 'Cliente Desconocido';
+
+    if (!acc[key]) {
+      acc[key] = {
+        cliente_nombre: deuda.cliente_nombre || 'Cliente sin nombre',
+        telefono: deuda.telefono,
+        direccion: deuda.direccion,
+        deudas: [],
+        total_grupo: 0,
+      };
+    }
+
+    acc[key].deudas.push(deuda);
+    acc[key].total_grupo += deuda.total;
+    return acc;
+  }, {} as Record<string, DeudorGroup>);
+
+  // 3. Convertir el objeto de grupos en un array para mapear
+  const deudorGroups: DeudorGroup[] = Object.values(groupedDeudas);
+  // Opcional: ordenar los grupos por el total adeudado o por nombre
+  deudorGroups.sort((a, b) => b.total_grupo - a.total_grupo); // Ordenar por total adeudado (descendente)
+
 
   const openModalPago = (deudaId: number) => {
     setDeudaSeleccionada(deudaId)
@@ -90,7 +128,7 @@ const Deudas = () => {
           : 'Pago parcial registrado')
 
       setDeudaSeleccionada(null)
-      fetchDeudas()
+      fetchDeudas() // Recargar para actualizar la lista de deudas
     } catch (error) {
       toast.error('Error al registrar el pago')
     } finally {
@@ -112,7 +150,6 @@ const Deudas = () => {
       minute: '2-digit'
     })
   }
-
 
 
   if (loading) {
@@ -151,108 +188,122 @@ const Deudas = () => {
               <p className="text-gray-500">Todas las ventas están al día</p>
             </div>
         ) : (
-            <div className="space-y-4">
-              {filteredDeudas.map((deuda) => (
-                  <div key={deuda.id} className="bg-white rounded-lg shadow-md border border-gray-200">
-                    <div className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row justify-between items-start">
-                        <div className="flex-1 min-w-0 pr-4 mb-4 sm:mb-0">
-                          <div className="flex items-center mb-2 gap-3">
-                            <User className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                              {deuda.cliente_nombre || 'Cliente sin nombre'}
-                            </h3>
-                            <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full flex-shrink-0">
-                                Deuda
-                            </span>
-                          </div>
+            // ITERACIÓN POR GRUPOS DE DEUDORES
+            <div className="space-y-10"> {/* Mayor espacio entre deudores */}
+              {deudorGroups.map((group, index) => (
+                  <div key={index} className="space-y-4 border p-4 rounded-lg bg-gray-50 shadow-lg">
 
-                          {/* Info de contacto: Apilada en móvil */}
-                          <div className="flex flex-col gap-1 text-sm text-gray-600 mb-2">
-                            {deuda.telefono && (
-                                <span className="flex items-center">
-                                  <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
-                                  <span className='truncate'>{deuda.telefono}</span>
-                                </span>
-                            )}
-                            {deuda.direccion && (
-                                <span className="flex items-start">
-                                  <MapPin className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-                                  <span className='truncate'>{deuda.direccion}</span>
-                                </span>
-                            )}
-                          </div>
-
-                          {/* Fecha */}
-                          <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
-                            <CalendarIcon className="h-4 w-4 flex-shrink-0" />
-                            <span>Venta: {formatDate(deuda.fecha)}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-start sm:items-end ml-0 sm:ml-4 flex-shrink-0">
-                          <div className="text-3xl font-bold text-orange-600 mb-2">
-                            {formatPrice(deuda.total)}
-                          </div>
-                          <button
-                              onClick={() => openModalPago(deuda.id!)}
-                              className="w-full sm:w-auto flex items-center justify-center px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Marcar como pagada
-                          </button>
-                        </div>
+                    {/* --- ENCABEZADO DEL GRUPO (DEUDOR) --- */}
+                    <div className="p-4 bg-orange-100 rounded-lg border-2 border-orange-400 shadow-md">
+                      <h2 className="text-2xl font-bold text-orange-900 flex items-center mb-1">
+                        <User className="h-6 w-6 mr-2 text-orange-600" />
+                        {group.cliente_nombre}
+                      </h2>
+                      <div className="flex flex-wrap gap-x-4 text-sm text-orange-700 mb-2">
+                        {group.telefono && (
+                            <span className="flex items-center">
+                            <Phone className="h-4 w-4 mr-1" /> {group.telefono}
+                          </span>
+                        )}
+                        {group.direccion && (
+                            <span className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" /> {group.direccion}
+                          </span>
+                        )}
                       </div>
-
-                      <button
-                          onClick={() => toggleExpanded(deuda.id!)}
-                          className="mt-4 flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        <Package className="h-4 w-4 mr-1" />
-                        {expandedDeuda === deuda.id ? 'Ocultar' : 'Ver'} productos ({deuda.detalles.length})
-                      </button>
+                      <div className="text-2xl font-extrabold text-orange-900 mt-3 border-t border-orange-300 pt-2">
+                        Total Adeudado: <span className="text-3xl">{formatPrice(group.total_grupo)}</span>
+                      </div>
                     </div>
 
-                    {expandedDeuda === deuda.id && (
-                        <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-4">
-                          <h4 className="font-medium text-gray-900 mb-3">Productos adeudados:</h4>
-                          <div className="space-y-3">
-                            {deuda.detalles.map((detalle, index) => (
-                                <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border">
-
-                                  {/* CORRECCIÓN: Contenedor del nombre con w-full y min-w-0 para que truncate funcione siempre */}
-                                  <div className='min-w-0 w-full sm:w-auto flex-1 pr-4'>
-                                    <span className="font-medium text-gray-900 truncate block">
-                                      {detalle.producto_nombre || detalle.descripcion}
-                                    </span>
-                                    <span className="text-sm text-gray-500 block">
-                                      {formatPrice(detalle.precio_unitario)} c/u
-                                    </span>
+                    {/* --- LISTA DE DEUDAS INDIVIDUALES DEL GRUPO --- */}
+                    <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2 ml-2">
+                      Ventas pendientes ({group.deudas.length}):
+                    </h3>
+                    <div className="space-y-3">
+                      {group.deudas.map((deuda) => (
+                          <div key={deuda.id} className="bg-white rounded-lg shadow-md border border-gray-200">
+                            <div className="p-4 sm:p-6">
+                              <div className="flex flex-col sm:flex-row justify-between items-start">
+                                <div className="flex-1 min-w-0 pr-4 mb-4 sm:mb-0">
+                                  <div className="flex items-center mb-2 gap-3">
+                                    <h4 className="text-lg font-semibold text-gray-700 truncate">
+                                      Deuda ID: {deuda.id}
+                                    </h4>
+                                    <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex-shrink-0">
+                                                  Venta
+                                              </span>
                                   </div>
-
-                                  {/* Contenedor de precios y cantidad: se ajusta a ser una línea simple en móvil */}
-                                  <div className="flex-shrink-0 text-left sm:text-right flex justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0 pt-2 border-t sm:border-none sm:pt-0">
-                                    <div className="text-sm text-gray-600">
-                                      Cant: {detalle.cantidad}
-                                    </div>
-                                    <div className="font-bold text-gray-900 ml-4">
-                                      Total: {formatPrice(detalle.subtotal)}
-                                    </div>
+                                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                                    <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                                    <span>Generada: {formatDate(deuda.fecha)}</span>
                                   </div>
                                 </div>
-                            ))}
+
+                                <div className="flex flex-col items-start sm:items-end ml-0 sm:ml-4 flex-shrink-0">
+                                  <div className="text-3xl font-bold text-red-600 mb-2">
+                                    {formatPrice(deuda.total)}
+                                  </div>
+                                  <button
+                                      onClick={() => openModalPago(deuda.id!)}
+                                      className="w-full sm:w-auto flex items-center justify-center px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Pagar esta deuda
+                                  </button>
+                                </div>
+                              </div>
+
+                              <button
+                                  onClick={() => toggleExpanded(deuda.id!)}
+                                  className="mt-4 flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                <Package className="h-4 w-4 mr-1" />
+                                {expandedDeuda === deuda.id ? 'Ocultar' : 'Ver'} productos ({deuda.detalles.length})
+                              </button>
+                            </div>
+
+                            {/* Sección de detalles del producto */}
+                            {expandedDeuda === deuda.id && (
+                                <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-4">
+                                  <h4 className="font-medium text-gray-900 mb-3">Productos de esta venta:</h4>
+                                  <div className="space-y-3">
+                                    {deuda.detalles.map((detalle, detIndex) => (
+                                        <div key={detIndex} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border">
+
+                                          <div className='min-w-0 w-full sm:w-auto flex-1 pr-4'>
+                                                      <span className="font-medium text-gray-900 truncate block">
+                                                        {detalle.producto_nombre || detalle.descripcion}
+                                                      </span>
+                                            <span className="text-sm text-gray-500 block">
+                                                        {formatPrice(detalle.precio_unitario)} c/u
+                                                      </span>
+                                          </div>
+
+                                          <div className="flex-shrink-0 text-left sm:text-right flex justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0 pt-2 border-t sm:border-none sm:pt-0">
+                                            <div className="text-sm text-gray-600">
+                                              Cant: **{detalle.cantidad}**
+                                            </div>
+                                            <div className="font-bold text-gray-900 ml-4">
+                                              Total: {formatPrice(detalle.subtotal)}
+                                            </div>
+                                          </div>
+                                        </div>
+                                    ))}
+                                  </div>
+                                </div>
+                            )}
                           </div>
-                        </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
               ))}
             </div>
         )}
 
-        {/* Modal de método de pago */}
+        {/* Modal de método de pago (se mantiene igual) */}
         {deudaSeleccionada && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
-              {/* RESPONSIVE: w-full max-w-sm */}
               <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
                 <h2 className="text-lg font-bold mb-4">Seleccionar método de pago</h2>
                 <p className="text-sm text-gray-700 mb-3">Podés cambiar la forma de pago con la que se registró originalmente la venta.</p>
