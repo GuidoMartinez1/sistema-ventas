@@ -64,13 +64,11 @@ const Deudas = () => {
       d.telefono?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // 2. AGRUPACIÓN DE DEUDAS POR CLIENTE (CORRECCIÓN DE NaN)
+  // 2. AGRUPACIÓN DE DEUDAS POR CLIENTE
   const groupedDeudas = filteredDeudas.reduce((acc, deuda) => {
     const key = deuda.cliente_id?.toString() || deuda.cliente_nombre || 'Cliente Desconocido';
 
-    // --- CORRECCIÓN CLAVE DE NaN: Aseguramos que el total sea un número
     const deudaTotal = Number(deuda.total) || 0;
-    // --------------------------------------------------------------------
 
     if (!acc[key]) {
       acc[key] = {
@@ -83,13 +81,34 @@ const Deudas = () => {
     }
 
     acc[key].deudas.push(deuda);
-    acc[key].total_grupo += deudaTotal; // Sumamos el total corregido
+    acc[key].total_grupo += deudaTotal;
     return acc;
   }, {} as Record<string, DeudorGroup>);
 
-  // 3. Convertir el objeto de grupos en un array para mapear
+  // 3. Convertir el objeto de grupos en un array y ORDENAR POR FECHA
   const deudorGroups: DeudorGroup[] = Object.values(groupedDeudas);
-  deudorGroups.sort((a, b) => b.total_grupo - a.total_grupo);
+
+  // Función para encontrar la fecha de deuda más reciente en un grupo
+  const getMostRecentDate = (group: DeudorGroup) => {
+    if (group.deudas.length === 0) return 0;
+    // Encontrar la fecha más grande (más reciente) en el grupo
+    const maxDate = Math.max(...group.deudas.map(d => new Date(d.fecha!).getTime()));
+    return maxDate;
+  };
+
+  // --- CAMBIO CLAVE AQUÍ: Ordenar por la fecha de la deuda más reciente (descendente) ---
+  deudorGroups.sort((a, b) => getMostRecentDate(b) - getMostRecentDate(a));
+  // -------------------------------------------------------------------------------------
+
+
+  // Opcional: ordenar las deudas individuales dentro de cada grupo por fecha también
+  deudorGroups.forEach(group => {
+    group.deudas.sort((a, b) => {
+      const dateA = a.fecha ? new Date(a.fecha).getTime() : 0;
+      const dateB = b.fecha ? new Date(b.fecha).getTime() : 0;
+      return dateB - dateA; // Más reciente primero
+    });
+  });
 
 
   const openModalPago = (deudaId: number) => {
@@ -221,13 +240,13 @@ const Deudas = () => {
                       Ventas pendientes ({group.deudas.length}):
                     </h3>
                     <div className="space-y-3">
+                      {/* Las deudas individuales dentro de este grupo ya están ordenadas por fecha */}
                       {group.deudas.map((deuda) => (
                           <div key={deuda.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
                             <div className="p-4 sm:p-5">
                               <div className="flex flex-col sm:flex-row justify-between items-start">
                                 <div className="flex-1 min-w-0 pr-4 mb-3 sm:mb-0">
                                   <div className="flex items-center mb-1 gap-3">
-                                    {/* CAMBIO DE TEXTO: De "Deuda ID" a "Venta N°" */}
                                     <h4 className="text-md font-semibold text-gray-800 truncate">
                                       Venta N° {deuda.id}
                                     </h4>
