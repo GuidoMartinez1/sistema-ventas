@@ -446,13 +446,13 @@ const Gastos = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto Original</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto ARS</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Categoría</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Concepto</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Monto Original</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Monto ARS</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
                                 </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
