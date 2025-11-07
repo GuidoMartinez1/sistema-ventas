@@ -393,8 +393,7 @@ const StockDeposito = () => {
                                             {item.producto_nombre}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {item.codigo} <br/>
-                                            <span className="text-xs text-gray-400">{item.categoria_nombre}</span>
+                                            <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-orange-600">
                                             {item.stock_en_deposito}
@@ -456,7 +455,7 @@ const StockDeposito = () => {
                                         </button>
                                     </div>
                                     <div className="text-xs text-gray-600 mb-2 pl-6">
-                                        Cód.: {item.codigo} | Cat.: {item.categoria_nombre}
+                                        Categoria.: {item.categoria_nombre}
                                     </div>
                                     <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Depósito:</span>
