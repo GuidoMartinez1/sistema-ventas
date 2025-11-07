@@ -462,18 +462,17 @@ const Gastos = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center">
                                             <Tag className='h-4 w-4 mr-1 text-red-400' /> {g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{g.concepto}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{g.concepto}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
                                                 {formatCurrency(g.monto, g.moneda)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                            {/* 🆕 USAR formatPrice */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-center">
                                             {formatPrice(g.monto_ars)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(g.fecha).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{new Date(g.fecha).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2 text-center">
                                             <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
                                                 <Pencil className="h-4 w-4" />
                                             </button>
