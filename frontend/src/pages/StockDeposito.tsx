@@ -297,8 +297,7 @@ const StockDeposito = () => {
                     <button
                         onClick={handleMassTransferSelected}
                         className="bg-orange-600 hover:bg-orange-600 text-white rounded-full text-base py-3 px-6 transition duration-150 ease-in-out font-semibold flex items-center shadow-2xl disabled:bg-gray-400"
-                        disabled={isMassTransferring || totalSelectedStock === 0}
-                    >
+                        disabled={isMassTransferring || totalSelectedStock === 0}>
                         {isMassTransferring ? (
                             <Loader2 className="h-5 w-5 animate-spin mr-2" />
                         ) : (
@@ -310,8 +309,8 @@ const StockDeposito = () => {
             )}
 
             {/* ENCABEZADO Y BOTÓN MAESTRO GLOBAL */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                <div>
+            <div className="flex flex-wrap justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                <div className="min-w-0"> {/* Añadir min-w-0 para evitar desbordamiento */}
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
                         <Warehouse className="h-6 w-6 md:h-7 md:w-7 mr-2 text-orange-500" />
                         Stock en Depósito
@@ -322,9 +321,10 @@ const StockDeposito = () => {
                 {/* Botón Maestro Trasladar Todo GLOBAL (Naranja) */}
                 <button
                     onClick={handleMassTransferAll}
-                    className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400"
-                    disabled={isMassTransferring || totalStockInDeposito === 0}
-                >
+                    // Usamos flex-shrink-0 para que el botón siempre conserve su ancho
+                    // y aseguramos que ocupe todo el ancho en mobile con w-full
+                    className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400 flex-shrink-0"
+                    disabled={isMassTransferring || totalStockInDeposito === 0}>
                     {isMassTransferring ? (
                         <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin mr-2" />
                     ) : (
@@ -341,8 +341,7 @@ const StockDeposito = () => {
                         placeholder="Buscar producto por nombre o código..."
                         value={busqueda}
                         onChange={e => setBusqueda(e.target.value)}
-                        className={`${inputFieldClass} w-full`}
-                    />
+                        className={`${inputFieldClass} w-full`}/>
                 </div>
 
                 {filteredStock.length === 0 ? (
