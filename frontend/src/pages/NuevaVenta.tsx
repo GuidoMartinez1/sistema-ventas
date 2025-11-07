@@ -319,6 +319,26 @@ const NuevaVenta = () => {
                             <h3 className="font-medium text-gray-900">{p.nombre}</h3>
                             <span className="text-sm font-medium text-gray-900">{formatPrice(Number(p.precio || 0).toFixed(2))}</span>
                           </div>
+
+                          {/* 🆕 NUEVA SECCIÓN DE DATOS DE COSTO Y GANANCIA */}
+                          <div className="flex justify-between text-xs text-gray-500 mb-2">
+                            {p.precio_costo && (
+                                <p>
+                                  Costo: <span className="font-medium text-gray-700">{formatPrice(Number(p.precio_costo).toFixed(2))}</span>
+                                </p>
+                            )}
+                            {p.porcentaje_ganancia && (
+                                <p>
+                                  Ganancia: <span className={`font-medium ${
+                                    (p.porcentaje_ganancia || 0) >= 30 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                        {p.porcentaje_ganancia}%
+                                    </span>
+                                </p>
+                            )}
+                          </div>
+                          {/* ----------------------------------------------------- */}
+
                           {p.precio_kg ? (
                               <p className="text-xs text-gray-500 mb-1">
                                 Precio x Kg: <span className="font-medium text-gray-800">{formatPrice(Number(p.precio_kg).toFixed(2))}</span>
