@@ -35,6 +35,7 @@ const Productos = () => {
   const [busqueda, setBusqueda] = useState('')
   const [stockFiltro, setStockFiltro] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState('')
+  const [gananciaFiltro, setGananciaFiltro] = useState('')
 
 
   useEffect(() => {
@@ -251,6 +252,12 @@ const Productos = () => {
       .filter(p =>
           categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
       )
+      .filter(p => {
+        if (!gananciaFiltro) return true; // Mostrar todos si el filtro está vacío
+        const ganancia = Number(p.porcentaje_ganancia) || 0;
+        const limite = parseInt(gananciaFiltro); // 10, 20, 30, 40
+        return ganancia < limite;
+      });
 
   if (loading) {
     return (
@@ -285,7 +292,7 @@ const Productos = () => {
           </div>
         </div>
 
-        {/* FILTROS: Usa grid en móvil para mejor distribución */}
+        {/* FILTROS: Se amplía el grid a 4 columnas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
               type="text"
@@ -319,12 +326,21 @@ const Productos = () => {
                 </option>
             ))}
           </select>
+          <select
+              value={gananciaFiltro}
+              onChange={(e) => setGananciaFiltro(e.target.value)}
+              className={inputFieldClass}
+          >
+            <option value="">Todas las Ganancias</option>
+            <option value="10">Ganancia &lt; 10%</option>
+            <option value="20">Ganancia &lt; 20%</option>
+            <option value="30">Ganancia &lt; 30%</option>
+            <option value="40">Ganancia &lt; 40%</option>
+          </select>
         </div>
 
         {/* TABLA / CARD VIEW */}
         <div className={cardClass}>
-          {/* VISTA DE TABLA (ESCRITORIO) */}
-          {/* CORRECCIÓN: Se envuelve la tabla en un div con overflow-x-auto para que aparezca el scroll si es necesario. */}
           <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
