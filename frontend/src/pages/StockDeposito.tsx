@@ -395,13 +395,13 @@ const StockDeposito = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-orange-600">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-orange-600">
                                             {item.stock_en_deposito}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
                                             {item.stock_en_tienda}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-center space-y-1">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-center space-y-1">
                                             <button
                                                 onClick={() => handleOpenModal(item)}
                                                 className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
