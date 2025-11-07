@@ -167,6 +167,7 @@ export interface Gasto {
   moneda: 'ARS' | 'USD'
   monto_ars: number // Monto normalizado
   fecha: string
+  categoria: string
   created_at?: string
 }
 
@@ -264,7 +265,8 @@ export const futurosPedidosAPI = {
 
 export const gastosAPI = {
   getAll: () => api.get<Gasto[]>('/gastos'),
-  create: (gasto: Omit<Gasto, 'id' | 'created_at'>) => api.post('/gastos', gasto),
+  create: (gasto: Omit<Gasto, 'id' | 'created_at' | 'monto_ars'>) => api.post('/gastos', gasto), // Ahora recibe categoria
+  update: (id: number, gasto: Omit<Gasto, 'id' | 'created_at' | 'monto_ars'>) => api.put(`/gastos/${id}`, gasto), // 🆕 Método Update (PUT)
   delete: (id: number) => api.delete(`/gastos/${id}`),
 }
 

@@ -1,6 +1,6 @@
 // src/pages/Gastos.tsx
 import { useEffect, useState } from 'react'
-import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag } from 'lucide-react'
+import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil } from 'lucide-react' // 🆕 Agregué Pencil
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -42,74 +42,22 @@ const getCategoriaLabel = (value: string | undefined): string => {
 };
 
 
-// --- CotizacionForm Component (Gestión de la cotización diaria) ---
-const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
-    const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
-    const [valor, setValor] = useState('')
-    const [loading, setLoading] = useState(false)
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-        try {
-            await cotizacionesAPI.create({
-                fecha,
-                valor: safeNumber(valor),
-            })
-            toast.success(`Cotización de ${new Date(fecha).toLocaleDateString()} guardada.`)
-            setValor('')
-            onCotizacionSaved()
-        } catch (error) {
-            const msg = (error as any).response?.data?.error || 'Error al guardar la cotización. Revise si ya existe un registro para esa fecha.'
-            toast.error(msg)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    return (
-        // Se usa p-3 en móvil, se eliminó la clase 'card' original
-        <div className="p-3 bg-orange-50 border border-orange-300 rounded-lg">
-            <h4 className="text-sm font-semibold text-orange-800 flex items-center mb-2">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Cotización USD Diaria
-            </h4>
-            {/* RESPONSIVE: Apilar en móvil, en línea en escritorio */}
-            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2 md:gap-3 items-end">
-                <div className="flex-1 w-full">
-                    <label className="block text-xs font-medium text-orange-700 mb-1">Fecha</label>
-                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={`${inputFieldClass} py-1`} required />
-                </div>
-                <div className="flex-1 w-full">
-                    <label className="block text-xs font-medium text-orange-700 mb-1">Valor ($ ARS)</label>
-                    <input
-                        type="number"
-                        value={valor}
-                        onChange={e => setValor(e.target.value)}
-                        className={`${inputFieldClass} py-1 border-orange-500`}
-                        step="0.01"
-                        required />
-                </div>
-                <button
-                    type="submit"
-                    className="w-full md:w-auto px-3 py-1.5 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition h-fit"
-                    disabled={loading || !valor}>
-                    {loading ? 'Guardando...' : 'Guardar'}
-                </button>
-            </form>
-        </div>
-    )
+// --- Gasto Form Genérico (Usado para crear y editar) ---
+interface GastoFormProps {
+    initialGasto?: Gasto; // Opcional para editar
+    onSave: () => void;
+    onCancel?: () => void; // Solo para edición/modal
 }
 
-
-// --- GastoForm Component (Registro de un nuevo gasto) ---
-const GastoForm = ({ onSave }: { onSave: () => void }) => {
-    const [concepto, setConcepto] = useState('')
-    const [monto, setMonto] = useState('')
-    const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
-    const [moneda, setMoneda] = useState<'ARS' | 'USD'>('ARS')
-    // 🆕 Nuevo estado para la categoría
-    const [categoria, setCategoria] = useState(CATEGORIAS[0].value)
+const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel }) => {
+    const isEditing = !!initialGasto;
+    const [concepto, setConcepto] = useState(initialGasto?.concepto || '')
+    const [monto, setMonto] = useState(initialGasto?.monto.toString() || '')
+    // Aseguramos formato 'YYYY-MM-DD' para el input type="date"
+    const defaultDate = initialGasto?.fecha ? new Date(initialGasto.fecha).toISOString().split('T')[0] : new Date().toLocaleDateString('en-CA');
+    const [fecha, setFecha] = useState(defaultDate)
+    const [moneda, setMoneda] = useState<'ARS' | 'USD'>(initialGasto?.moneda || 'ARS')
+    const [categoria, setCategoria] = useState(initialGasto?.categoria || CATEGORIAS[0].value)
     const [cotizacionActual, setCotizacionActual] = useState(1)
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
@@ -150,30 +98,39 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
             return
         }
 
-        // 🆕 Asegurar que la categoría esté seleccionada
         if (!categoria) {
             toast.error('Debe seleccionar una categoría para el gasto.')
             return
         }
 
+        const payload = {
+            concepto,
+            monto: montoNum,
+            fecha: fecha,
+            moneda,
+            categoria,
+        }
+
         try {
-            await gastosAPI.create({
-                concepto,
-                monto: montoNum,
-                fecha: fecha,
-                moneda,
-                // 🆕 Incluir la categoría en el payload
-                categoria,
-            })
-            toast.success('Gasto registrado con éxito!')
-            setConcepto('')
-            setMonto('')
-            setMoneda('ARS')
-            setCategoria(CATEGORIAS[0].value) // Resetear a la primera opción
-            setFecha(new Date().toLocaleDateString('en-CA'))
+            if (isEditing && initialGasto?.id) {
+                // Lógica de edición
+                await gastosAPI.update(initialGasto.id, payload)
+                toast.success('Gasto actualizado con éxito!')
+            } else {
+                // Lógica de creación
+                await gastosAPI.create(payload)
+                toast.success('Gasto registrado con éxito!')
+
+                // Resetear solo al crear
+                setConcepto('')
+                setMonto('')
+                setMoneda('ARS')
+                setCategoria(CATEGORIAS[0].value)
+                setFecha(new Date().toLocaleDateString('en-CA'))
+            }
             onSave()
         } catch (error) {
-            const msg = (error as any).response?.data?.error || 'Error al registrar el gasto.'
+            const msg = (error as any).response?.data?.error || `Error al ${isEditing ? 'actualizar' : 'registrar'} el gasto.`
             toast.error(msg)
         }
     }
@@ -182,13 +139,19 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
     const esMontoValido = safeNumber(monto) > 0
 
     return (
-        <form onSubmit={handleSubmit} className={`${cardClass} space-y-4 bg-gray-50 border border-gray-200`}>
-            <h3 className="text-xl font-bold flex items-center text-gray-800"><PlusCircle className="mr-2 h-5 w-5 text-red-600" /> Registrar Nuevo Gasto</h3>
+        <form onSubmit={handleSubmit} className={`${cardClass} space-y-4 ${isEditing ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'} w-full`}>
+            <h3 className="text-xl font-bold flex items-center text-gray-800">
+                {isEditing ? (
+                    <><Pencil className="mr-2 h-5 w-5 text-blue-600" /> Editar Gasto #{initialGasto?.id}</>
+                ) : (
+                    <><PlusCircle className="mr-2 h-5 w-5 text-red-600" /> Registrar Nuevo Gasto</>
+                )}
+            </h3>
 
             {/* RESPONSIVE: 2 columnas en móvil (grid-cols-2), 4 en escritorio (md:grid-cols-4) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-                {/* 🆕 CAMPO CATEGORIA (Ocupa 1 columna) */}
+                {/* CAMPO CATEGORIA */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Categoría</label>
                     <select value={categoria} onChange={e => setCategoria(e.target.value)} className={inputFieldClass} required>
@@ -198,7 +161,7 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                     </select>
                 </div>
 
-                {/* Concepto (Ocupa 1 columna en escritorio) */}
+                {/* Concepto */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Concepto</label>
                     <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className={inputFieldClass} required />
@@ -269,23 +232,96 @@ const GastoForm = ({ onSave }: { onSave: () => void }) => {
                 </div>
             )}
 
-
-            <button
-                type="submit"
-                className="w-full px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition flex items-center justify-center"
-                disabled={moneda === 'USD' && cotizacionActual < 1}>
-                <DollarIcon className="h-4 w-4 mr-2" />
-                Guardar Gasto
-            </button>
+            <div className='flex justify-end space-x-2'>
+                {isEditing && (
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="px-4 py-2 text-gray-700 font-medium rounded-lg bg-gray-200 hover:bg-gray-300 transition flex items-center justify-center">
+                        Cancelar
+                    </button>
+                )}
+                <button
+                    type="submit"
+                    className={`px-4 py-2 font-medium rounded-lg transition flex items-center justify-center ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                    disabled={moneda === 'USD' && cotizacionActual < 1}>
+                    {isEditing ? (
+                        <><Pencil className="h-4 w-4 mr-2" /> Actualizar Gasto</>
+                    ) : (
+                        <><DollarIcon className="h-4 w-4 mr-2" /> Guardar Gasto</>
+                    )}
+                </button>
+            </div>
         </form>
     )
 }
+
+
+// --- CotizacionForm Component (Gestión de la cotización diaria) ---
+const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
+    const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
+    const [valor, setValor] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        try {
+            await cotizacionesAPI.create({
+                fecha,
+                valor: safeNumber(valor),
+            })
+            toast.success(`Cotización de ${new Date(fecha).toLocaleDateString()} guardada.`)
+            setValor('')
+            onCotizacionSaved()
+        } catch (error) {
+            const msg = (error as any).response?.data?.error || 'Error al guardar la cotización. Revise si ya existe un registro para esa fecha.'
+            toast.error(msg)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="p-3 bg-orange-50 border border-orange-300 rounded-lg">
+            <h4 className="text-sm font-semibold text-orange-800 flex items-center mb-2">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Cotización USD Diaria
+            </h4>
+            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2 md:gap-3 items-end">
+                <div className="flex-1 w-full">
+                    <label className="block text-xs font-medium text-orange-700 mb-1">Fecha</label>
+                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={`${inputFieldClass} py-1`} required />
+                </div>
+                <div className="flex-1 w-full">
+                    <label className="block text-xs font-medium text-orange-700 mb-1">Valor ($ ARS)</label>
+                    <input
+                        type="number"
+                        value={valor}
+                        onChange={e => setValor(e.target.value)}
+                        className={`${inputFieldClass} py-1 border-orange-500`}
+                        step="0.01"
+                        required />
+                </div>
+                <button
+                    type="submit"
+                    className="w-full md:w-auto px-3 py-1.5 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition h-fit"
+                    disabled={loading || !valor}>
+                    {loading ? 'Guardando...' : 'Guardar'}
+                </button>
+            </form>
+        </div>
+    )
+}
+
 
 // --- Gastos Component (Listado principal) ---
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
     const [cotizacionKey, setCotizacionKey] = useState(0);
+    // 🆕 Estado para manejar la edición
+    const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
 
     const fetchData = async () => {
         setLoading(true)
@@ -314,10 +350,15 @@ const Gastos = () => {
         }
     }
 
+    // 🆕 Función para iniciar la edición
+    const handleEdit = (gasto: Gasto) => {
+        setEditingGasto(gasto);
+    };
+
     const totalGastosARS = gastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto"> {/* Ajuste de padding y centrado */}
+        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
 
             {/* RESPONSIVE: Apilar en móvil, dos columnas en escritorio */}
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
@@ -335,7 +376,21 @@ const Gastos = () => {
                 </div>
             </div>
 
-            <GastoForm onSave={fetchData} />
+            {/* Formulario de CREACIÓN (Solo se muestra si NO se está editando) */}
+            {!editingGasto && <GastoForm onSave={fetchData} />}
+
+            {/* 🆕 Renderizado del Formulario de Edición (Modal) */}
+            {editingGasto && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className='w-full max-w-lg'>
+                        <GastoForm
+                            initialGasto={editingGasto}
+                            onSave={() => { setEditingGasto(null); fetchData(); }}
+                            onCancel={() => setEditingGasto(null)}
+                        />
+                    </div>
+                </div>
+            )}
 
             <div className={cardClass}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
@@ -359,7 +414,7 @@ const Gastos = () => {
                                 <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th> {/* 🆕 Columna Categoría */}
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto Original</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto ARS</th>
@@ -373,7 +428,7 @@ const Gastos = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center">
                                             <Tag className='h-4 w-4 mr-1 text-red-400' /> {g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}
-                                        </td> {/* 🆕 Muestra la categoría */}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{g.concepto}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
@@ -384,8 +439,12 @@ const Gastos = () => {
                                             ${safeNumber(g.monto_ars).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(g.fecha).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900 ml-4">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2">
+                                            {/* 🆕 Botón de Editar en la tabla */}
+                                            <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
+                                                <Pencil className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900">
                                                 <Trash2 className="h-5 w-5" />
                                             </button>
                                         </td>
@@ -399,18 +458,24 @@ const Gastos = () => {
                         <div className="md:hidden space-y-3">
                             {gastos.map(g => (
                                 <div key={g.id} className="p-4 border border-gray-200 rounded-lg shadow-sm hover:bg-red-50">
-                                    <div className="flex justify-between items-center mb-1">
+                                    <div className="flex justify-between items-start mb-1">
                                         <p className="text-sm font-bold text-gray-900 truncate">
                                             #{g.id} - {g.concepto}
                                         </p>
-                                        <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900">
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                        {/* 🆕 Botones en la vista de cards */}
+                                        <div className="flex space-x-2">
+                                            <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
+                                                <Pencil className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900">
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="flex justify-between items-center mb-1 border-b border-red-100 pb-1">
                                         <span className="text-xs font-medium text-gray-500 flex items-center"><Tag className="h-3 w-3 mr-1" /> Categoría:</span>
                                         <span className="text-sm font-medium text-gray-700">{g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}</span>
-                                    </div> {/* 🆕 Muestra la categoría en móvil */}
+                                    </div>
                                     <div className="flex justify-between items-center mb-1">
                                         <span className="text-xs font-medium text-gray-500 flex items-center"><Calendar className="h-3 w-3 mr-1" /> Fecha:</span>
                                         <span className="text-sm text-gray-700">{new Date(g.fecha).toLocaleDateString()}</span>
