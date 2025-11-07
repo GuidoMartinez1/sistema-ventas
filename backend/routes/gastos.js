@@ -18,7 +18,13 @@ router.get('/', async (req, res) => {
 // POST: Crear un nuevo gasto
 router.post('/', async (req, res) => {
     try {
-        const { concepto, monto, fecha, moneda } = req.body // Ya no recibimos cotizacion
+        // 🆕 Ahora recibimos 'categoria'
+        const { concepto, monto, fecha, moneda, categoria } = req.body // Ya no recibimos cotizacion
+
+        // Validación básica de categoría
+        if (!categoria) {
+            return res.status(400).json({ error: "Debe seleccionar una categoría para el gasto." });
+        }
 
         // 1. Obtener la cotización del día para la fecha del gasto
         let cotizacion_usada = 1; // Default para ARS
@@ -38,9 +44,10 @@ router.post('/', async (req, res) => {
         const monto_ars = Number(monto) * cotizacion_usada;
 
         // 3. Insertar
+        // 🆕 Añadimos $6 para la categoría
         const newGasto = await pool.query(
-            "INSERT INTO gastos (concepto, monto, fecha, moneda, monto_ars) VALUES($1, $2, $3, $4, $5) RETURNING *",
-            [concepto, monto, fecha, moneda, monto_ars] // Nota: Insertamos el monto original y el monto normalizado
+            "INSERT INTO gastos (concepto, monto, fecha, moneda, monto_ars, categoria) VALUES($1, $2, $3, $4, $5, $6) RETURNING *",
+            [concepto, monto, fecha, moneda, monto_ars, categoria] // Nota: Agregamos categoria
         )
         res.json(newGasto.rows[0])
     } catch (err) {
