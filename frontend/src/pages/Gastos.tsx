@@ -497,7 +497,7 @@ const Gastos = () => {
                                 {filteredGastos.map(g => (
                                     <tr key={g.id} className="hover:bg-red-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center justify-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center">
                                             <Tag className='h-4 w-4 mr-1 text-red-400' /> {g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{g.concepto}</td>
