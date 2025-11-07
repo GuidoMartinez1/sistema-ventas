@@ -335,22 +335,22 @@ const Productos = () => {
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Categoría
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio Venta
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio x Kg
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Costo
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ganancia %
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stock
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -380,16 +380,16 @@ const Productos = () => {
                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                       {getCategoriaNombre(producto.categoria_id)}
                     </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                       {formatPrice(producto.precio)}
                     </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" >
                       {formatPrice(producto.precio_kg)}
                     </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       {formatPrice(producto.precio_costo)}
                     </td>
-                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.porcentaje_ganancia || 0) >= 50
                             ? 'bg-green-100 text-green-800'
@@ -400,7 +400,7 @@ const Productos = () => {
                       {producto.porcentaje_ganancia || 0}%
                     </span>
                     </td>
-                    <td className="px-3 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.stock || 0) <= 4
                             ? 'bg-red-100 text-red-800'
