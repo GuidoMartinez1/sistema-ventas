@@ -1,6 +1,6 @@
 // src/pages/Gastos.tsx
 import { useEffect, useState } from 'react'
-import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil } from 'lucide-react' // 🆕 Agregué Pencil
+import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil, X } from 'lucide-react'
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -53,7 +53,6 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
     const isEditing = !!initialGasto;
     const [concepto, setConcepto] = useState(initialGasto?.concepto || '')
     const [monto, setMonto] = useState(initialGasto?.monto.toString() || '')
-    // Aseguramos formato 'YYYY-MM-DD' para el input type="date"
     const defaultDate = initialGasto?.fecha ? new Date(initialGasto.fecha).toISOString().split('T')[0] : new Date().toLocaleDateString('en-CA');
     const [fecha, setFecha] = useState(defaultDate)
     const [moneda, setMoneda] = useState<'ARS' | 'USD'>(initialGasto?.moneda || 'ARS')
@@ -113,11 +112,9 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
 
         try {
             if (isEditing && initialGasto?.id) {
-                // Lógica de edición
                 await gastosAPI.update(initialGasto.id, payload)
                 toast.success('Gasto actualizado con éxito!')
             } else {
-                // Lógica de creación
                 await gastosAPI.create(payload)
                 toast.success('Gasto registrado con éxito!')
 
@@ -139,10 +136,12 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
     const esMontoValido = safeNumber(monto) > 0
 
     return (
-        <form onSubmit={handleSubmit} className={`${cardClass} space-y-4 ${isEditing ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'} w-full`}>
+        // 🆕 Contenedor blanco para la edición
+        <form onSubmit={handleSubmit} className={`${cardClass} space-y-4 bg-white border border-gray-200 w-full`}>
             <h3 className="text-xl font-bold flex items-center text-gray-800">
                 {isEditing ? (
-                    <><Pencil className="mr-2 h-5 w-5 text-blue-600" /> Editar Gasto #{initialGasto?.id}</>
+                    // 🆕 Título Naranja para edición
+                    <><Pencil className="mr-2 h-5 w-5 text-orange-600" /> Editar Gasto #{initialGasto?.id}</>
                 ) : (
                     <><PlusCircle className="mr-2 h-5 w-5 text-red-600" /> Registrar Nuevo Gasto</>
                 )}
@@ -203,7 +202,15 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
                 {/* Fecha */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Fecha</label>
-                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={inputFieldClass} required />
+                    <input
+                        type="date"
+                        value={fecha}
+                        onChange={e => setFecha(e.target.value)}
+                        className={inputFieldClass}
+                        required
+                        // 🆕 BLOQUEAR EDICIÓN DE FECHA
+                        disabled={isEditing}
+                    />
                 </div>
             </div>
 
@@ -232,17 +239,20 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
                 </div>
             )}
 
+            {/* Botones de acción */}
             <div className='flex justify-end space-x-2'>
                 {isEditing && (
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="px-4 py-2 text-gray-700 font-medium rounded-lg bg-gray-200 hover:bg-gray-300 transition flex items-center justify-center">
+                        // 🆕 Estilo Cancelar Naranja/Gris
+                        className="px-4 py-2 text-orange-600 font-medium rounded-lg bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center">
                         Cancelar
                     </button>
                 )}
                 <button
                     type="submit"
+                    // Estilo Actualizar Azul
                     className={`px-4 py-2 font-medium rounded-lg transition flex items-center justify-center ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
                     disabled={moneda === 'USD' && cotizacionActual < 1}>
                     {isEditing ? (
@@ -320,7 +330,6 @@ const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
     const [cotizacionKey, setCotizacionKey] = useState(0);
-    // 🆕 Estado para manejar la edición
     const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
 
     const fetchData = async () => {
@@ -350,7 +359,6 @@ const Gastos = () => {
         }
     }
 
-    // 🆕 Función para iniciar la edición
     const handleEdit = (gasto: Gasto) => {
         setEditingGasto(gasto);
     };
@@ -440,7 +448,6 @@ const Gastos = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(g.fecha).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2">
-                                            {/* 🆕 Botón de Editar en la tabla */}
                                             <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
                                                 <Pencil className="h-4 w-4" />
                                             </button>
@@ -462,7 +469,6 @@ const Gastos = () => {
                                         <p className="text-sm font-bold text-gray-900 truncate">
                                             #{g.id} - {g.concepto}
                                         </p>
-                                        {/* 🆕 Botones en la vista de cards */}
                                         <div className="flex space-x-2">
                                             <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
                                                 <Pencil className="h-4 w-4" />
