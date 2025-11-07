@@ -242,6 +242,7 @@ const Productos = () => {
     })
   }
 
+  // 🛠️ Lógica de filtrado modificada para rangos
   const productosFiltrados = productos
       .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.codigo?.toLowerCase().includes(busqueda.toLowerCase()))
       .filter(p => {
@@ -253,10 +254,17 @@ const Productos = () => {
           categoriaFiltro ? p.categoria_id?.toString() === categoriaFiltro : true
       )
       .filter(p => {
-        if (!gananciaFiltro) return true; // Mostrar todos si el filtro está vacío
+        if (!gananciaFiltro) return true;
+
         const ganancia = Number(p.porcentaje_ganancia) || 0;
-        const limite = parseInt(gananciaFiltro); // 10, 20, 30, 40
-        return ganancia < limite;
+
+        // El formato del valor será "MIN-MAX" (ej: "10-20") o "0-10"
+        const [minStr, maxStr] = gananciaFiltro.split('-');
+        const min = parseInt(minStr);
+        const max = parseInt(maxStr);
+
+        // Si la ganancia está entre MIN (inclusivo) y MAX (exclusivo)
+        return ganancia >= min && ganancia < max;
       });
 
   if (loading) {
@@ -326,16 +334,18 @@ const Productos = () => {
                 </option>
             ))}
           </select>
+          {/* 🛠️ SELECTOR DE GANANCIA MODIFICADO CON RANGOS */}
           <select
               value={gananciaFiltro}
               onChange={(e) => setGananciaFiltro(e.target.value)}
               className={inputFieldClass}
           >
             <option value="">Todas las Ganancias</option>
-            <option value="10">Ganancia &lt; 10%</option>
-            <option value="20">Ganancia &lt; 20%</option>
-            <option value="30">Ganancia &lt; 30%</option>
-            <option value="40">Ganancia &lt; 40%</option>
+            <option value="0-10">0% - 10%</option>
+            <option value="10-20">10% - 20%</option>
+            <option value="20-30">20% - 30%</option>
+            <option value="30-40">30% - 40%</option>
+            <option value="40-999">Más del 40%</option>
           </select>
         </div>
 
