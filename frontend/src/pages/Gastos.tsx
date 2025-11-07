@@ -332,6 +332,10 @@ const Gastos = () => {
     const [cotizacionKey, setCotizacionKey] = useState(0);
     const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
+    // 🆕 ESTADOS PARA EL FILTRO DE FECHAS
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+
 
     const fetchData = async () => {
         setLoading(true)
@@ -364,15 +368,30 @@ const Gastos = () => {
         setEditingGasto(gasto);
     };
 
-    // 🆕 Lógica de filtrado
+    // 🆕 Lógica de filtrado con Fechas
     const filteredGastos = gastos.filter(gasto => {
-        if (selectedCategory === 'ALL') {
-            return true;
+        // 1. Filtrar por Categoría
+        const categoryMatch = selectedCategory === 'ALL' || gasto.categoria === selectedCategory;
+
+        // 2. Filtrar por Rango de Fechas
+        const gastoDate = new Date(gasto.fecha);
+        let dateMatch = true;
+
+        if (dateFrom) {
+            const from = new Date(dateFrom);
+            dateMatch = dateMatch && gastoDate >= from;
         }
-        return gasto.categoria === selectedCategory;
+
+        if (dateTo) {
+            const to = new Date(dateTo);
+            // Sumamos un día a 'dateTo' para incluir los gastos de ese mismo día
+            to.setDate(to.getDate() + 1);
+            dateMatch = dateMatch && gastoDate < to;
+        }
+
+        return categoryMatch && dateMatch;
     });
 
-    // 🆕 Cálculo del total normalizado basado en los gastos FILTRADOS
     const totalGastosARS = filteredGastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
 
     return (
@@ -410,17 +429,19 @@ const Gastos = () => {
             )}
 
             <div className={cardClass}>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                <div className="flex flex-col space-y-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                         <FileText className="h-5 w-5 mr-2" /> Listado de Gastos
                     </h3>
 
-                    {/* 🆕 Controles de Filtrado y Total */}
-                    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full md:w-auto">
+                    {/* 🆕 Controles de Filtrado (Categoría y Fechas) */}
+                    <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+
+                        {/* Selector de Categoría */}
                         <select
                             value={selectedCategory}
                             onChange={e => setSelectedCategory(e.target.value)}
-                            className="p-2 border border-gray-300 rounded-lg text-sm bg-white hover:border-orange-500 transition duration-150"
+                            className="p-2 border border-gray-300 rounded-lg text-sm bg-white hover:border-orange-500 transition duration-150 flex-1 min-w-[200px]"
                         >
                             <option value="ALL">Todas las Categorías</option>
                             {CATEGORIAS.map(cat => (
@@ -428,11 +449,28 @@ const Gastos = () => {
                             ))}
                         </select>
 
-                        {/* Tarjeta de Total Normalizado (Ahora usa el total filtrado) */}
-                        <div className="bg-red-100 p-2 rounded-lg flex flex-col md:flex-row md:items-center min-w-48">
-                            <span className="text-xs md:text-sm font-medium text-red-700 md:mr-2">Total Filtrado (ARS): </span>
-                            {/* 🆕 USAR formatPrice */}
-                            <span className="text-base md:text-lg font-bold text-red-900">{formatPrice(totalGastosARS)}</span>
+                        {/* Filtros de Fecha */}
+                        <div className='flex gap-2 flex-1 items-center'>
+                            <label className='text-sm text-gray-600 font-medium whitespace-nowrap'>Desde:</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                onChange={e => setDateFrom(e.target.value)}
+                                className={`${inputFieldClass} py-2 flex-1`}
+                            />
+                            <label className='text-sm text-gray-600 font-medium whitespace-nowrap'>Hasta:</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                onChange={e => setDateTo(e.target.value)}
+                                className={`${inputFieldClass} py-2 flex-1`}
+                            />
+                        </div>
+
+                        {/* Tarjeta de Total Normalizado (Total Filtrado) */}
+                        <div className="bg-red-100 p-2 rounded-lg flex items-center justify-between min-w-48 lg:min-w-64">
+                            <span className="text-sm font-medium text-red-700 whitespace-nowrap">Total Filtrado (ARS): </span>
+                            <span className="text-lg font-bold text-red-900">{formatPrice(totalGastosARS)}</span>
                         </div>
                     </div>
                 </div>
@@ -459,11 +497,11 @@ const Gastos = () => {
                                 {filteredGastos.map(g => (
                                     <tr key={g.id} className="hover:bg-red-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center justify-center">
                                             <Tag className='h-4 w-4 mr-1 text-red-400' /> {g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{g.concepto}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                                             <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
                                                 {formatCurrency(g.monto, g.moneda)}
                                             </span>
@@ -472,7 +510,7 @@ const Gastos = () => {
                                             {formatPrice(g.monto_ars)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{new Date(g.fecha).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2 text-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2 justify-center">
                                             <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
                                                 <Pencil className="h-4 w-4" />
                                             </button>
