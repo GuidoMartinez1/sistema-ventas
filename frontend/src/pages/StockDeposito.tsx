@@ -430,9 +430,9 @@ const StockDeposito = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
                                         </td>
-                                        {/* 💡 CELDA DE PESO */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
-                                            {formatKilos(item.kilos)}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-700">
+                                            {/* 💡 Calculamos: Kilos por Unidad * Stock en Depósito */}
+                                            {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-orange-600">
                                             {item.stock_en_deposito}
@@ -496,10 +496,11 @@ const StockDeposito = () => {
                                     <div className="text-xs text-gray-600 mb-2 pl-6">
                                         Categoria.: {item.categoria_nombre}
                                     </div>
-                                    {/* 💡 CAMPO DE PESO EN MÓVIL */}
                                     <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Peso (Kg/u):</span>
-                                        <span className="text-gray-600">{formatKilos(item.kilos)}</span>
+                                        <span className="text-gray-600">
+                                            {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Depósito:</span>
