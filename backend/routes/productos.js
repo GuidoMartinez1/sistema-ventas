@@ -6,7 +6,7 @@ const router = express.Router();
 // Obtener todos los productos
 router.get('/', async (req, res) => {
     try {
-        // 💡 Seleccionamos también la nueva columna 'kilos'
+        // Seleccionamos la columna 'kilos' para que el frontend la reciba.
         const result = await pool.query(`
             SELECT p.*, c.nombre AS categoria_nombre
             FROM productos p
@@ -49,19 +49,22 @@ router.post('/', async (req, res) => {
         stock,
         categoria_id,
         codigo,
-        kilos
+        kilos // Recibimos el valor extraído del front
     } = req.body;
 
     try {
         // --- Sanitización de datos para PostgreSQL ---
 
-        const precioFinal = precio || precio === 0 ? precio : null;
-        const precioKgFinal = precio_kg || precio_kg === 0 ? precio_kg : null;
-        const precioCostoFinal = precio_costo || precio_costo === 0 ? precio_costo : null;
-        const porcentajeGananciaFinal = porcentaje_ganancia || porcentaje_ganancia === 0 ? porcentaje_ganancia : null;
+        // Conversión y manejo de NULLs para los campos DECIMAL
+        const precioFinal = (precio !== null && precio !== undefined) ? Number(precio) : null;
+        const precioKgFinal = (precio_kg !== null && precio_kg !== undefined) ? Number(precio_kg) : null;
+        const precioCostoFinal = (precio_costo !== null && precio_costo !== undefined) ? Number(precio_costo) : null;
+        const porcentajeGananciaFinal = (porcentaje_ganancia !== null && porcentaje_ganancia !== undefined) ? Number(porcentaje_ganancia) : null;
 
-        // 💡 Sanitización para KILOS
-        const kilosFinal = kilos || kilos === 0 ? kilos : null;
+        // ✅ CORRECCIÓN CRÍTICA: Sanitización para KILOS
+        // Aseguramos que solo se guarde como número o NULL, no como cadena vacía.
+        const kilosFinal = (kilos !== null && kilos !== undefined && kilos !== '') ? Number(kilos) : null;
+
 
         const stockFinal = stock || stock === 0 ? stock : 0;
         const categoriaIdFinal = categoria_id ? parseInt(categoria_id) : null;
@@ -75,7 +78,6 @@ router.post('/', async (req, res) => {
         // --- Fin de Sanitización ---
 
         const result = await pool.query(
-            // Añadimos 'kilos' al INSERT (total 10 campos)
             `INSERT INTO productos
              (nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, kilos)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -90,7 +92,7 @@ router.post('/', async (req, res) => {
                 stockFinal,
                 categoriaIdFinal,
                 codigoFinal,
-                kilosFinal
+                kilosFinal // $10
             ]
         );
         res.json(result.rows[0]);
@@ -114,19 +116,21 @@ router.put('/:id', async (req, res) => {
         stock,
         categoria_id,
         codigo,
-        // 💡 NUEVO CAMPO
-        kilos
+        kilos // Recibimos el valor del front
     } = req.body;
 
+    // Repetimos la sanitización de kilos para el UPDATE
+    const kilosFinal = (kilos !== null && kilos !== undefined && kilos !== '') ? Number(kilos) : null;
+
+
     try {
-        // 💡 El valor de kilos viene directamente del req.body (si no se envía, será undefined/null y se actualizará a eso)
         const result = await pool.query(
             // Añadimos 'kilos' al UPDATE (total 11 parámetros, siendo $11 el id)
             `UPDATE productos
              SET nombre=$1, descripcion=$2, precio=$3, precio_kg=$4, precio_costo=$5, porcentaje_ganancia=$6, stock=$7, categoria_id=$8, codigo=$9, kilos=$10, updated_at=NOW()
              WHERE id=$11
                  RETURNING *`,
-            [nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, kilos, id] // 💡 NUEVO VALOR: kilos es $10
+            [nombre, descripcion, precio, precio_kg, precio_costo, porcentaje_ganancia, stock, categoria_id, codigo, kilosFinal, id] // $10 es kilosFinal
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Producto no encontrado' });
