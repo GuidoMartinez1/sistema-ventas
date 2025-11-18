@@ -16,7 +16,6 @@ const formatPrice = (value: number | string | undefined) => {
 
 /**
  * Función que extrae el peso (KILOS o LITROS) del nombre del producto usando RegEx.
- * Nota: Es crucial que esta lógica se ejecute justo antes del envío (handleSubmit).
  */
 const extraerKilos = (nombre: string): number | null => {
     if (!nombre) return null;
@@ -123,13 +122,9 @@ const Productos = () => {
         }
     }
 
-    // ❌ SE ELIMINA LA DECLARACIÓN FUERA DEL COMPONENTE:
-    // const kilosExtraidos = extraerKilos(formData.nombre);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        // ✅ CORRECCIÓN CRÍTICA: Llamar a la función DENTRO de handleSubmit para obtener el nombre actual.
         const kilosExtraidos = extraerKilos(formData.nombre);
 
         try {
@@ -310,6 +305,19 @@ const Productos = () => {
             </div>
         )
     }
+
+    // Función de ayuda para formatear Kilos sin '.00'
+    const formatKilos = (kilos: number | undefined) => {
+        if (kilos == null || kilos <= 0) return '-';
+
+        // Verifica si es un número entero
+        if (Number.isInteger(kilos)) {
+            return kilos.toString();
+        }
+        // Si no es entero, usa toFixed(2)
+        return kilos.toFixed(2);
+    };
+
     return (
         // Contenedor con límite de ancho para estética en pantallas grandes
         <div className="p-4 md:p-8 space-y-6 max-w-screen-xl mx-auto">
@@ -453,11 +461,8 @@ const Productos = () => {
                                     {formatPrice(producto.precio_kg)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-700 text-center">
-                                    {producto.kilos != null && producto.kilos > 0
-                                        ? (Number.isInteger(producto.kilos)
-                                            ? producto.kilos.toString()
-                                            : producto.kilos.toFixed(2))
-                                        : '-'}
+                                    {/* ✅ USO DE formatKilos */}
+                                    {formatKilos(producto.kilos)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {formatPrice(producto.precio_costo)}
@@ -568,13 +573,10 @@ const Productos = () => {
                                     <span className="text-xs text-gray-500 block">Categoría</span>
                                     <span className="text-sm font-medium text-gray-700">{getCategoriaNombre(producto.categoria_id)}</span>
                                 </div>
-                                {producto.kilos ? (
+                                {producto.kilos != null && producto.kilos > 0 ? (
                                     <div className="col-span-2">
-                                        <span className="text-xs text-gray-500 block">Kilos/Litros </span>
-                                        <span className="text-sm font-bold text-orange-600">{Number.isInteger(producto.kilos)
-                                            ? producto.kilos.toString()
-                                            : producto.kilos.toFixed(2)}
-                                        </span>
+                                        <span className="text-xs text-gray-500 block">Kilos/Litros (Extraído)</span>
+                                        <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)}</span>
                                     </div>
                                 ) : null}
                                 {producto.precio_kg ? (
