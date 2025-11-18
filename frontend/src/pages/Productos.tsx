@@ -14,6 +14,37 @@ const formatPrice = (value: number | string | undefined) => {
     return '$' + Number(value).toLocaleString("es-AR");
 };
 
+/**
+ * Intenta extraer el peso (KILOS o LITROS) de un nombre de producto.
+ */
+const extraerKilos = (nombre: string): number | null => {
+    if (!nombre) return null;
+    const nombreUpper = nombre.toUpperCase();
+
+    // RegEx: Captura número (entero o decimal) seguido de la unidad (KG, LT, KILOS, etc.)
+    // Incluye una ligera lógica para convertir gramos a kilos si es necesario (ej: 500 GR -> 0.5)
+    const regex = /(\d{1,}(\.\d+)?)\s*(KG|KGS|KILOS|LITROS|LT|L|G|GR|GRS)/;
+    const match = nombreUpper.match(regex);
+
+    if (match && match[1]) {
+        const pesoStr = match[1];
+        let pesoNum = parseFloat(pesoStr);
+        let unidad = match[3];
+
+        if (isNaN(pesoNum)) return null;
+
+        // Lógica opcional para convertir gramos a kilos:
+        if (unidad && (unidad === 'G' || unidad === 'GR' || unidad === 'GRS')) {
+            // Si el número es 500 y la unidad es GRS, convertir a 0.5 Kilos
+            pesoNum = pesoNum / 1000;
+        }
+
+        return parseFloat(pesoNum.toFixed(2)); // Asegura 2 decimales
+    }
+
+    return null;
+};
+
 const Productos = () => {
     const [productos, setProductos] = useState<Producto[]>([])
     const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -90,12 +121,15 @@ const Productos = () => {
         }
     }
 
+    const kilosExtraidos = extraerKilos(formData.nombre);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         try {
             const productoData = {
                 ...formData,
+                kilos: kilosExtraidos,
                 precio: parseFloat(formData.precio || '0') || 0,
                 precio_kg: parseFloat(formData.precio_kg || '0') || 0,
                 precio_costo: parseFloat(formData.precio_costo || '0') || 0,
@@ -366,6 +400,9 @@ const Productos = () => {
                                 Precio x Kg
                             </th>
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Kilos/Lt
+                            </th>
+                            <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Costo
                             </th>
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -410,6 +447,9 @@ const Productos = () => {
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" >
                                     {formatPrice(producto.precio_kg)}
+                                </td>
+                                <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-700 text-center">
+                                    {producto.kilos ? `${producto.kilos} kg/lt` : '-'}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {formatPrice(producto.precio_costo)}
@@ -520,6 +560,12 @@ const Productos = () => {
                                     <span className="text-xs text-gray-500 block">Categoría</span>
                                     <span className="text-sm font-medium text-gray-700">{getCategoriaNombre(producto.categoria_id)}</span>
                                 </div>
+                                {producto.kilos ? (
+                                    <div className="col-span-2">
+                                        <span className="text-xs text-gray-500 block">Kilos/Litros (Extraído)</span>
+                                        <span className="text-sm font-bold text-orange-600">{producto.kilos} kg/lt</span>
+                                    </div>
+                                ) : null}
                                 {producto.precio_kg ? (
                                     <div className="col-span-2">
                                         <span className="text-xs text-gray-500 block">Precio x Kg</span>

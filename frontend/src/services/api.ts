@@ -29,6 +29,7 @@ export interface Producto {
   categoria_id?: number
   categoria_nombre?: string
   codigo?: string
+  kilos?: number
   created_at?: string
   updated_at?: string
 }
