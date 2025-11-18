@@ -700,8 +700,7 @@ const Productos = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="btn-secondary"
-                                    >
+                                        className="btn-secondary">
                                         Cancelar
                                     </button>
                                     <button type="submit" className="btn-primary">
