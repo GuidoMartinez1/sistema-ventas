@@ -5,7 +5,7 @@ import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
-// Clases de utilidad
+// Clases de utilidad (Se mantienen las optimizaciones de responsividad)
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 
@@ -15,31 +15,32 @@ const formatPrice = (value: number | string | undefined) => {
 };
 
 /**
- * Intenta extraer el peso (KILOS o LITROS) de un nombre de producto.
+ * Función que extrae el peso (KILOS o LITROS) del nombre del producto usando RegEx.
+ * Nota: Es crucial que esta lógica se ejecute justo antes del envío (handleSubmit).
  */
 const extraerKilos = (nombre: string): number | null => {
     if (!nombre) return null;
     const nombreUpper = nombre.toUpperCase();
 
-    // RegEx: Captura número (entero o decimal) seguido de la unidad (KG, LT, KILOS, etc.)
-    // Incluye una ligera lógica para convertir gramos a kilos si es necesario (ej: 500 GR -> 0.5)
-    const regex = /(\d{1,}(\.\d+)?)\s*(KG|KGS|KILOS|LITROS|LT|L|G|GR|GRS)/;
+    // Regex: Captura el número (entero o decimal) seguido de la unidad (KG, LT, KILOS, etc.)
+    const regex = /(\d+(\.\d+)?)\s*(KG|KGS|KILOS|LITROS|LT|L|G|GR|GRS)/;
     const match = nombreUpper.match(regex);
 
     if (match && match[1]) {
-        const pesoStr = match[1];
-        let pesoNum = parseFloat(pesoStr);
-        let unidad = match[3];
+        let pesoNum = parseFloat(match[1]);
 
         if (isNaN(pesoNum)) return null;
 
-        // Lógica opcional para convertir gramos a kilos:
+        let unidad = match[3];
+
+        // Manejo de Gramos: Si es G, GR o GRS, convertir a Kilos.
         if (unidad && (unidad === 'G' || unidad === 'GR' || unidad === 'GRS')) {
-            // Si el número es 500 y la unidad es GRS, convertir a 0.5 Kilos
-            pesoNum = pesoNum / 1000;
+            if (pesoNum > 1) { // Evita dividir 1G a 0.001kg si es un error de formato simple.
+                pesoNum = pesoNum / 1000;
+            }
         }
 
-        return parseFloat(pesoNum.toFixed(2)); // Asegura 2 decimales
+        return parseFloat(pesoNum.toFixed(2));
     }
 
     return null;
@@ -107,7 +108,8 @@ const Productos = () => {
                 Precio_x_Kg: formatPrice(p.precio_kg),
                 Precio_Costo: formatPrice(p.precio_costo),
                 Ganancia_Porcentaje: p.porcentaje_ganancia || 0,
-                Stock: p.stock
+                Stock: p.stock,
+                Kilos: p.kilos || 0, // Incluimos KILOS en el export
             }))
 
             const worksheet = XLSX.utils.json_to_sheet(exportData)
@@ -121,15 +123,19 @@ const Productos = () => {
         }
     }
 
-    const kilosExtraidos = extraerKilos(formData.nombre);
+    // ❌ SE ELIMINA LA DECLARACIÓN FUERA DEL COMPONENTE:
+    // const kilosExtraidos = extraerKilos(formData.nombre);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
+        // ✅ CORRECCIÓN CRÍTICA: Llamar a la función DENTRO de handleSubmit para obtener el nombre actual.
+        const kilosExtraidos = extraerKilos(formData.nombre);
+
         try {
             const productoData = {
                 ...formData,
-                kilos: kilosExtraidos,
+                kilos: kilosExtraidos, // Enviamos el valor dinámico
                 precio: parseFloat(formData.precio || '0') || 0,
                 precio_kg: parseFloat(formData.precio_kg || '0') || 0,
                 precio_costo: parseFloat(formData.precio_costo || '0') || 0,
@@ -305,7 +311,7 @@ const Productos = () => {
         )
     }
     return (
-        // 1. SOLUCIÓN FINAL: Usamos max-w-screen-xl (1280px) para que no se estire en monitores grandes.
+        // Contenedor con límite de ancho para estética en pantallas grandes
         <div className="p-4 md:p-8 space-y-6 max-w-screen-xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -386,7 +392,6 @@ const Productos = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                         <tr>
-                            {/* 2. REFACTOR: Usamos px-2 en todos los TH para ganar espacio horizontal */}
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Producto
                             </th>
@@ -419,7 +424,6 @@ const Productos = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {productosFiltrados.map((producto) => (
                             <tr key={producto.id} className="hover:bg-gray-50">
-                                {/* 2. REFACTOR: px-2 y min-w para el producto */}
                                 <td className="px-2 py-4 whitespace-nowrap min-w-[150px]">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-8 w-8">
@@ -507,7 +511,7 @@ const Productos = () => {
                     </table>
                 </div>
 
-                {/* VISTA DE TARJETA (MÓVIL) */}
+                {/* VISTA DE TARJETA (MÓVIL) - CORREGIDA Y OPTIMIZADA */}
                 <div className="md:hidden space-y-4">
                     {productosFiltrados.map((producto) => (
                         <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
