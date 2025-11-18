@@ -1,19 +1,27 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { stockDepositoAPI, StockDeposito, LoteDeposito } from '../services/api';
+// 💡 Importamos la interfaz Traslado
+import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado } from '../services/api';
 import toast from 'react-hot-toast';
-import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2 } from 'lucide-react';
+import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2, FileText, LayoutList } from 'lucide-react';
+
+// Tipos para el selector de pestañas
+type Vista = 'deposito' | 'reporte';
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
-const formatDate = (dateString: string | undefined) => {
+const formatDate = (dateString: string | undefined, includeTime: boolean = false) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('es-AR', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: includeTime ? '2-digit' : undefined,
+        minute: includeTime ? '2-digit' : undefined
     });
 };
 
-// 💡 FUNCIÓN PARA MOSTRAR KILOS (Sin .00 si es entero)
+// FUNCIÓN PARA MOSTRAR KILOS (Sin .00 si es entero, con .00 si no)
 const formatKilos = (kilos: number | undefined | string) => {
     if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
 
@@ -25,13 +33,89 @@ const formatKilos = (kilos: number | undefined | string) => {
     return kiloValue.toFixed(2);
 };
 
-// 💡 FUNCIÓN PARA FORMATEAR NÚMEROS GRANDES (ej: 1,234.50)
+// FUNCIÓN PARA FORMATEAR NÚMEROS GRANDES (ej: 1,234.50)
 const formatNumber = (value: number) => {
     if (value === null || value === undefined) return '0';
     return Number(value).toLocaleString("es-AR", { maximumFractionDigits: 2 });
 };
 
+// ====================================================================
+// 💡 NUEVO COMPONENTE: VISTA DE REPORTES
+// ====================================================================
+interface ReportesTrasladoProps {
+    reporteList: Traslado[];
+    loadingReporte: boolean;
+}
+
+const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadingReporte }) => {
+    if (loadingReporte) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                <p className="ml-3 text-gray-600">Cargando reportes...</p>
+            </div>
+        );
+    }
+
+    if (reporteList.length === 0) {
+        return (
+            <div className="text-center py-10 text-gray-500">
+                Aún no se ha registrado ninguna transferencia entre Depósito y Tienda.
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                <tr>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unidades</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso Total (Kg)</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
+                </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                {reporteList.map((traslado) => {
+                    const kilosPorUnidad = Number(traslado.kilos_por_unidad) || 0;
+                    const cantidad = Number(traslado.cantidad_movida) || 0;
+                    const pesoTotal = kilosPorUnidad * cantidad;
+
+                    return (
+                        <tr key={traslado.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {traslado.producto_nombre}
+                            </td>
+                            <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-semibold">
+                                {cantidad} uds
+                            </td>
+                            <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-800 font-semibold">
+                                {formatKilos(pesoTotal)} kg
+                            </td>
+                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                {formatDate(traslado.fecha_traslado, true)}
+                            </td>
+                        </tr>
+                    );
+                })}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+// ====================================================================
+// COMPONENTE PRINCIPAL StockDeposito
+// ====================================================================
+
 const StockDeposito = () => {
+    // 💡 NUEVO ESTADO DE PESTAÑA Y REPORTE
+    const [vistaActual, setVistaActual] = useState<Vista>('deposito');
+    const [reporteList, setReporteList] = useState<Traslado[]>([]);
+    const [loadingReporte, setLoadingReporte] = useState(false);
+
+    // ESTADO PRINCIPAL DE DATOS
     const [stockList, setStockList] = useState<StockDeposito[]>([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
@@ -55,7 +139,7 @@ const StockDeposito = () => {
             const safeStockList = response.data.map((item: StockDeposito) => ({
                 ...item,
                 stock_en_deposito: Number(item.stock_en_deposito) || 0,
-                kilos: Number(item.kilos) || 0, // 💡 Aseguramos que kilos sea un número
+                kilos: Number(item.kilos) || 0,
             }));
             setStockList(safeStockList);
         } catch {
@@ -65,9 +149,28 @@ const StockDeposito = () => {
         }
     }, []);
 
+    // 💡 FUNCIÓN: Llama al endpoint getReporteTraslados
+    const fetchReporte = useCallback(async () => {
+        setLoadingReporte(true);
+        try {
+            const response = await stockDepositoAPI.getReporteTraslados(); // 👈 CONSUMO DEL ENDPOINT
+            setReporteList(response.data);
+        } catch {
+            toast.error('Error al cargar el reporte de traslados.');
+            setReporteList([]);
+        } finally {
+            setLoadingReporte(false);
+        }
+    }, []);
+
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (vistaActual === 'deposito') {
+            fetchData();
+        } else {
+            // Llama al reporte solo si la pestaña actual es 'reporte'
+            fetchReporte();
+        }
+    }, [fetchData, fetchReporte, vistaActual]); // Depende de la vistaActual
 
     const filteredStock = useMemo(() => {
         return stockList.filter(item =>
@@ -76,7 +179,7 @@ const StockDeposito = () => {
         );
     }, [stockList, busqueda]);
 
-    // 💡 CÁLCULO DE KILOS TOTALES EN DEPÓSITO
+    // CÁLCULOS DE KILOS Y STOCK TOTALES
     const totalWeightInDeposito = useMemo(() => {
         return stockList.reduce((sum, item) => {
             const kilosPorUnidad = Number(item.kilos) || 0;
@@ -98,7 +201,6 @@ const StockDeposito = () => {
         }, 0);
     }, [stockList, selectedItems]);
 
-    // 💡 CÁLCULO DE KILOS TOTALES SELECCIONADOS
     const totalSelectedWeight = useMemo(() => {
         return stockList.reduce((sum, item) => {
             if (selectedItems.has(item.producto_id)) {
@@ -314,7 +416,7 @@ const StockDeposito = () => {
         .filter(item => Number(item.stock_en_deposito) > 0)
         .every(item => selectedItems.has(item.producto_id));
 
-    if (loading) {
+    if (loading && vistaActual === 'deposito') { // Solo muestra loading si está en la pestaña principal
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -322,11 +424,15 @@ const StockDeposito = () => {
         );
     }
 
+    // ====================================================================
+    // RENDERIZADO PRINCIPAL
+    // ====================================================================
+
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto relative">
 
             {/* Botón Flotante para Traslado Masivo por Selección */}
-            {selectedItems.size > 0 && (
+            {vistaActual === 'deposito' && selectedItems.size > 0 && (
                 <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
                     <button
                         onClick={handleMassTransferSelected}
@@ -349,171 +455,215 @@ const StockDeposito = () => {
                         <Warehouse className="h-6 w-6 md:h-7 md:w-7 mr-2 text-orange-500" />
                         Stock en Depósito
                     </h1>
-                    {/* 💡 MOSTRAMOS EL PESO TOTAL */}
-                    <p className="text-sm text-gray-600">Control de la mercadería almacenada ({formatNumber(totalStockInDeposito)} uds. | <span className="font-semibold text-orange-600">{formatNumber(totalWeightInDeposito)} kg</span>).</p>
+                    {vistaActual === 'deposito' && (
+                        <p className="text-sm text-gray-600">Control de la mercadería almacenada ({formatNumber(totalStockInDeposito)} uds. | <span className="font-semibold text-orange-600">{formatNumber(totalWeightInDeposito)} kg</span>).</p>
+                    )}
+                    {vistaActual === 'reporte' && (
+                        <p className="text-sm text-gray-600">Historial de todas las transferencias de Depósito a Tienda.</p>
+                    )}
                 </div>
 
-                {/* Botón Maestro Trasladar Todo GLOBAL (Naranja) */}
-                <button
-                    onClick={handleMassTransferAll}
-                    className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400 flex-shrink-0"
-                    disabled={isMassTransferring || totalStockInDeposito === 0}>
-                    {isMassTransferring ? (
-                        <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin mr-2" />
-                    ) : (
-                        <Maximize2 className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-                    )}
-                    {isMassTransferring ? 'Vaciando Depósito...' : `Vaciar Depósito Completo (${totalStockInDeposito} uds.)`}
-                </button>
+                {/* Botón Maestro Trasladar Todo GLOBAL (Solo visible en la pestaña Depósito) */}
+                {vistaActual === 'deposito' && (
+                    <button
+                        onClick={handleMassTransferAll}
+                        className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400 flex-shrink-0"
+                        disabled={isMassTransferring || totalStockInDeposito === 0}>
+                        {isMassTransferring ? (
+                            <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin mr-2" />
+                        ) : (
+                            <Maximize2 className="h-5 w-5 md:h-6 md:w-6 mr-2" />
+                        )}
+                        {isMassTransferring ? 'Vaciando Depósito...' : `Vaciar Depósito Completo (${totalStockInDeposito} uds.)`}
+                    </button>
+                )}
+            </div>
+
+            {/* 💡 NAVEGACIÓN POR PESTAÑAS */}
+            <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button
+                        onClick={() => setVistaActual('deposito')}
+                        className={`py-2 px-1 font-medium text-sm border-b-2 transition duration-150 ease-in-out flex items-center ${
+                            vistaActual === 'deposito'
+                                ? 'border-orange-500 text-orange-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                        <LayoutList className="h-4 w-4 mr-2" /> Inventario Depósito
+                    </button>
+                    <button
+                        onClick={() => setVistaActual('reporte')}
+                        className={`py-2 px-1 font-medium text-sm border-b-2 transition duration-150 ease-in-out flex items-center ${
+                            vistaActual === 'reporte'
+                                ? 'border-orange-500 text-orange-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                        <FileText className="h-4 w-4 mr-2" /> Reporte de Traslados
+                    </button>
+                </nav>
             </div>
 
             <div className={cardClass}>
-                <div className="mb-4">
-                    <input
-                        type="text"
-                        placeholder="Buscar producto por nombre o código..."
-                        value={busqueda}
-                        onChange={e => setBusqueda(e.target.value)}
-                        className={`${inputFieldClass} w-full`}/>
-                </div>
 
-                {filteredStock.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">
-                        {busqueda ? 'No se encontraron productos con ese criterio en el depósito.' : 'No hay stock registrado actualmente en el depósito.'}
-                    </div>
-                ) : (
+                {vistaActual === 'deposito' && (
                     <>
-                        {/* TABLA GRANDE (Desktop) */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                <tr>
-                                    {/* Nueva columna para Checkbox de selección masiva */}
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {totalFilteredItemsWithStock > 0 && (
+                        <div className="mb-4">
+                            <input
+                                type="text"
+                                placeholder="Buscar producto por nombre o código..."
+                                value={busqueda}
+                                onChange={e => setBusqueda(e.target.value)}
+                                className={`${inputFieldClass} w-full`}/>
+                        </div>
+
+                        {filteredStock.length === 0 ? (
+                            <div className="text-center py-10 text-gray-500">
+                                {busqueda ? 'No se encontraron productos con ese criterio en el depósito.' : 'No hay stock registrado actualmente en el depósito.'}
+                            </div>
+                        ) : (
+                            <>
+                                {/* TABLA GRANDE (Desktop) */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                        <tr>
+                                            {/* Nueva columna para Checkbox de selección masiva */}
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {totalFilteredItemsWithStock > 0 && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
+                                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                                        className="form-checkbox h-4 w-4 text-orange-600 rounded"
+                                                        title="Seleccionar todos los productos visibles con stock"
+                                                    />
+                                                )}
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso Total (Kg)</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Tienda</th>
+                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        {filteredStock.map((item) => (
+                                            <tr key={item.producto_id}>
+                                                {/* Columna Checkbox */}
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-center">
+                                                    {Number(item.stock_en_deposito) > 0 && (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedItems.has(item.producto_id)}
+                                                            onChange={() => handleSelectItem(item.producto_id)}
+                                                            className="form-checkbox h-4 w-4 text-orange-600 rounded"
+                                                            disabled={isMassTransferring || isTransferring}
+                                                        />
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {item.producto_nombre}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
+                                                </td>
+                                                {/* CELDA CORREGIDA: Muestra Peso Total */}
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-700">
+                                                    {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-orange-600">
+                                                    {item.stock_en_deposito}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                                                    {item.stock_en_tienda}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-center space-y-1">
+                                                    <button
+                                                        onClick={() => handleOpenModal(item)}
+                                                        className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
+                                                        disabled={isMassTransferring || isTransferring}
+                                                    >
+                                                        <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* LISTA DE TARJETAS (Mobile) */}
+                                <div className="md:hidden space-y-3">
+                                    {/* Selector masivo para mobile, si hay stock visible */}
+                                    {totalFilteredItemsWithStock > 0 && (
+                                        <div className="flex items-center space-x-2 pb-2 border-b">
                                             <input
                                                 type="checkbox"
                                                 checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
                                                 className="form-checkbox h-4 w-4 text-orange-600 rounded"
-                                                title="Seleccionar todos los productos visibles con stock"
                                             />
-                                        )}
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
-                                    {/* 💡 NUEVA COLUMNA DE PESO */}
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso (Kg/u)</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Tienda</th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredStock.map((item) => (
-                                    <tr key={item.producto_id}>
-                                        {/* Columna Checkbox */}
-                                        <td className="px-3 py-4 whitespace-nowrap text-sm text-center">
-                                            {Number(item.stock_en_deposito) > 0 && (
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedItems.has(item.producto_id)}
-                                                    onChange={() => handleSelectItem(item.producto_id)}
-                                                    className="form-checkbox h-4 w-4 text-orange-600 rounded"
-                                                    disabled={isMassTransferring || isTransferring}
-                                                />
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {item.producto_nombre}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-700">
-                                            {/* 💡 Calculamos: Kilos por Unidad * Stock en Depósito */}
-                                            {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-orange-600">
-                                            {item.stock_en_deposito}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
-                                            {item.stock_en_tienda}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-center space-y-1">
-                                            <button
-                                                onClick={() => handleOpenModal(item)}
-                                                className="btn-primary flex items-center justify-center mx-auto text-sm py-1 px-3"
-                                                disabled={isMassTransferring || isTransferring}
-                                            >
-                                                <ArrowRight className="h-4 w-4 mr-1" /> Trasladar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* LISTA DE TARJETAS (Mobile) */}
-                        <div className="md:hidden space-y-3">
-                            {/* Selector masivo para mobile, si hay stock visible */}
-                            {totalFilteredItemsWithStock > 0 && (
-                                <div className="flex items-center space-x-2 pb-2 border-b">
-                                    <input
-                                        type="checkbox"
-                                        checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
-                                        onChange={(e) => handleSelectAll(e.target.checked)}
-                                        className="form-checkbox h-4 w-4 text-orange-600 rounded"
-                                    />
-                                    <span className="text-sm font-semibold text-gray-700">Seleccionar todos los {totalFilteredItemsWithStock} ítems visibles con stock</span>
-                                </div>
-                            )}
-
-                            {filteredStock.map((item) => (
-                                <div key={item.producto_id} className="p-3 border rounded-lg shadow-sm">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex items-center space-x-2">
-                                            {Number(item.stock_en_deposito) > 0 && (
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedItems.has(item.producto_id)}
-                                                    onChange={() => handleSelectItem(item.producto_id)}
-                                                    className="form-checkbox h-4 w-4 text-orange-600 rounded"
-                                                    disabled={isMassTransferring || isTransferring}
-                                                />
-                                            )}
-                                            <span className="text-sm font-bold text-gray-900">{item.producto_nombre}</span>
+                                            <span className="text-sm font-semibold text-gray-700">Seleccionar todos los {totalFilteredItemsWithStock} ítems visibles con stock</span>
                                         </div>
-                                        <button
-                                            onClick={() => handleOpenModal(item)}
-                                            className="bg-orange-500 hover:bg-orange-600 text-white text-xs py-1 px-3 rounded-lg flex items-center"
-                                            disabled={isMassTransferring || isTransferring}
-                                        >
-                                            <ArrowRight className="h-3 w-3 mr-1" /> Trasladar
-                                        </button>
-                                    </div>
-                                    <div className="text-xs text-gray-600 mb-2 pl-6">
-                                        Categoria.: {item.categoria_nombre}
-                                    </div>
-                                    <div className="flex justify-between text-sm pl-6">
-                                        <span className="text-gray-500">Peso (Kg/u):</span>
-                                        <span className="text-gray-600">
-                                            {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm pl-6">
-                                        <span className="text-gray-500">Depósito:</span>
-                                        <span className="font-semibold text-orange-600">{item.stock_en_deposito}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm pl-6">
-                                        <span className="text-gray-500">Tienda:</span>
-                                        <span className="text-gray-600">{item.stock_en_tienda}</span>
-                                    </div>
+                                    )}
+
+                                    {filteredStock.map((item) => (
+                                        <div key={item.producto_id} className="p-3 border rounded-lg shadow-sm">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center space-x-2">
+                                                    {Number(item.stock_en_deposito) > 0 && (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedItems.has(item.producto_id)}
+                                                            onChange={() => handleSelectItem(item.producto_id)}
+                                                            className="form-checkbox h-4 w-4 text-orange-600 rounded"
+                                                            disabled={isMassTransferring || isTransferring}
+                                                        />
+                                                    )}
+                                                    <span className="text-sm font-bold text-gray-900">{item.producto_nombre}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleOpenModal(item)}
+                                                    className="bg-orange-500 hover:bg-orange-600 text-white text-xs py-1 px-3 rounded-lg flex items-center"
+                                                    disabled={isMassTransferring || isTransferring}
+                                                >
+                                                    <ArrowRight className="h-3 w-3 mr-1" /> Trasladar
+                                                </button>
+                                            </div>
+                                            <div className="text-xs text-gray-600 mb-2 pl-6">
+                                                Categoria.: {item.categoria_nombre}
+                                            </div>
+                                            <div className="flex justify-between text-sm pl-6">
+                                                <span className="text-gray-500">Peso Total (Kg):</span>
+                                                <span className="text-gray-600">
+                                                    {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between text-sm pl-6">
+                                                <span className="text-gray-500">Depósito:</span>
+                                                <span className="font-semibold text-orange-600">{item.stock_en_deposito}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm pl-6">
+                                                <span className="text-gray-500">Tienda:</span>
+                                                <span className="text-gray-600">{item.stock_en_tienda}</span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        )}
                     </>
+                )}
+
+                {/* 💡 CONTENIDO DE LA PESTAÑA DE REPORTES */}
+                {vistaActual === 'reporte' && (
+                    <ReportesTraslado
+                        reporteList={reporteList}
+                        loadingReporte={loadingReporte}
+                    />
                 )}
             </div>
 
@@ -541,7 +691,7 @@ const StockDeposito = () => {
                                 <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
                                     <p className="text-sm font-medium">Stock en Depósito: <span className="text-orange-600 font-bold">{selectedProduct.stock_en_deposito}</span></p>
                                     <p className="text-sm">Stock en Tienda: {selectedProduct.stock_en_tienda}</p>
-                                    {/* 💡 MOSTRAR PESO DEL PRODUCTO */}
+                                    {/* MOSTRAR PESO DEL PRODUCTO */}
                                     {Number(selectedProduct.kilos) > 0 && (
                                         <p className="text-xs text-gray-600">Peso por unidad: <span className="font-semibold">{formatKilos(selectedProduct.kilos)} kg</span></p>
                                     )}
@@ -612,7 +762,7 @@ const StockDeposito = () => {
                                                 <p>Quedarán en depósito: <span className="font-bold">{Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)}</span> unidades.</p>
                                             )}
 
-                                            {/* 💡 CÁLCULO DE PESO ESTIMADO DEL TRASLADO */}
+                                            {/* CÁLCULO DE PESO ESTIMADO DEL TRASLADO */}
                                             {Number(selectedProduct.kilos) > 0 && (
                                                 <p className="mt-1">
                                                     Peso estimado a mover: <span className="font-bold">

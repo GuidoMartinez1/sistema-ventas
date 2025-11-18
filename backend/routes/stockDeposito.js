@@ -17,8 +17,8 @@ router.get("/", async (req, res) => {
                  COALESCE(SUM(sdd.cantidad_actual), 0) AS stock_en_deposito,
                  (p.stock - COALESCE(SUM(sdd.cantidad_actual), 0)) AS stock_en_tienda
              FROM productos p
-             LEFT JOIN stock_deposito_detalle sdd ON sdd.producto_id = p.id AND sdd.cantidad_actual > 0
-             LEFT JOIN categorias c ON p.categoria_id = c.id
+                      LEFT JOIN stock_deposito_detalle sdd ON sdd.producto_id = p.id AND sdd.cantidad_actual > 0
+                      LEFT JOIN categorias c ON p.categoria_id = c.id
              GROUP BY p.id, p.nombre, p.codigo, p.kilos, p.stock, c.nombre
              HAVING COALESCE(SUM(sdd.cantidad_actual), 0) > 0 -- Solo mostrar productos con stock en depósito
              ORDER BY p.nombre ASC`
@@ -49,7 +49,7 @@ router.get("/lotes/:productoId", async (req, res) => {
 });
 
 // 📌 3. Registrar la transferencia de Depósito a Tienda (Salida de Mercadería)
-// Recibe: { cantidad_a_mover, producto_id }
+// RECIBE: { cantidad_a_mover, producto_id }
 router.post("/transferir", async (req, res) => {
     const { producto_id, cantidad_a_mover } = req.body;
     const cantidad = parseInt(cantidad_a_mover);
@@ -64,8 +64,8 @@ router.post("/transferir", async (req, res) => {
 
         // 1. Verificar stock suficiente en depósito
         const checkStock = await client.query(
-            `SELECT COALESCE(SUM(cantidad_actual), 0) AS stock_deposito_actual 
-             FROM stock_deposito_detalle 
+            `SELECT COALESCE(SUM(cantidad_actual), 0) AS stock_deposito_actual
+             FROM stock_deposito_detalle
              WHERE producto_id = $1`,
             [producto_id]
         );
@@ -86,7 +86,7 @@ router.post("/transferir", async (req, res) => {
              FROM stock_deposito_detalle
              WHERE producto_id = $1 AND cantidad_actual > 0
              ORDER BY fecha_ingreso ASC
-             FOR UPDATE`,
+                 FOR UPDATE`,
             [producto_id]
         );
 
@@ -96,8 +96,8 @@ router.post("/transferir", async (req, res) => {
             const aConsumir = Math.min(cantidadPendiente, lote.cantidad_actual);
 
             await client.query(
-                `UPDATE stock_deposito_detalle 
-                 SET cantidad_actual = cantidad_actual - $1 
+                `UPDATE stock_deposito_detalle
+                 SET cantidad_actual = cantidad_actual - $1
                  WHERE id = $2`,
                 [aConsumir, lote.id]
             );
@@ -105,9 +105,15 @@ router.post("/transferir", async (req, res) => {
             cantidadPendiente -= aConsumir;
         }
 
-        // 3. El stock_total (productos.stock) NO se toca.
-        // Lógica de negocio: El stock TOTAL (productos.stock) sigue siendo el mismo.
-        // El stock de Tienda (Calculado como stock_total - stock_deposito) aumenta automáticamente al reducir stock_deposito.
+        // 💡 3. REGISTRAR LA TRANSFERENCIA EN LA NUEVA TABLA
+        await client.query(
+            `INSERT INTO movimientos_deposito_tienda (producto_id, cantidad_movida)
+             VALUES ($1, $2)`,
+            [producto_id, cantidad]
+        );
+
+
+        // 4. El stock_total (productos.stock) NO se toca. (Lógica de negocio correcta)
 
         await client.query("COMMIT");
         res.json({ message: "Transferencia registrada con éxito", cantidad_movida: cantidad });
@@ -118,6 +124,27 @@ router.post("/transferir", async (req, res) => {
         res.status(500).json({ error: "Error al registrar transferencia" });
     } finally {
         client.release();
+    }
+});
+
+// 📌 4. NUEVA RUTA: Obtener el reporte de traslados a la tienda
+router.get("/reporte", async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT 
+                 mdt.id, 
+                 mdt.cantidad_movida, 
+                 mdt.fecha_traslado,
+                 p.nombre AS producto_nombre,
+                 p.kilos AS kilos_por_unidad
+             FROM movimientos_deposito_tienda mdt
+             JOIN productos p ON mdt.producto_id = p.id
+             ORDER BY mdt.fecha_traslado DESC`
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error al obtener reporte de traslados:", error);
+        res.status(500).json({ error: "Error al obtener reporte de traslados" });
     }
 });
 
