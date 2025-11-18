@@ -307,15 +307,15 @@ const Productos = () => {
     }
 
     // Función de ayuda para formatear Kilos sin '.00'
-    const formatKilos = (kilos: number | undefined) => {
-        if (kilos == null || kilos <= 0) return '-';
-
+    const formatKilos = (kilos: number | undefined | string) => { // 💡 Añadimos 'string' al tipo
+        if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
+        const kiloValue = Number(kilos); // 💡 CONVERSIÓN CRÍTICA: Aseguramos que sea un número.
         // Verifica si es un número entero
-        if (Number.isInteger(kilos)) {
-            return kilos.toString();
+        if (Number.isInteger(kiloValue)) {
+            return kiloValue.toString();
         }
         // Si no es entero, usa toFixed(2)
-        return kilos.toFixed(2);
+        return kiloValue.toFixed(2);
     };
 
     return (
