@@ -149,5 +149,4 @@ router.get("/reporte", async (req, res) => {
         res.status(500).json({ error: "Error al obtener reporte de traslados" });
     }
 });
-
 export default router;
