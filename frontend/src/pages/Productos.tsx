@@ -453,7 +453,7 @@ const Productos = () => {
                                     {formatPrice(producto.precio_kg)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-700 text-center">
-                                    {producto.kilos ? `${producto.kilos} kg/lt` : '-'}
+                                    {formatPrice(producto.kilos) ? `${producto.kilos}` : '-'}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {formatPrice(producto.precio_costo)}
