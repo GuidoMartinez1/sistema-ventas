@@ -593,8 +593,8 @@ const Productos = () => {
                                 </div>
                                 {producto.kilos != null && producto.kilos > 0 ? (
                                     <div className="col-span-2">
-                                        <span className="text-xs text-gray-500 block">Kilos/Litros (Extraído)</span>
-                                        <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)} kg/lt</span>
+                                        <span className="text-xs text-gray-500 block">Kilos/Litros</span>
+                                        <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)}</span>
                                     </div>
                                 ) : null}
                                 {producto.precio_kg ? (
