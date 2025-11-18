@@ -241,7 +241,7 @@ const Productos = () => {
         })
     }
 
-    // 🛠️ Lógica de filtrado modificada para rangos
+    // 🛠️ Lógica de filtrado
     const productosFiltrados = productos
         .filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.codigo?.toLowerCase().includes(busqueda.toLowerCase()))
         .filter(p => {
@@ -256,13 +256,10 @@ const Productos = () => {
             if (!gananciaFiltro) return true;
 
             const ganancia = Number(p.porcentaje_ganancia) || 0;
-
-            // El formato del valor será "MIN-MAX" (ej: "10-20") o "0-10"
             const [minStr, maxStr] = gananciaFiltro.split('-');
             const min = parseInt(minStr);
             const max = parseInt(maxStr);
 
-            // Si la ganancia está entre MIN (inclusivo) y MAX (exclusivo)
             return ganancia >= min && ganancia < max;
         });
 
@@ -274,8 +271,8 @@ const Productos = () => {
         )
     }
     return (
-        // 1. CAMBIO: w-full en lugar de max-w-7xl para usar todo el ancho
-        <div className="p-4 md:p-8 space-y-6 w-full mx-auto">
+        // 1. SOLUCIÓN FINAL: Usamos max-w-screen-xl (1280px) para que no se estire en monitores grandes.
+        <div className="p-4 md:p-8 space-y-6 max-w-screen-xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Productos - AliMar</h1>
@@ -300,7 +297,7 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* FILTROS: Se amplía el grid a 4 columnas */}
+            {/* FILTROS: Grid de 4 columnas en lg */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <input
                     type="text"
@@ -334,7 +331,6 @@ const Productos = () => {
                         </option>
                     ))}
                 </select>
-                {/* 🛠️ SELECTOR DE GANANCIA MODIFICADO CON RANGOS */}
                 <select
                     value={gananciaFiltro}
                     onChange={(e) => setGananciaFiltro(e.target.value)}
@@ -351,40 +347,33 @@ const Productos = () => {
 
             {/* TABLA / CARD VIEW */}
             <div className={cardClass}>
-                {/* Contenedor de tabla con scroll horizontal como respaldo */}
+                {/* Vista de Tabla (Desktop/Tablet) */}
                 <div className="hidden md:block overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                         <tr>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
+                            {/* 2. REFACTOR: Usamos px-2 en todos los TH para ganar espacio horizontal */}
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Producto
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Categoría
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Precio Venta
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Precio x Kg
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Costo
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Ganancia %
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Stock
                             </th>
-                            {/* 2. CAMBIO: px-2 para ganar espacio */}
                             <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Acciones
                             </th>
@@ -393,7 +382,7 @@ const Productos = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {productosFiltrados.map((producto) => (
                             <tr key={producto.id} className="hover:bg-gray-50">
-                                {/* 2. CAMBIO: px-2 y min-w para la columna de producto */}
+                                {/* 2. REFACTOR: px-2 y min-w para el producto */}
                                 <td className="px-2 py-4 whitespace-nowrap min-w-[150px]">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-8 w-8">
@@ -413,23 +402,18 @@ const Productos = () => {
                                         </div>
                                     </div>
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {getCategoriaNombre(producto.categoria_id)}
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                                     {formatPrice(producto.precio)}
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" >
                                     {formatPrice(producto.precio_kg)}
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {formatPrice(producto.precio_costo)}
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.porcentaje_ganancia || 0) >= 50
@@ -441,7 +425,6 @@ const Productos = () => {
                       {producto.porcentaje_ganancia || 0}%
                     </span>
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 whitespace-nowrap text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         (producto.stock || 0) <= 4
@@ -451,7 +434,6 @@ const Productos = () => {
                       {producto.stock} uds
                     </span>
                                 </td>
-                                {/* 2. CAMBIO: px-2 */}
                                 <td className="px-2 py-4 text-sm font-medium">
                                     <div className="flex space-x-1 justify-center">
                                         <button
@@ -485,20 +467,17 @@ const Productos = () => {
                     </table>
                 </div>
 
-                {/* VISTA DE TARJETA (MÓVIL) - Se mantiene igual, ya está bien */}
+                {/* VISTA DE TARJETA (MÓVIL) */}
                 <div className="md:hidden space-y-4">
                     {productosFiltrados.map((producto) => (
                         <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
-                            {/* Título y Acciones */}
                             <div className="flex justify-between items-start mb-3">
-                                {/* CORRECCIÓN: Contenedor con overflow hidden y truncate forzado */}
                                 <div className="min-w-0 flex-1 pr-2">
                                     <h3 className="text-lg font-bold text-gray-900 truncate">
                                         {producto.nombre}
                                     </h3>
                                     {producto.descripcion && <p className="text-xs text-gray-500 truncate mt-1">{producto.descripcion}</p>}
                                 </div>
-                                {/* El grupo de botones mantiene su espacio fijo */}
                                 <div className="flex space-x-2 flex-shrink-0 ml-auto">
                                     <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
                                         <Edit className="h-4 w-4" />
@@ -514,7 +493,6 @@ const Productos = () => {
                                 </div>
                             </div>
 
-                            {/* Precios y Stock (Grid 2 columnas) */}
                             <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t pt-3">
                                 <div>
                                     <span className="text-xs text-gray-500 block">Precio Venta</span>
@@ -554,7 +532,7 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* Modal - Se mantiene el tamaño responsive del Modal de Clientes */}
+            {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
@@ -599,7 +577,6 @@ const Productos = () => {
                                         placeholder="0.00"
                                     />
                                 </div>
-                                {/* RESPONSIVE: Grid de 2 columnas para Precio de Costo y Ganancia */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
@@ -637,7 +614,6 @@ const Productos = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {/* RESPONSIVE: Grid de 2 columnas para Precio de Venta y Stock */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
@@ -665,7 +641,6 @@ const Productos = () => {
                                         />
                                     </div>
                                 </div>
-                                {/* RESPONSIVE: Grid de 2 columnas para Categoría y Código */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
