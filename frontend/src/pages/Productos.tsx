@@ -45,6 +45,21 @@ const extraerKilos = (nombre: string): number | null => {
     return null;
 };
 
+// Función de ayuda para formatear Kilos sin '.00'
+const formatKilos = (kilos: number | undefined | string) => {
+    if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
+
+    const kiloValue = Number(kilos);
+
+    // Verifica si es un número entero
+    if (Number.isInteger(kiloValue)) {
+        return kiloValue.toString();
+    }
+
+    // Si no es entero, usa toFixed(2)
+    return kiloValue.toFixed(2);
+};
+
 const Productos = () => {
     const [productos, setProductos] = useState<Producto[]>([])
     const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -307,13 +322,16 @@ const Productos = () => {
     }
 
     // Función de ayuda para formatear Kilos sin '.00'
-    const formatKilos = (kilos: number | undefined | string) => { // 💡 Añadimos 'string' al tipo
+    const formatKilos = (kilos: number | undefined | string) => {
         if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
-        const kiloValue = Number(kilos); // 💡 CONVERSIÓN CRÍTICA: Aseguramos que sea un número.
+
+        const kiloValue = Number(kilos); // Convertimos el valor a Number
+
         // Verifica si es un número entero
         if (Number.isInteger(kiloValue)) {
             return kiloValue.toString();
         }
+
         // Si no es entero, usa toFixed(2)
         return kiloValue.toFixed(2);
     };
@@ -432,7 +450,8 @@ const Productos = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {productosFiltrados.map((producto) => (
                             <tr key={producto.id} className="hover:bg-gray-50">
-                                <td className="px-2 py-4 whitespace-nowrap min-w-[150px]">
+                                {/* ✅ Aumentado el min-w para estética */}
+                                <td className="px-2 py-4 min-w-[280px]">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-8 w-8">
                                             <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
@@ -461,7 +480,6 @@ const Productos = () => {
                                     {formatPrice(producto.precio_kg)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-700 text-center">
-                                    {/* ✅ USO DE formatKilos */}
                                     {formatKilos(producto.kilos)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
@@ -576,7 +594,7 @@ const Productos = () => {
                                 {producto.kilos != null && producto.kilos > 0 ? (
                                     <div className="col-span-2">
                                         <span className="text-xs text-gray-500 block">Kilos/Litros (Extraído)</span>
-                                        <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)}</span>
+                                        <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)} kg/lt</span>
                                     </div>
                                 ) : null}
                                 {producto.precio_kg ? (
