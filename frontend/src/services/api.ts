@@ -143,13 +143,14 @@ export interface LoteDeposito {
     fecha_ingreso: string;
 }
 
-// 💡 NUEVA INTERFAZ PARA EL REPORTE DE TRASLADO
+
 export interface Traslado {
-    id: number;
+    fecha_dia: string;
+    producto_id: number; // Añadimos producto_id para la clave
     producto_nombre: string;
-    cantidad_movida: number;
+    total_unidades_movidas: number;
+    peso_total_movido: number; // Ya calculado por el backend
     kilos_por_unidad?: number;
-    fecha_traslado: string;
 }
 
 export interface BolsaAbierta {

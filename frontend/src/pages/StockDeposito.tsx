@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-// 💡 Importamos la interfaz Traslado
 import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2, FileText, LayoutList } from 'lucide-react';
@@ -12,12 +11,14 @@ const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 const formatDate = (dateString: string | undefined, includeTime: boolean = false) => {
     if (!dateString) return 'N/A';
+    // Nota: Si el backend devuelve solo la fecha (DATE(mdt.fecha_traslado)), toLocaleDateString es suficiente
     return new Date(dateString).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-        hour: includeTime ? '2-digit' : undefined,
-        minute: includeTime ? '2-digit' : undefined
+        // Comentamos la hora si el backend devuelve solo la fecha del día
+        // hour: includeTime ? '2-digit' : undefined,
+        // minute: includeTime ? '2-digit' : undefined
     });
 };
 
@@ -40,7 +41,7 @@ const formatNumber = (value: number) => {
 };
 
 // ====================================================================
-// 💡 NUEVO COMPONENTE: VISTA DE REPORTES
+// 💡 NUEVO COMPONENTE: VISTA DE REPORTES AGRUPADOS
 // ====================================================================
 interface ReportesTrasladoProps {
     reporteList: Traslado[];
@@ -48,6 +49,37 @@ interface ReportesTrasladoProps {
 }
 
 const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadingReporte }) => {
+
+    // 💡 LÓGICA CLAVE: Agrupar los reportes por fecha
+    const groupedReports = useMemo(() => {
+        const groups: { [fecha: string]: { items: Traslado[], totalKilosDia: number } } = {};
+
+        reporteList.forEach(item => {
+            const dateKey = item.fecha_dia; // Usamos la fecha_dia devuelta por el backend
+
+            if (!groups[dateKey]) {
+                groups[dateKey] = { items: [], totalKilosDia: 0 };
+            }
+
+            groups[dateKey].items.push(item);
+            // El peso_total_movido ya viene calculado por el backend
+            groups[dateKey].totalKilosDia += Number(item.peso_total_movido) || 0;
+        });
+
+        return groups;
+    }, [reporteList]);
+
+    // Convertir el objeto de grupos a un array ordenado por fecha (descendente)
+    const orderedGroups = useMemo(() => {
+        return Object.entries(groupedReports).sort(([dateA], [dateB]) => {
+            // Comparar fechas como strings ISO para el orden descendente
+            if (dateA > dateB) return -1;
+            if (dateA < dateB) return 1;
+            return 0;
+        });
+    }, [groupedReports]);
+
+
     if (loadingReporte) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -71,34 +103,53 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
                 <thead className="bg-gray-50">
                 <tr>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Kg/U</th>
                     <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unidades</th>
-                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso Total (Kg)</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso Movido (Kg)</th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                 </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                {reporteList.map((traslado) => {
-                    const kilosPorUnidad = Number(traslado.kilos_por_unidad) || 0;
-                    const cantidad = Number(traslado.cantidad_movida) || 0;
-                    const pesoTotal = kilosPorUnidad * cantidad;
-
-                    return (
-                        <tr key={traslado.id} className="hover:bg-gray-50">
-                            <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {traslado.producto_nombre}
+                <tbody className="bg-white">
+                {orderedGroups.map(([dateKey, group], index) => (
+                    <React.Fragment key={dateKey}>
+                        {/* 📌 FILA DE GRUPO: TOTALIZADOR POR FECHA */}
+                        <tr className="bg-gray-100 border-t border-b border-gray-300">
+                            <td colSpan={3} className="px-3 py-3 text-left font-bold text-gray-700 text-sm">
+                                <Calendar className="h-4 w-4 mr-2 inline-block"/>
+                                TRASLADOS DEL DÍA: {formatDate(dateKey)}
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-semibold">
-                                {cantidad} uds
+                            <td className="px-3 py-3 text-right font-bold text-orange-600 text-base">
+                                {/* 💡 Total Kilos del día */}
+                                {formatNumber(group.totalKilosDia)} kg
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-800 font-semibold">
-                                {formatKilos(pesoTotal)} kg
-                            </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                {formatDate(traslado.fecha_traslado, true)}
-                            </td>
+                            <td className="px-3 py-3"></td>
                         </tr>
-                    );
-                })}
+
+                        {/* 📌 FILAS DE DETALLE DENTRO DEL GRUPO */}
+                        {group.items.map((traslado) => (
+                            <tr key={traslado.producto_id} className="hover:bg-white transition-colors">
+                                <td className="px-3 py-2 text-sm text-gray-900 font-medium">
+                                    {traslado.producto_nombre}
+                                </td>
+                                <td className="px-3 py-2 text-sm text-right text-gray-500">
+                                    {formatKilos(traslado.kilos_por_unidad)}
+                                </td>
+                                <td className="px-3 py-2 text-sm text-right text-gray-700">
+                                    {traslado.total_unidades_movidas} uds
+                                </td>
+                                <td className="px-3 py-2 text-sm text-right font-medium text-gray-700">
+                                    {/* Peso total movido (ya calculado por el backend) */}
+                                    {formatKilos(traslado.peso_total_movido)} kg
+                                </td>
+                                <td className="px-3 py-2"></td>
+                            </tr>
+                        ))}
+                        {/* Espacio entre días */}
+                        {index < orderedGroups.length - 1 && (
+                            <tr><td colSpan={5} className="h-3"></td></tr>
+                        )}
+                    </React.Fragment>
+                ))}
                 </tbody>
             </table>
         </div>
@@ -153,9 +204,10 @@ const StockDeposito = () => {
     const fetchReporte = useCallback(async () => {
         setLoadingReporte(true);
         try {
-            const response = await stockDepositoAPI.getReporteTraslados(); // 👈 CONSUMO DEL ENDPOINT
-            setReporteList(response.data);
-        } catch {
+            const response = await stockDepositoAPI.getReporteTraslados();
+            setReporteList(response.data); // Asume que la respuesta tiene la estructura de Traslado[]
+        } catch (error) {
+            console.error("Error fetching report:", error);
             toast.error('Error al cargar el reporte de traslados.');
             setReporteList([]);
         } finally {
@@ -402,7 +454,13 @@ const StockDeposito = () => {
                 toast.success(`Traslado de ${cantidadAMover} unidades de ${selectedProduct.producto_nombre} a la tienda registrado.`);
             }
 
-            await fetchData();
+            // Refetch data for the current view
+            if (vistaActual === 'deposito') {
+                await fetchData();
+            } else {
+                await fetchReporte(); // Refrescar el reporte si estábamos en esa pestaña
+            }
+
             setShowModal(false);
         } catch (error: any) {
             const errorMessage = error.response?.data?.error || 'Error desconocido al realizar la transferencia.';
@@ -638,9 +696,7 @@ const StockDeposito = () => {
                                             </div>
                                             <div className="flex justify-between text-sm pl-6">
                                                 <span className="text-gray-500">Peso Total (Kg):</span>
-                                                <span className="text-gray-600">
-                                                    {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
-                                                </span>
+                                                <span className="text-gray-600">{formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}</span>
                                             </div>
                                             <div className="flex justify-between text-sm pl-6">
                                                 <span className="text-gray-500">Depósito:</span>

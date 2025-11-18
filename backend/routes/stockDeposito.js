@@ -131,15 +131,17 @@ router.post("/transferir", async (req, res) => {
 router.get("/reporte", async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT 
-                 mdt.id, 
-                 mdt.cantidad_movida, 
-                 mdt.fecha_traslado,
+            `SELECT
+                 DATE(mdt.fecha_traslado) AS fecha_dia, -- Agrupa por la fecha del día
+                 mdt.producto_id,
                  p.nombre AS producto_nombre,
-                 p.kilos AS kilos_por_unidad
+                 p.kilos AS kilos_por_unidad,
+                 SUM(mdt.cantidad_movida) AS total_unidades_movidas, -- Suma las unidades
+                 SUM(mdt.cantidad_movida * p.kilos) AS peso_total_movido -- Calcula el peso total por producto/día
              FROM movimientos_deposito_tienda mdt
-             JOIN productos p ON mdt.producto_id = p.id
-             ORDER BY mdt.fecha_traslado DESC`
+                 JOIN productos p ON mdt.producto_id = p.id
+             GROUP BY fecha_dia, mdt.producto_id, p.nombre, p.kilos
+             ORDER BY fecha_dia DESC, p.nombre ASC`
         );
         res.json(result.rows);
     } catch (error) {
