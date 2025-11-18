@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2, FileText, LayoutList } from 'lucide-react';
