@@ -453,7 +453,11 @@ const Productos = () => {
                                     {formatPrice(producto.precio_kg)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-700 text-center">
-                                    {producto.kilos != null && producto.kilos > 0 ? `${producto.kilos}` : '-'}
+                                    {producto.kilos != null && producto.kilos > 0
+                                        ? (Number.isInteger(producto.kilos)
+                                            ? producto.kilos.toString()
+                                            : producto.kilos.toFixed(2))
+                                        : '-'}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {formatPrice(producto.precio_costo)}
@@ -567,7 +571,10 @@ const Productos = () => {
                                 {producto.kilos ? (
                                     <div className="col-span-2">
                                         <span className="text-xs text-gray-500 block">Kilos/Litros </span>
-                                        <span className="text-sm font-bold text-orange-600">{producto.kilos} </span>
+                                        <span className="text-sm font-bold text-orange-600">{Number.isInteger(producto.kilos)
+                                            ? producto.kilos.toString()
+                                            : producto.kilos.toFixed(2)}
+                                        </span>
                                     </div>
                                 ) : null}
                                 {producto.precio_kg ? (
