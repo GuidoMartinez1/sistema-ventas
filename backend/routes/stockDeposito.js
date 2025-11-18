@@ -11,6 +11,7 @@ router.get("/", async (req, res) => {
                  p.id AS producto_id,
                  p.nombre AS producto_nombre,
                  p.codigo,
+                 p.kilos,
                  p.stock AS stock_total, -- Stock TOTAL del sistema
                  c.nombre AS categoria_nombre,
                  COALESCE(SUM(sdd.cantidad_actual), 0) AS stock_en_deposito,
@@ -18,7 +19,7 @@ router.get("/", async (req, res) => {
              FROM productos p
              LEFT JOIN stock_deposito_detalle sdd ON sdd.producto_id = p.id AND sdd.cantidad_actual > 0
              LEFT JOIN categorias c ON p.categoria_id = c.id
-             GROUP BY p.id, p.nombre, p.codigo, p.stock, c.nombre
+             GROUP BY p.id, p.nombre, p.codigo, p.kilos, p.stock, c.nombre
              HAVING COALESCE(SUM(sdd.cantidad_actual), 0) > 0 -- Solo mostrar productos con stock en depósito
              ORDER BY p.nombre ASC`
         );

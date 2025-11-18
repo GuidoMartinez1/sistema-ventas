@@ -133,6 +133,7 @@ export interface StockDeposito {
   stock_total: number;       // Stock total del sistema
   stock_en_deposito: number; // Stock actual en el depósito
   stock_en_tienda: number;   // Stock en la tienda (calculado)
+  kilos?: number;
   ultima_fecha_ingreso: string;
 }
 

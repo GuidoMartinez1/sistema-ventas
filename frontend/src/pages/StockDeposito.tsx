@@ -13,6 +13,24 @@ const formatDate = (dateString: string | undefined) => {
     });
 };
 
+// 💡 FUNCIÓN PARA MOSTRAR KILOS (Sin .00 si es entero)
+const formatKilos = (kilos: number | undefined | string) => {
+    if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
+
+    const kiloValue = Number(kilos);
+
+    if (Number.isInteger(kiloValue)) {
+        return kiloValue.toString();
+    }
+    return kiloValue.toFixed(2);
+};
+
+// 💡 FUNCIÓN PARA FORMATEAR NÚMEROS GRANDES (ej: 1,234.50)
+const formatNumber = (value: number) => {
+    if (value === null || value === undefined) return '0';
+    return Number(value).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+};
+
 const StockDeposito = () => {
     const [stockList, setStockList] = useState<StockDeposito[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,6 +55,7 @@ const StockDeposito = () => {
             const safeStockList = response.data.map((item: StockDeposito) => ({
                 ...item,
                 stock_en_deposito: Number(item.stock_en_deposito) || 0,
+                kilos: Number(item.kilos) || 0, // 💡 Aseguramos que kilos sea un número
             }));
             setStockList(safeStockList);
         } catch {
@@ -57,6 +76,15 @@ const StockDeposito = () => {
         );
     }, [stockList, busqueda]);
 
+    // 💡 CÁLCULO DE KILOS TOTALES EN DEPÓSITO
+    const totalWeightInDeposito = useMemo(() => {
+        return stockList.reduce((sum, item) => {
+            const kilosPorUnidad = Number(item.kilos) || 0;
+            const stock = Number(item.stock_en_deposito) || 0;
+            return sum + (kilosPorUnidad * stock);
+        }, 0);
+    }, [stockList]);
+
     const totalStockInDeposito = useMemo(() => {
         return stockList.reduce((sum, item) => sum + (Number(item.stock_en_deposito) || 0), 0);
     }, [stockList]);
@@ -65,6 +93,18 @@ const StockDeposito = () => {
         return stockList.reduce((sum, item) => {
             if (selectedItems.has(item.producto_id)) {
                 return sum + (Number(item.stock_en_deposito) || 0);
+            }
+            return sum;
+        }, 0);
+    }, [stockList, selectedItems]);
+
+    // 💡 CÁLCULO DE KILOS TOTALES SELECCIONADOS
+    const totalSelectedWeight = useMemo(() => {
+        return stockList.reduce((sum, item) => {
+            if (selectedItems.has(item.producto_id)) {
+                const kilosPorUnidad = Number(item.kilos) || 0;
+                const stock = Number(item.stock_en_deposito) || 0;
+                return sum + (kilosPorUnidad * stock);
             }
             return sum;
         }, 0);
@@ -82,7 +122,6 @@ const StockDeposito = () => {
         });
     };
 
-    // DECLARACIONES FALTANTES AQUÍ: Se asegura que estas variables existan antes del JSX
     const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
 
     const handleSelectAll = (checked: boolean) => {
@@ -170,7 +209,7 @@ const StockDeposito = () => {
 
         const count = selectedItems.size;
 
-        if (!window.confirm(`⚠️ ADVERTENCIA: Esta acción trasladará TODO el stock de los ${count} productos seleccionados, vaciando su depósito (Total: ${totalSelectedStock} unidades). ¿Confirmar?`)) {
+        if (!window.confirm(`⚠️ ADVERTENCIA: Esta acción trasladará TODO el stock de los ${count} productos seleccionados, vaciando su depósito (Total: ${formatNumber(totalSelectedStock)} uds. / ${formatNumber(totalSelectedWeight)} kg). ¿Confirmar?`)) {
             return;
         }
 
@@ -271,14 +310,9 @@ const StockDeposito = () => {
         }
     };
 
-    // La variable que estaba causando el error:
     const allFilteredItemsWithStockSelected = filteredStock
         .filter(item => Number(item.stock_en_deposito) > 0)
         .every(item => selectedItems.has(item.producto_id));
-
-    // Esta variable se usa en el header de la tabla y en el selector de mobile
-    // ya estaba declarada arriba, se mantiene el uso
-    // const totalFilteredItemsWithStock = filteredStock.filter(item => Number(item.stock_en_deposito) > 0).length;
 
     if (loading) {
         return (
@@ -303,26 +337,25 @@ const StockDeposito = () => {
                         ) : (
                             <Maximize2 className="h-5 w-5 mr-2" />
                         )}
-                        Vaciar Depósito de {selectedItems.size} {selectedItems.size === 1 ? 'Ítem Seleccionado' : 'Ítems Seleccionados'} ({totalSelectedStock} uds.)
+                        Vaciar Depósito de {selectedItems.size} {selectedItems.size === 1 ? 'Ítem Seleccionado' : 'Ítems Seleccionados'} ({formatNumber(totalSelectedStock)} uds. | {formatNumber(totalSelectedWeight)} kg)
                     </button>
                 </div>
             )}
 
             {/* ENCABEZADO Y BOTÓN MAESTRO GLOBAL */}
             <div className="flex flex-wrap justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                <div className="min-w-0"> {/* Añadir min-w-0 para evitar desbordamiento */}
+                <div className="min-w-0">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
                         <Warehouse className="h-6 w-6 md:h-7 md:w-7 mr-2 text-orange-500" />
                         Stock en Depósito
                     </h1>
-                    <p className="text-sm text-gray-600">Control de la mercadería almacenada y traslados a la tienda física.</p>
+                    {/* 💡 MOSTRAMOS EL PESO TOTAL */}
+                    <p className="text-sm text-gray-600">Control de la mercadería almacenada ({formatNumber(totalStockInDeposito)} uds. | <span className="font-semibold text-orange-600">{formatNumber(totalWeightInDeposito)} kg</span>).</p>
                 </div>
 
                 {/* Botón Maestro Trasladar Todo GLOBAL (Naranja) */}
                 <button
                     onClick={handleMassTransferAll}
-                    // Usamos flex-shrink-0 para que el botón siempre conserve su ancho
-                    // y aseguramos que ocupe todo el ancho en mobile con w-full
                     className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto rounded-xl text-sm md:text-lg py-3 px-4 md:px-6 transition duration-150 ease-in-out font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400 flex-shrink-0"
                     disabled={isMassTransferring || totalStockInDeposito === 0}>
                     {isMassTransferring ? (
@@ -357,7 +390,7 @@ const StockDeposito = () => {
                                 <tr>
                                     {/* Nueva columna para Checkbox de selección masiva */}
                                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {totalFilteredItemsWithStock > 0 && ( // Usa la variable corregida
+                                        {totalFilteredItemsWithStock > 0 && (
                                             <input
                                                 type="checkbox"
                                                 checked={totalFilteredItemsWithStock > 0 && allFilteredItemsWithStockSelected}
@@ -369,6 +402,8 @@ const StockDeposito = () => {
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                    {/* 💡 NUEVA COLUMNA DE PESO */}
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Peso (Kg/u)</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Depósito</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Tienda</th>
                                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -395,6 +430,10 @@ const StockDeposito = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
                                         </td>
+                                        {/* 💡 CELDA DE PESO */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
+                                            {formatKilos(item.kilos)}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-orange-600">
                                             {item.stock_en_deposito}
                                         </td>
@@ -419,7 +458,7 @@ const StockDeposito = () => {
                         {/* LISTA DE TARJETAS (Mobile) */}
                         <div className="md:hidden space-y-3">
                             {/* Selector masivo para mobile, si hay stock visible */}
-                            {totalFilteredItemsWithStock > 0 && ( // Usa la variable corregida
+                            {totalFilteredItemsWithStock > 0 && (
                                 <div className="flex items-center space-x-2 pb-2 border-b">
                                     <input
                                         type="checkbox"
@@ -456,6 +495,11 @@ const StockDeposito = () => {
                                     </div>
                                     <div className="text-xs text-gray-600 mb-2 pl-6">
                                         Categoria.: {item.categoria_nombre}
+                                    </div>
+                                    {/* 💡 CAMPO DE PESO EN MÓVIL */}
+                                    <div className="flex justify-between text-sm pl-6">
+                                        <span className="text-gray-500">Peso (Kg/u):</span>
+                                        <span className="text-gray-600">{formatKilos(item.kilos)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm pl-6">
                                         <span className="text-gray-500">Depósito:</span>
@@ -496,6 +540,10 @@ const StockDeposito = () => {
                                 <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
                                     <p className="text-sm font-medium">Stock en Depósito: <span className="text-orange-600 font-bold">{selectedProduct.stock_en_deposito}</span></p>
                                     <p className="text-sm">Stock en Tienda: {selectedProduct.stock_en_tienda}</p>
+                                    {/* 💡 MOSTRAR PESO DEL PRODUCTO */}
+                                    {Number(selectedProduct.kilos) > 0 && (
+                                        <p className="text-xs text-gray-600">Peso por unidad: <span className="font-semibold">{formatKilos(selectedProduct.kilos)} kg</span></p>
+                                    )}
                                 </div>
 
                                 <form onSubmit={handleTransfer} className="space-y-4">
@@ -548,9 +596,11 @@ const StockDeposito = () => {
                                         />
                                     </div>
 
-                                    {/* Resumen del Traslado (Cálculo Inverso) */}
-                                    {(Number(cantidadInput) > 0) || (modoTransferencia === 'quedar' && Number(cantidadInput) === 0 && Number(selectedProduct.stock_en_deposito) > 0) ? (
+                                    {/* Resumen del Traslado (Cálculo Inverso y Peso Estimado) */}
+                                    {(Number(cantidadInput) > 0 || (modoTransferencia === 'quedar' && Number(selectedProduct.stock_en_deposito) > 0)) && (
                                         <div className="text-sm p-2 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
+
+                                            {/* Cálculo de unidades a mover */}
                                             {modoTransferencia === 'quedar' ? (
                                                 Number(cantidadInput) === 0 ? (
                                                     <p>Se trasladarán: <span className="font-bold">{selectedProduct.stock_en_deposito}</span> unidades. **Stock en depósito quedará en 0.**</p>
@@ -560,8 +610,20 @@ const StockDeposito = () => {
                                             ) : (
                                                 <p>Quedarán en depósito: <span className="font-bold">{Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)}</span> unidades.</p>
                                             )}
+
+                                            {/* 💡 CÁLCULO DE PESO ESTIMADO DEL TRASLADO */}
+                                            {Number(selectedProduct.kilos) > 0 && (
+                                                <p className="mt-1">
+                                                    Peso estimado a mover: <span className="font-bold">
+                                                        {formatNumber(
+                                                            (modoTransferencia === 'trasladar' ? Number(cantidadInput) : (Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)))
+                                                            * Number(selectedProduct.kilos)
+                                                        )} kg
+                                                    </span>
+                                                </p>
+                                            )}
                                         </div>
-                                    ) : null}
+                                    )}
 
                                     <div className="flex justify-end pt-2">
                                         <button
