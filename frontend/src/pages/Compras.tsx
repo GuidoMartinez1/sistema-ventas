@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon, Edit } from 'lucide-react' // 💡 Agregamos 'Edit'
 // 💡 IMPORTANTE: Añadir Producto y productosAPI
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
@@ -24,21 +24,22 @@ const Compras = () => {
     const [futurosPedidos, setFuturosPedidos] = useState<FuturoPedido[]>([])
     const [cargandoFuturos, setCargandoFuturos] = useState(false)
 
-    // 💡 ESTADOS DEL FORMULARIO UNIFICADO
-    const [productos, setProductos] = useState<Producto[]>([]) // Lista de todos los productos
-    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null) // ID del producto seleccionado (NULL si es custom)
-    // ❌ ELIMINADO: const [usarProductoExistente, setUsarProductoExistente] = useState(false)
-    // ❌ ELIMINADO: const [nuevoProducto, setNuevoProducto] = useState('')
+    // 💡 ESTADOS DEL FORMULARIO UNIFICADO (CREACIÓN)
+    const [productos, setProductos] = useState<Producto[]>([])
+    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null)
     const [nuevaCantidad, setNuevaCantidad] = useState('')
+    const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('')
+    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false)
 
-    // 💡 ESTADOS PARA EL AUTOSUGERENCIA
-    const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('') // Campo principal: texto del producto
-    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false) // Controla el dropdown del Autocomplete
+    // 💡 NUEVOS ESTADOS PARA EDICIÓN
+    const [editandoId, setEditandoId] = useState<number | null>(null);
+    const [cantidadEditando, setCantidadEditando] = useState<string>('');
+
 
     // 💡 Lógica de filtrado para el Autocomplete
     const productosSugeridos = productos.filter(p =>
         (p.nombre?.toLowerCase().includes(busquedaProductoExistente.toLowerCase()))
-    ).slice(0, 10); // Limitar a 10 sugerencias para rendimiento
+    ).slice(0, 10);
 
 
     // 💡 NUEVO useEffect para cargar productos (solo una vez)
@@ -72,19 +73,15 @@ const Compras = () => {
     const agregarFuturo = async () => {
         const cantidadTrim = nuevaCantidad.trim() || undefined;
 
-        // 2. Determinar el payload (Existente vs. Custom)
         let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
             cantidad: cantidadTrim
         };
 
         if (productoSeleccionadoId) {
-            // Caso 1: Se seleccionó un producto existente (ID presente).
             payload.producto_id = productoSeleccionadoId;
         } else if (busquedaProductoExistente.trim()) {
-            // Caso 2: No hay ID seleccionado, pero hay texto en el input. -> ¡Es Custom!
             payload.producto = busquedaProductoExistente.trim();
         } else {
-            // Caso 3: El campo está vacío y no hay ID seleccionado.
             toast.error('Debe buscar y seleccionar un producto o ingresar un nombre custom.');
             return;
         }
@@ -95,7 +92,7 @@ const Compras = () => {
 
             await fetchFuturosPedidos()
 
-            // Resetear el formulario
+            // Resetear el formulario de creación
             setNuevaCantidad('')
             setProductoSeleccionadoId(null)
             setBusquedaProductoExistente('')
@@ -104,6 +101,37 @@ const Compras = () => {
             console.error(error)
         }
     }
+
+    // 💡 NUEVA FUNCIÓN: Iniciar edición
+    const iniciarEdicion = (pedido: FuturoPedido) => {
+        setEditandoId(pedido.id || null);
+        setCantidadEditando(pedido.cantidad || '');
+    };
+
+    // 💡 NUEVA FUNCIÓN: Actualizar pedido
+    const actualizarPedido = async () => {
+        if (!editandoId) return;
+
+        const cantidadTrim = cantidadEditando.trim() || undefined;
+
+        try {
+            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim }); // Solo actualizamos la cantidad por ahora
+            toast.success('Pedido actualizado.');
+
+            setEditandoId(null);
+            setCantidadEditando('');
+            await fetchFuturosPedidos();
+        } catch (error) {
+            toast.error('Error al actualizar el pedido.');
+            console.error(error);
+        }
+    };
+
+    // 💡 FUNCIÓN CANCELAR EDICIÓN
+    const cancelarEdicion = () => {
+        setEditandoId(null);
+        setCantidadEditando('');
+    };
 
 
     const eliminarFuturo = async (id: number) => {
@@ -347,9 +375,6 @@ const Compras = () => {
                             </button>
                         </div>
 
-                        {/* ❌ ELIMINAMOS EL TOGGLE DE SELECCIÓN */}
-                        {/* ❌ ELIMINAMOS EL ESTADO nuevoProducto*/}
-
                         {/* RESPONSIVE: Input/Botón en fila compacta */}
                         <div className="flex flex-col sm:flex-row gap-2 mb-4">
 
@@ -439,13 +464,55 @@ const Compras = () => {
                                                 {/* Muestra el producto_nombre si existe (viene del JOIN), sino el producto custom */}
                                                 {item.producto_nombre || item.producto}
                                             </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                                {/* 💡 CAMPO DE CANTIDAD CONDICIONAL (EDICIÓN) */}
+                                                {editandoId === item.id ? (
+                                                    <input
+                                                        type="text"
+                                                        value={cantidadEditando}
+                                                        onChange={(e) => setCantidadEditando(e.target.value)}
+                                                        className="w-16 text-center border rounded px-1 py-0.5 text-xs"
+                                                    />
+                                                ) : (
+                                                    item.cantidad || '-'
+                                                )}
+                                            </td>
                                             <td className="px-4 py-2 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => eliminarFuturo(item.id!)}
-                                                    className="text-red-500 hover:text-red-700 p-1">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    {editandoId === item.id ? (
+                                                        <>
+                                                            <button
+                                                                onClick={actualizarPedido}
+                                                                className="text-green-600 hover:text-green-800 p-1"
+                                                                title="Guardar"
+                                                            >
+                                                                ✅
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelarEdicion}
+                                                                className="text-gray-600 hover:text-gray-800 p-1"
+                                                                title="Cancelar"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => iniciarEdicion(item)}
+                                                            className="text-blue-500 hover:text-blue-700 p-1"
+                                                            title="Editar cantidad"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => eliminarFuturo(item.id!)}
+                                                        className="text-red-500 hover:text-red-700 p-1"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
