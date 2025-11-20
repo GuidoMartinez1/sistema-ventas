@@ -442,20 +442,20 @@ const Compras = () => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cant</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
+                                        {/* 💡 AJUSTE DE ANCHOS EN CABECERA WEB */}
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[5%]">#</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[65%]">Producto</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Cant</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Acción</th>
                                     </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                     {futurosPedidos.map((item, index) => (
                                         <tr key={item.id}>
-                                            {/* 💡 CONTADOR ASCENDENTE */}
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                                 <span className="font-bold text-gray-900">{index + 1}</span>
                                             </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
                                                 {item.producto_nombre || item.producto}
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
@@ -514,7 +514,7 @@ const Compras = () => {
                             </div>
 
                             {/* 💡 VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto"> {/* 💡 FIX: Altura ajustada a 60vh */}
+                            <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
@@ -522,7 +522,6 @@ const Compras = () => {
                                                 <h4 className="text-sm font-bold text-gray-900">
                                                     {index + 1}. {item.producto_nombre || item.producto}
                                                 </h4>
-                                                {/* ❌ ID INTERNO ELIMINADO */}
                                             </div>
 
                                             {/* Botones de acción (Eliminar) */}
@@ -558,7 +557,6 @@ const Compras = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-3">
-                                                    {/* 💡 CAMBIO: Usamos '-' en lugar de 'N/A' */}
                                                     <span className="font-bold text-sm text-gray-800">{item.cantidad || '-'}</span>
                                                     <button
                                                         onClick={() => iniciarEdicion(item)}
