@@ -193,7 +193,7 @@ const Compras = () => {
         } finally {
             setCargandoDetalles(false)
         }
-    }
+    };
 
     // NUEVA FUNCIÓN: Eliminar compra
     const handleEliminarCompra = async (compraId: number) => {
@@ -363,8 +363,9 @@ const Compras = () => {
 
             {/* MODAL FUTUROS PEDIDOS */}
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20" style={{ display: mostrarFuturos ? 'flex' : 'none' }}>
-                <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
-                    <div className="flex justify-between items-center mb-4">
+                {/* 💡 FIX: max-h-full y overflow-y-auto en el modal wrapper para que el navegador maneje el scroll si el modal es muy largo */}
+                <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto flex flex-col">
+                    <div className="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 className="text-xl font-bold flex items-center">
                             <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
                         </h2>
@@ -373,8 +374,8 @@ const Compras = () => {
                         </button>
                     </div>
 
-                    {/* Formulario de creación */}
-                    <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                    {/* Formulario de creación (flex-shrink-0) */}
+                    <div className="flex flex-col sm:flex-row gap-2 mb-4 flex-shrink-0">
                         <div className="relative flex-1">
                             <input
                                 type="text"
@@ -436,11 +437,12 @@ const Compras = () => {
                     ) : futurosPedidos.length === 0 ? (
                         <p className="text-gray-500">No hay productos en la lista.</p>
                     ) : (
-                        <>
-                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) - FIX DE SCROLL WEB */}
-                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[75vh]"> {/* 💡 FIX: Usamos 75vh para darle más espacio vertical en web */}
+                        // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll
+                        <div className="flex-grow overflow-y-auto mt-2">
+                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg h-full">
                                 <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
+                                    <thead className="bg-gray-50 sticky top-0 z-10"> {/* Sticky header para web */}
                                     <tr>
                                         {/* AJUSTE DE ANCHOS EN CABECERA WEB */}
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[5%]">#</th>
@@ -513,8 +515,8 @@ const Compras = () => {
                                 </table>
                             </div>
 
-                            {/* 💡 VISTA DE TARJETA (MÓVIL) - FIX DE SCROLL MOBILE */}
-                            <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto">
+                            {/* 💡 VISTA DE TARJETA (MÓVIL) */}
+                            <div className="md:hidden space-y-3 h-full overflow-y-auto">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
@@ -575,7 +577,6 @@ const Compras = () => {
                     )}
                 </div>
             </div>
-
 
             {/* MODAL DETALLES (Sin cambios) */}
             {mostrarDetalles && compraSeleccionada && (
