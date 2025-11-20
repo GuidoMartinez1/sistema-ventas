@@ -114,7 +114,7 @@ const Compras = () => {
         const cantidadTrim = cantidadEditando.trim() || undefined;
 
         try {
-            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim }); // Solo actualizamos la cantidad por ahora
+            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim });
             toast.success('Pedido actualizado.');
 
             setEditandoId(null);
@@ -514,7 +514,7 @@ const Compras = () => {
                             </div>
 
                             {/* 💡 VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 max-h-[70vh] overflow-y-auto">
+                            <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto"> {/* 💡 FIX: Altura ajustada a 60vh */}
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
@@ -522,10 +522,7 @@ const Compras = () => {
                                                 <h4 className="text-sm font-bold text-gray-900">
                                                     {index + 1}. {item.producto_nombre || item.producto}
                                                 </h4>
-                                                {/* ❌ ELIMINAMOS ID INTERNO */}
-                                                {/* <p className="text-xs text-gray-500 mt-1">
-                                                    ID interno: {item.id}
-                                                </p> */}
+                                                {/* ❌ ID INTERNO ELIMINADO */}
                                             </div>
 
                                             {/* Botones de acción (Eliminar) */}
