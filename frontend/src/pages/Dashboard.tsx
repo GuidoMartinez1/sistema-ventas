@@ -6,7 +6,7 @@ import {
   ShoppingBag,
   CreditCard,
   Calendar,
-  X,
+  X, Zap, Package,
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, productosAPI, bolsasAbiertasAPI, statsAPI } from '../services/api'
 import { Venta, Compra, Producto, BolsaAbierta, Stats } from '../services/api'
@@ -26,6 +26,7 @@ const formatPrice = (value: number | string | undefined) => {
 const Dashboard = () => {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [compras, setCompras] = useState<Compra[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
   const [bajoStock, setBajoStock] = useState<Producto[]>([])
   const [bolsasAbiertas, setBolsasAbiertas] = useState<BolsaAbierta[]>([])
   const [loading, setLoading] = useState(true)
