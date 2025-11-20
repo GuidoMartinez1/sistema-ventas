@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon, Edit } from 'lucide-react'
-// 💡 IMPORTANTE: Añadir Producto y productosAPI
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -246,6 +245,7 @@ const Compras = () => {
             </div>
 
             {/* LISTADO DE COMPRAS (Sin cambios) */}
+            {/* ... Código para mostrar listado de compras (omitiendo por brevedad) ... */}
             <div className={cardClass}>
                 {/* VISTA DE TABLA (ESCRITORIO) */}
                 <div className="hidden md:block overflow-x-auto">
@@ -362,113 +362,104 @@ const Compras = () => {
                 </div>
             </div>
 
-            {/* MODAL FUTUROS PEDIDOS (REFECTORIZADO A PERSISTENTE CON AUTOSUGERENCIA UNIFICADA) */}
-            {mostrarFuturos && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20">
-                    <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold flex items-center">
-                                <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
-                            </h2>
-                            <button onClick={() => setMostrarFuturos(false)} className="text-gray-500 hover:text-gray-700 p-1">
-                                <X className="h-6 w-6" />
-                            </button>
-                        </div>
+            {/* MODAL FUTUROS PEDIDOS */}
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20" style={{ display: mostrarFuturos ? 'flex' : 'none' }}>
+                <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold flex items-center">
+                            <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
+                        </h2>
+                        <button onClick={() => setMostrarFuturos(false)} className="text-gray-500 hover:text-gray-700 p-1">
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
 
-                        {/* RESPONSIVE: Input/Botón en fila compacta */}
-                        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-
-                            {/* 💡 CAMPO PRINCIPAL (AUTOSUGERENCIA / CUSTOM) */}
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    placeholder="Buscar producto existente o escribir nuevo custom..."
-                                    value={busquedaProductoExistente}
-                                    onChange={(e) => {
-                                        setBusquedaProductoExistente(e.target.value);
-                                        // 💡 Importante: Resetear ID si el usuario empieza a escribir, a menos que el texto coincida con el nombre del ID seleccionado.
-                                        const selectedName = productos.find(p => p.id === productoSeleccionadoId)?.nombre;
-                                        if (productoSeleccionadoId && selectedName !== e.target.value) {
-                                            setProductoSeleccionadoId(null);
-                                        }
-                                    }}
-                                    className={inputFieldClass}
-                                    onFocus={() => setMostrarSugerenciasProducto(true)}
-                                    // Usamos onBlur con setTimeout para permitir el clic en la sugerencia
-                                    onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
-                                />
-                                {/* Indicador de selección */}
-                                {productoSeleccionadoId && !mostrarSugerenciasProducto && (
-                                    <span className="absolute right-3 top-2.5 text-xs text-green-600">
-                                        ✅ Existente
-                                    </span>
-                                )}
-
-                                {/* Lista de sugerencias */}
-                                {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                    <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
-                                        {productosSugeridos.map(p => (
-                                            <li
-                                                key={p.id}
-                                                // Usar onMouseDown para capturar el clic antes del onBlur del input
-                                                onMouseDown={() => seleccionarProductoAutocomplete(p)}
-                                                className={`px-3 py-2 cursor-pointer text-sm ${productoSeleccionadoId === p.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'}`}
-                                            >
-                                                {p.nombre}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                {/* Mensaje de "No resultados" */}
-                                {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
-                                    <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
-                                        Escribí el nombre y se guardará como custom.
-                                    </div>
-                                )}
-                            </div>
-
+                    {/* Formulario de creación */}
+                    <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                        <div className="relative flex-1">
                             <input
                                 type="text"
-                                placeholder="Cantidad"
-                                value={nuevaCantidad}
-                                onChange={(e) => setNuevaCantidad(e.target.value)}
-                                className={`${inputFieldClass} w-full sm:w-28`}/>
-                            <button
-                                onClick={agregarFuturo}
-                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg w-full sm:w-auto flex-shrink-0">
-                                Agregar
-                            </button>
+                                placeholder="Buscar producto existente o escribir nuevo custom..."
+                                value={busquedaProductoExistente}
+                                onChange={(e) => {
+                                    setBusquedaProductoExistente(e.target.value);
+                                    const selectedName = productos.find(p => p.id === productoSeleccionadoId)?.nombre;
+                                    if (productoSeleccionadoId && selectedName !== e.target.value) {
+                                        setProductoSeleccionadoId(null);
+                                    }
+                                }}
+                                className={inputFieldClass}
+                                onFocus={() => setMostrarSugerenciasProducto(true)}
+                                onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                            />
+                            {productoSeleccionadoId && !mostrarSugerenciasProducto && (
+                                <span className="absolute right-3 top-2.5 text-xs text-green-600">
+                                    ✅ Existente
+                                </span>
+                            )}
+
+                            {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
+                                <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
+                                    {productosSugeridos.map(p => (
+                                        <li
+                                            key={p.id}
+                                            onMouseDown={() => seleccionarProductoAutocomplete(p)}
+                                            className={`px-3 py-2 cursor-pointer text-sm ${productoSeleccionadoId === p.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'}`}
+                                        >
+                                            {p.nombre}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
+                                <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
+                                    Escribí el nombre y se guardará como custom.
+                                </div>
+                            )}
                         </div>
 
-                        {/* 💡 Muestra el estado de carga o la tabla */}
-                        {cargandoFuturos ? (
-                            <p className="text-blue-500">Cargando pedidos...</p>
-                        ) : futurosPedidos.length === 0 ? (
-                            <p className="text-gray-500">No hay productos en la lista.</p>
-                        ) : (
-                            <div className="overflow-x-auto border rounded-lg max-h-[75vh]">
+                        <input
+                            type="text"
+                            placeholder="Cantidad"
+                            value={nuevaCantidad}
+                            onChange={(e) => setNuevaCantidad(e.target.value)}
+                            className={`${inputFieldClass} w-full sm:w-28`}/>
+                        <button
+                            onClick={agregarFuturo}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg w-full sm:w-auto flex-shrink-0">
+                            Agregar
+                        </button>
+                    </div>
+
+                    {/* 💡 Muestra el estado de carga o la tabla/tarjetas */}
+                    {cargandoFuturos ? (
+                        <p className="text-blue-500">Cargando pedidos...</p>
+                    ) : futurosPedidos.length === 0 ? (
+                        <p className="text-gray-500">No hay productos en la lista.</p>
+                    ) : (
+                        <>
+                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[75vh]">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th> {/* 💡 Título cambiado a # */}
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cant</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
                                     </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                    {futurosPedidos.map((item, index) => ( // 💡 AGREGAMOS EL ÍNDICE AQUÍ
+                                    {futurosPedidos.map((item, index) => (
                                         <tr key={item.id}>
-                                            {/* 💡 CAMBIO APLICADO: Usamos index + 1 para el contador */}
+                                            {/* 💡 CONTADOR ASCENDENTE */}
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                                 <span className="font-bold text-gray-900">{index + 1}</span>
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {/* Muestra el producto_nombre si existe (viene del JOIN), sino el producto custom */}
                                                 {item.producto_nombre || item.producto}
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                {/* 💡 CAMPO DE CANTIDAD CONDICIONAL (EDICIÓN) */}
                                                 {editandoId === item.id ? (
                                                     <input
                                                         type="text"
@@ -522,12 +513,76 @@ const Compras = () => {
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                    </div>
+
+                            {/* 💡 VISTA DE TARJETA (MÓVIL) */}
+                            <div className="md:hidden space-y-3 max-h-[75vh] overflow-y-auto">
+                                {futurosPedidos.map((item, index) => (
+                                    <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="min-w-0 flex-1 pr-2">
+                                                <h4 className="text-sm font-bold text-gray-900">
+                                                    {index + 1}. {item.producto_nombre || item.producto}
+                                                </h4>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    ID interno: {item.id}
+                                                </p>
+                                            </div>
+
+                                            {/* Botones de acción */}
+                                            <div className="flex space-x-2 flex-shrink-0">
+                                                <button
+                                                    onClick={() => eliminarFuturo(item.id!)}
+                                                    className="text-red-500 hover:text-red-700 p-1"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Campo de Cantidad y Edición */}
+                                        <div className="flex justify-between items-center border-t pt-2 mt-2">
+                                            <span className="text-xs text-gray-600 font-medium">Cantidad:</span>
+
+                                            {editandoId === item.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={cantidadEditando}
+                                                        onChange={(e) => setCantidadEditando(e.target.value)}
+                                                        className="w-16 text-center border rounded px-1 py-0.5 text-xs"
+                                                    />
+                                                    <button onClick={actualizarPedido} className="text-green-600" title="Guardar">
+                                                        ✅
+                                                    </button>
+                                                    <button onClick={cancelarEdicion} className="text-gray-600" title="Cancelar">
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-bold text-sm text-gray-800">{item.cantidad || 'N/A'}</span>
+                                                    <button
+                                                        onClick={() => iniciarEdicion(item)}
+                                                        className="text-blue-500 hover:text-blue-700"
+                                                        title="Editar cantidad"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
-            )}
+            </div>
+
 
             {/* MODAL DETALLES (Sin cambios) */}
+            {/* ... Código para mostrar detalles (omitiendo por brevedad) ... */}
             {mostrarDetalles && compraSeleccionada && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-4 md:top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
