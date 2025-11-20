@@ -60,6 +60,12 @@ const formatKilos = (kilos: number | undefined | string) => {
     return kiloValue.toFixed(2);
 };
 
+// 💡 Función de ayuda para limpiar y parsear el input de tipo texto
+const parseNumericInput = (value: string): string => {
+    // Permite números y un punto decimal
+    return value.replace(/[^0-9.]/g, '');
+};
+
 const Productos = () => {
     const [productos, setProductos] = useState<Producto[]>([])
     const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -260,23 +266,26 @@ const Productos = () => {
     }
 
     const handlePrecioCostoChange = (value: string) => {
-        setFormData(prev => ({ ...prev, precio_costo: value }))
-        if (value && formData.porcentaje_ganancia) {
+        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
+        setFormData(prev => ({ ...prev, precio_costo: cleanValue }))
+        if (cleanValue && formData.porcentaje_ganancia) {
             setTimeout(calcularPrecioAutomatico, 100)
         }
     }
 
     const handlePorcentajeChange = (value: string) => {
-        setFormData(prev => ({ ...prev, porcentaje_ganancia: value }))
-        if (value && formData.precio_costo) {
+        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
+        setFormData(prev => ({ ...prev, porcentaje_ganancia: cleanValue }))
+        if (cleanValue && formData.precio_costo) {
             setTimeout(calcularPrecioAutomatico, 100)
         }
     }
 
     const handlePrecioVentaChange = (value: string) => {
+        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
         setFormData(prev => {
             const precioCosto = parseFloat(prev.precio_costo) || 0
-            const precioVenta = parseFloat(value) || 0
+            const precioVenta = parseFloat(cleanValue) || 0
 
             let nuevoPorcentaje = prev.porcentaje_ganancia
             if (precioCosto > 0 && precioVenta > 0) {
@@ -285,11 +294,25 @@ const Productos = () => {
 
             return {
                 ...prev,
-                precio: value,
+                precio: cleanValue,
                 porcentaje_ganancia: nuevoPorcentaje
             }
         })
     }
+
+    // 💡 NUEVO HANDLER PARA PRECIO X KG
+    const handlePrecioKgChange = (value: string) => {
+        const cleanValue = parseNumericInput(value);
+        setFormData(prev => ({ ...prev, precio_kg: cleanValue }));
+    }
+
+    // 💡 NUEVO HANDLER PARA STOCK
+    const handleStockChange = (value: string) => {
+        // Para stock (entero), limpiamos solo dígitos
+        const cleanValue = value.replace(/[^0-9]/g, '');
+        setFormData(prev => ({ ...prev, stock: cleanValue }));
+    }
+
 
     // 🛠️ Lógica de filtrado
     const productosFiltrados = productos
@@ -645,11 +668,11 @@ const Productos = () => {
                                     <label className="block text-sm font-medium text-gray-700">
                                         Precio por Kilo
                                     </label>
+                                    {/* 💡 REFACTORIZADO */}
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text" // Cambiado a text
                                         value={formData.precio_kg}
-                                        onChange={(e) => setFormData({...formData, precio_kg: e.target.value})}
+                                        onChange={(e) => handlePrecioKgChange(e.target.value)} // Usamos el handler que limpia
                                         className={inputFieldClass}
                                         placeholder="0.00"
                                     />
@@ -659,11 +682,11 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Precio de Costo
                                         </label>
+                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text" // Cambiado a text
                                             value={formData.precio_costo}
-                                            onChange={(e) => handlePrecioCostoChange(e.target.value)}
+                                            onChange={(e) => handlePrecioCostoChange(e.target.value)} // Usamos el handler que limpia
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
@@ -673,11 +696,11 @@ const Productos = () => {
                                             Porcentaje de Ganancia
                                         </label>
                                         <div className="flex">
+                                            {/* 💡 REFACTORIZADO */}
                                             <input
-                                                type="number"
-                                                step="0.01"
+                                                type="text" // Cambiado a text
                                                 value={formData.porcentaje_ganancia}
-                                                onChange={(e) => handlePorcentajeChange(e.target.value)}
+                                                onChange={(e) => handlePorcentajeChange(e.target.value)} // Usamos el handler que limpia
                                                 className={`${inputFieldClass} rounded-r-none`}
                                                 placeholder="30"
                                             />
@@ -696,12 +719,12 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Precio de Venta *
                                         </label>
+                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text" // Cambiado a text
                                             required
                                             value={formData.precio}
-                                            onChange={(e) => handlePrecioVentaChange(e.target.value)}
+                                            onChange={(e) => handlePrecioVentaChange(e.target.value)} // Usamos el handler que limpia
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
@@ -710,10 +733,11 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Stock
                                         </label>
+                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="number"
+                                            type="text" // Cambiado a text
                                             value={formData.stock}
-                                            onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                                            onChange={(e) => handleStockChange(e.target.value)} // Usamos el handler que limpia solo dígitos
                                             className={inputFieldClass}
                                         />
                                     </div>
