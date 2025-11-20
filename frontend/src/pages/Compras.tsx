@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon } from 'lucide-react'
-// 💡 IMPORTANTE: Añadir FuturoPedido y futurosPedidosAPI
-import { comprasAPI, futurosPedidosAPI, FuturoPedido } from '../services/api'
+// 💡 IMPORTANTE: Añadir Producto y productosAPI
+import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -21,19 +21,27 @@ const Compras = () => {
 
     // ================= FUTUROS PEDIDOS - PERSISTENTE =================
     const [mostrarFuturos, setMostrarFuturos] = useState(false)
-    // 💡 USAMOS EL TIPO FuturoPedido DE LA API Y ESTADO DE CARGA
     const [futurosPedidos, setFuturosPedidos] = useState<FuturoPedido[]>([])
-    const [cargandoFuturos, setCargandoFuturos] = useState(false) // Nuevo estado para feedback de carga
-    const [nuevoProducto, setNuevoProducto] = useState('')
-    const [nuevaCantidad, setNuevaCantidad] = useState('')
-    // 💡 ELIMINAMOS: futurosCargados y toda la lógica de useEffect/localStorage
+    const [cargandoFuturos, setCargandoFuturos] = useState(false)
 
-    // 💡 NUEVA FUNCIÓN: Obtener futuros pedidos de la DB
+    // 💡 ESTADOS PARA EL FORMULARIO DE NUEVO PEDIDO
+    const [productos, setProductos] = useState<Producto[]>([]) // Lista de productos
+    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null) // ID del producto seleccionado
+    const [usarProductoExistente, setUsarProductoExistente] = useState(false) // Toggle: true para usar select, false para input custom
+    const [nuevoProducto, setNuevoProducto] = useState('') // Input string custom
+    const [nuevaCantidad, setNuevaCantidad] = useState('')
+
+    // 💡 NUEVO useEffect para cargar productos (solo una vez)
+    useEffect(() => {
+        productosAPI.getAll().then(res => setProductos(res.data)).catch(() => {
+            toast.error("Error al cargar la lista de productos existentes.")
+        })
+    }, [])
+
     const fetchFuturosPedidos = async () => {
         setCargandoFuturos(true)
         try {
             const response = await futurosPedidosAPI.getAll()
-            // La respuesta de la API ya debería traer producto_nombre si existe producto_id
             setFuturosPedidos(response.data)
         } catch (error) {
             toast.error('Error al cargar futuros pedidos de la base de datos.')
@@ -43,29 +51,45 @@ const Compras = () => {
         }
     }
 
-    // 💡 NUEVA FUNCIÓN: Agregar futuro pedido a la DB (reemplaza a la función local)
+    // 💡 FUNCIÓN AGREGAR FUTURO ACTUALIZADA
     const agregarFuturo = async () => {
-        if (!nuevoProducto.trim()) {
-            toast.error('Ingresa un nombre de producto')
-            return
+
+        let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
+            // La cantidad es opcional, si está vacía, enviamos undefined o null
+            cantidad: nuevaCantidad.trim() || undefined
+        }
+
+        if (usarProductoExistente) {
+            // Lógica para producto existente (Select)
+            if (!productoSeleccionadoId) {
+                toast.error('Debe seleccionar un producto existente.')
+                return
+            }
+            payload.producto_id = productoSeleccionadoId
+            // Limpiamos el producto custom si usamos ID
+            payload.producto = undefined
+        } else {
+            // Lógica para producto custom (Input)
+            if (!nuevoProducto.trim()) {
+                toast.error('Ingresa un nombre de producto custom.')
+                return
+            }
+            payload.producto = nuevoProducto.trim()
+            // Limpiamos el ID si usamos producto custom
+            payload.producto_id = undefined
         }
 
         try {
-            // Payload para producto custom (ya que no estamos usando un selector de productos existentes aquí)
-            const payload = {
-                producto: nuevoProducto.trim(),
-                cantidad: nuevaCantidad.trim() || null
-            }
-
-            // Llamada POST a la DB
             await futurosPedidosAPI.create(payload)
             toast.success('Pedido agregado a la lista.')
 
-            // Recargar la lista
             await fetchFuturosPedidos()
 
+            // Resetear el formulario
             setNuevoProducto('')
             setNuevaCantidad('')
+            setProductoSeleccionadoId(null)
+            setUsarProductoExistente(false)
         } catch (error) {
             toast.error('Error al guardar el pedido en la DB.')
             console.error(error)
@@ -73,12 +97,10 @@ const Compras = () => {
     }
 
 
-    // 💡 NUEVA FUNCIÓN: Eliminar futuro pedido de la DB (reemplaza a la función local)
     const eliminarFuturo = async (id: number) => {
         try {
-            await futurosPedidosAPI.delete(id) // Llamada DELETE a la DB
+            await futurosPedidosAPI.delete(id)
             toast.success('Pedido eliminado.')
-            // Actualizar el estado local
             setFuturosPedidos(prev => prev.filter(p => p.id !== id))
         } catch (error) {
             toast.error('Error al eliminar el pedido de la DB.')
@@ -98,7 +120,6 @@ const Compras = () => {
     useEffect(() => {
         fetchCompras()
     }, [])
-    // 💡 ELIMINAMOS useEffects de localStorage
 
     const fetchCompras = async () => {
         try {
@@ -173,7 +194,6 @@ const Compras = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
-                        // 💡 Al hacer clic, se abre el modal y se dispara el fetch
                         onClick={() => setMostrarFuturos(true)}
                         className="w-full sm:w-auto btn-secondary flex items-center justify-center">
                         <ClipboardList className="h-5 w-5 mr-2" />
@@ -305,7 +325,7 @@ const Compras = () => {
                 </div>
             </div>
 
-            {/* MODAL FUTUROS PEDIDOS (REFECTORIZADO A PERSISTENTE) */}
+            {/* MODAL FUTUROS PEDIDOS (REFECTORIZADO A PERSISTENTE CON SELECT/INPUT) */}
             {mostrarFuturos && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20">
                     <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
@@ -318,14 +338,44 @@ const Compras = () => {
                             </button>
                         </div>
 
+                        {/* 💡 Toggle de selección */}
+                        <div className="flex gap-4 mb-3">
+                            <label className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={usarProductoExistente}
+                                    onChange={() => setUsarProductoExistente(prev => !prev)}
+                                />
+                                Usar **Producto Existente**
+                            </label>
+                        </div>
+
                         {/* RESPONSIVE: Input/Botón en fila compacta */}
                         <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                            <input
-                                type="text"
-                                placeholder="Producto"
-                                value={nuevoProducto}
-                                onChange={(e) => setNuevoProducto(e.target.value)}
-                                className={`${inputFieldClass} flex-1`}/>
+
+                            {/* 💡 CAMPO DE SELECCIÓN CONDICIONAL */}
+                            {usarProductoExistente ? (
+                                <select
+                                    className={`${inputFieldClass} flex-1`}
+                                    value={productoSeleccionadoId || ""}
+                                    onChange={(e) => setProductoSeleccionadoId(Number(e.target.value))}
+                                >
+                                    <option value="">-- Seleccionar producto --</option>
+                                    {productos.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder="Nombre del producto custom"
+                                    value={nuevoProducto}
+                                    onChange={(e) => setNuevoProducto(e.target.value)}
+                                    className={`${inputFieldClass} flex-1`}/>
+                            )}
+
                             <input
                                 type="text"
                                 placeholder="Cantidad"
@@ -360,7 +410,7 @@ const Compras = () => {
                                         <tr key={item.id}>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {/* Muestra el nombre del producto (si es de un producto existente) o el texto custom (item.producto) */}
+                                                {/* Muestra el producto_nombre si existe (viene del JOIN), sino el producto custom */}
                                                 {item.producto_nombre || item.producto}
                                             </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
