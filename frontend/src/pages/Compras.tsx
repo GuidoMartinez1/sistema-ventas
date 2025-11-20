@@ -363,7 +363,7 @@ const Compras = () => {
 
             {/* MODAL FUTUROS PEDIDOS */}
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20" style={{ display: mostrarFuturos ? 'flex' : 'none' }}>
-                {/* 💡 FIX SCROLL GLOBAL: max-h-full y overflow-y-auto en el modal wrapper para que el navegador maneje el scroll si el modal es muy largo */}
+                {/* 💡 FIX SCROLL GLOBAL: El modal ocupa 90vh y tiene su propio scroll si es necesario */}
                 <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto flex flex-col">
                     <div className="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 className="text-xl font-bold flex items-center">
@@ -440,7 +440,7 @@ const Compras = () => {
                         // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll interno
                         <div className="flex-grow overflow-y-auto mt-2">
                             {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
-                            <div className="hidden md:block overflow-x-auto border rounded-lg h-full">
+                            <div className="hidden md:block overflow-x-auto border rounded-lg h-full pb-3"> {/* 💡 FIX ESPACIO: Añadido pb-3 aquí para margen inferior */}
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50 sticky top-0 z-10"> {/* Sticky header para web */}
                                     <tr>
@@ -516,7 +516,7 @@ const Compras = () => {
                             </div>
 
                             {/* 💡 VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 h-full overflow-y-auto">
+                            <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3"> {/* 💡 FIX ESPACIO: Añadido pb-3 aquí para margen inferior */}
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
