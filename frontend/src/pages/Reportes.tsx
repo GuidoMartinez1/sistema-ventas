@@ -7,7 +7,6 @@ import {
   ShoppingBag,
   CreditCard,
   Calendar,
-  Zap,
   User,
   Factory
 } from 'lucide-react'

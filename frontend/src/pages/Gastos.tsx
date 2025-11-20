@@ -1,6 +1,6 @@
 // src/pages/Gastos.tsx
 import { useEffect, useState } from 'react'
-import { PlusCircle, DollarSign, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil, X } from 'lucide-react'
+import { PlusCircle, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil} from 'lucide-react'
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 

@@ -1,6 +1,6 @@
 // src/pages/Ventas.tsx
 import { useEffect, useState } from 'react'
-import { ShoppingCart, Eye, Calendar, User, DollarSign } from 'lucide-react'
+import { ShoppingCart, Eye, Calendar, User } from 'lucide-react'
 import { ventasAPI } from '../services/api'
 import { Venta } from '../services/api'
 import { format } from 'date-fns'

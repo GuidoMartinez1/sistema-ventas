@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle, MapPin } from 'lucide-react'
+import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle } from 'lucide-react'
 import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
