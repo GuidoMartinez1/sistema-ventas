@@ -25,11 +25,15 @@ const Compras = () => {
     const [cargandoFuturos, setCargandoFuturos] = useState(false)
 
     // 💡 ESTADOS PARA EL FORMULARIO DE NUEVO PEDIDO
-    const [productos, setProductos] = useState<Producto[]>([]) // Lista de productos
+    const [productos, setProductos] = useState<Producto[]>([]) // Lista de todos los productos
     const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null) // ID del producto seleccionado
-    const [usarProductoExistente, setUsarProductoExistente] = useState(false) // Toggle: true para usar select, false para input custom
+    const [usarProductoExistente, setUsarProductoExistente] = useState(false) // Toggle: true para usar select/autocomplete
     const [nuevoProducto, setNuevoProducto] = useState('') // Input string custom
     const [nuevaCantidad, setNuevaCantidad] = useState('')
+
+    // 💡 NUEVOS ESTADOS PARA EL AUTOSUGERENCIA
+    const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('') // Texto escrito para buscar producto
+    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false) // Controla el dropdown del Autocomplete
 
     // 💡 NUEVO useEffect para cargar productos (solo una vez)
     useEffect(() => {
@@ -51,22 +55,32 @@ const Compras = () => {
         }
     }
 
+    // 💡 Lógica de filtrado para el Autocomplete
+    const productosSugeridos = productos.filter(p =>
+        (p.nombre?.toLowerCase().includes(busquedaProductoExistente.toLowerCase()))
+    ).slice(0, 10); // Limitar a 10 sugerencias para rendimiento
+
+    // 💡 FUNCIÓN PARA SELECCIONAR UN PRODUCTO DEL AUTOSUGERENCIA
+    const seleccionarProductoAutocomplete = (producto: Producto) => {
+        setProductoSeleccionadoId(producto.id || null);
+        setBusquedaProductoExistente(producto.nombre); // Muestra el nombre completo en el input
+        setMostrarSugerenciasProducto(false);
+    }
+
     // 💡 FUNCIÓN AGREGAR FUTURO ACTUALIZADA
     const agregarFuturo = async () => {
 
         let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
-            // La cantidad es opcional, si está vacía, enviamos undefined o null
             cantidad: nuevaCantidad.trim() || undefined
         }
 
         if (usarProductoExistente) {
-            // Lógica para producto existente (Select)
+            // Lógica para producto existente (Autocomplete)
             if (!productoSeleccionadoId) {
-                toast.error('Debe seleccionar un producto existente.')
+                toast.error('Debe seleccionar un producto existente de la lista.')
                 return
             }
             payload.producto_id = productoSeleccionadoId
-            // Limpiamos el producto custom si usamos ID
             payload.producto = undefined
         } else {
             // Lógica para producto custom (Input)
@@ -75,7 +89,6 @@ const Compras = () => {
                 return
             }
             payload.producto = nuevoProducto.trim()
-            // Limpiamos el ID si usamos producto custom
             payload.producto_id = undefined
         }
 
@@ -89,6 +102,7 @@ const Compras = () => {
             setNuevoProducto('')
             setNuevaCantidad('')
             setProductoSeleccionadoId(null)
+            setBusquedaProductoExistente('')
             setUsarProductoExistente(false)
         } catch (error) {
             toast.error('Error al guardar el pedido en la DB.')
@@ -344,7 +358,12 @@ const Compras = () => {
                                 <input
                                     type="checkbox"
                                     checked={usarProductoExistente}
-                                    onChange={() => setUsarProductoExistente(prev => !prev)}
+                                    onChange={() => {
+                                        setUsarProductoExistente(prev => !prev);
+                                        // Limpiar estados de búsqueda/selección al cambiar de modo
+                                        setBusquedaProductoExistente('');
+                                        setProductoSeleccionadoId(null);
+                                    }}
                                 />
                                 Usar **Producto Existente**
                             </label>
@@ -353,20 +372,51 @@ const Compras = () => {
                         {/* RESPONSIVE: Input/Botón en fila compacta */}
                         <div className="flex flex-col sm:flex-row gap-2 mb-4">
 
-                            {/* 💡 CAMPO DE SELECCIÓN CONDICIONAL */}
+                            {/* 💡 CAMPO DE SELECCIÓN CONDICIONAL (AUTOSUGERENCIA) */}
                             {usarProductoExistente ? (
-                                <select
-                                    className={`${inputFieldClass} flex-1`}
-                                    value={productoSeleccionadoId || ""}
-                                    onChange={(e) => setProductoSeleccionadoId(Number(e.target.value))}
-                                >
-                                    <option value="">-- Seleccionar producto --</option>
-                                    {productos.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.nombre}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        placeholder="Escribe para buscar producto..."
+                                        value={busquedaProductoExistente}
+                                        onChange={(e) => {
+                                            setBusquedaProductoExistente(e.target.value);
+                                            // Resetear ID si el usuario empieza a escribir
+                                            if (productoSeleccionadoId && productos.find(p => p.id === productoSeleccionadoId)?.nombre !== e.target.value) {
+                                                setProductoSeleccionadoId(null);
+                                            }
+                                        }}
+                                        className={inputFieldClass}
+                                        onFocus={() => setMostrarSugerenciasProducto(true)}
+                                        onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                                    />
+                                    {/* Indicador de selección */}
+                                    {productoSeleccionadoId && !mostrarSugerenciasProducto && (
+                                        <span className="absolute right-3 top-2.5 text-xs text-green-600">
+                                            ✅ Seleccionado
+                                        </span>
+                                    )}
+
+                                    {/* Lista de sugerencias */}
+                                    {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
+                                        <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
+                                            {productosSugeridos.map(p => (
+                                                <li
+                                                    key={p.id}
+                                                    onMouseDown={() => seleccionarProductoAutocomplete(p)}
+                                                    className={`px-3 py-2 cursor-pointer text-sm ${productoSeleccionadoId === p.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'}`}
+                                                >
+                                                    {p.nombre}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
+                                        <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
+                                            No se encontraron resultados.
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <input
                                     type="text"
