@@ -164,11 +164,14 @@ export interface BolsaAbierta {
     total_open_bags?: number;      // <-- NUEVO: número total de bolsas abiertas para el producto
 }
 
+// 💡 INTERFAZ ACTUALIZADA para reflejar la DB y el JOIN del backend
 export interface FuturoPedido {
     id?: number
-    producto: string
-    cantidad?: string
-    created_at?: string
+    producto: string | null // Nombre custom (debe ser null si se usa producto_id)
+    cantidad: string | null
+    creado_en: string
+    producto_id: number | null // ID del producto asociado
+    producto_nombre: string | null // Nombre del producto obtenido del JOIN (para mostrar)
 }
 
 
@@ -266,11 +269,14 @@ export const statsAPI = {
     getStats: () => api.get<Stats>("/stats"),
 }
 
+// 💡 FUTUROS PEDIDOS ACTUALIZADO para manejar producto_id y producto
 export const futurosPedidosAPI = {
     getAll: () => api.get<FuturoPedido[]>("/futuros-pedidos"),
-    create: (pedido: { producto: string; cantidad?: string }) =>
+    // El payload puede tener 'producto' (string custom) o 'producto_id' (number existente)
+    create: (pedido: { producto?: string; cantidad?: string; producto_id?: number }) =>
         api.post<FuturoPedido>("/futuros-pedidos", pedido),
-    update: (id: number, pedido: { producto: string; cantidad?: string }) =>
+    // El update también debe manejar ambos campos opcionales
+    update: (id: number, pedido: { producto?: string; cantidad?: string; producto_id?: number }) =>
         api.put<FuturoPedido>(`/futuros-pedidos/${id}`, pedido),
     delete: (id: number) => api.delete(`/futuros-pedidos/${id}`),
 }
