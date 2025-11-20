@@ -111,11 +111,10 @@ const Compras = () => {
     const actualizarPedido = async () => {
         if (!editandoId) return;
 
-        // Limpiamos y aseguramos que si queda vacío, se envíe undefined/null
         const cantidadTrim = cantidadEditando.trim() || undefined;
 
         try {
-            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim });
+            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim }); // Solo actualizamos la cantidad por ahora
             toast.success('Pedido actualizado.');
 
             setEditandoId(null);
@@ -342,7 +341,7 @@ const Compras = () => {
                                 <div>
                                     <span className="text-xs text-gray-500 block">Proveedor</span>
                                     <div className="flex items-center">
-                                        <Building className="h-4 w-4 text-gray-400 mr-2" />
+                                        <Building className="h-4 w-4 mr-1 text-gray-400" />
                                         <span className="text-gray-700 font-medium truncate">{compra.proveedor_nombre || 'Sin proveedor'}</span>
                                     </div>
                                 </div>
@@ -523,9 +522,10 @@ const Compras = () => {
                                                 <h4 className="text-sm font-bold text-gray-900">
                                                     {index + 1}. {item.producto_nombre || item.producto}
                                                 </h4>
-                                                <p className="text-xs text-gray-500 mt-1">
+                                                {/* ❌ ELIMINAMOS ID INTERNO */}
+                                                {/* <p className="text-xs text-gray-500 mt-1">
                                                     ID interno: {item.id}
-                                                </p>
+                                                </p> */}
                                             </div>
 
                                             {/* Botones de acción (Eliminar) */}
@@ -561,6 +561,7 @@ const Compras = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-3">
+                                                    {/* 💡 CAMBIO: Usamos '-' en lugar de 'N/A' */}
                                                     <span className="font-bold text-sm text-gray-800">{item.cantidad || '-'}</span>
                                                     <button
                                                         onClick={() => iniciarEdicion(item)}
