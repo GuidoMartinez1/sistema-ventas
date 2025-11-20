@@ -111,10 +111,11 @@ const Compras = () => {
     const actualizarPedido = async () => {
         if (!editandoId) return;
 
+        // Limpiamos y aseguramos que si queda vacío, se envíe undefined/null
         const cantidadTrim = cantidadEditando.trim() || undefined;
 
         try {
-            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim }); // Solo actualizamos la cantidad por ahora
+            await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim });
             toast.success('Pedido actualizado.');
 
             setEditandoId(null);
@@ -245,7 +246,6 @@ const Compras = () => {
             </div>
 
             {/* LISTADO DE COMPRAS (Sin cambios) */}
-            {/* ... Código para mostrar listado de compras (omitiendo por brevedad) ... */}
             <div className={cardClass}>
                 {/* VISTA DE TABLA (ESCRITORIO) */}
                 <div className="hidden md:block overflow-x-auto">
@@ -342,7 +342,7 @@ const Compras = () => {
                                 <div>
                                     <span className="text-xs text-gray-500 block">Proveedor</span>
                                     <div className="flex items-center">
-                                        <Building className="h-4 w-4 mr-1 text-gray-400" />
+                                        <Building className="h-4 w-4 text-gray-400 mr-2" />
                                         <span className="text-gray-700 font-medium truncate">{compra.proveedor_nombre || 'Sin proveedor'}</span>
                                     </div>
                                 </div>
@@ -439,11 +439,11 @@ const Compras = () => {
                     ) : (
                         <>
                             {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
-                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[75vh]">
+                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[70vh]">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th> {/* 💡 Título cambiado a # */}
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cant</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
@@ -515,7 +515,7 @@ const Compras = () => {
                             </div>
 
                             {/* 💡 VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 max-h-[75vh] overflow-y-auto">
+                            <div className="md:hidden space-y-3 max-h-[70vh] overflow-y-auto">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
@@ -528,7 +528,7 @@ const Compras = () => {
                                                 </p>
                                             </div>
 
-                                            {/* Botones de acción */}
+                                            {/* Botones de acción (Eliminar) */}
                                             <div className="flex space-x-2 flex-shrink-0">
                                                 <button
                                                     onClick={() => eliminarFuturo(item.id!)}
@@ -561,7 +561,7 @@ const Compras = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-3">
-                                                    <span className="font-bold text-sm text-gray-800">{item.cantidad || 'N/A'}</span>
+                                                    <span className="font-bold text-sm text-gray-800">{item.cantidad || '-'}</span>
                                                     <button
                                                         onClick={() => iniciarEdicion(item)}
                                                         className="text-blue-500 hover:text-blue-700"
@@ -582,7 +582,6 @@ const Compras = () => {
 
 
             {/* MODAL DETALLES (Sin cambios) */}
-            {/* ... Código para mostrar detalles (omitiendo por brevedad) ... */}
             {mostrarDetalles && compraSeleccionada && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-4 md:top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
