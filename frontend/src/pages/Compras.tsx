@@ -437,12 +437,12 @@ const Compras = () => {
                         <p className="text-gray-500">No hay productos en la lista.</p>
                     ) : (
                         <>
-                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
-                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[70vh]">
+                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) - FIX DE SCROLL WEB */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg max-h-[75vh]"> {/* 💡 FIX: Usamos 75vh para darle más espacio vertical en web */}
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                     <tr>
-                                        {/* 💡 AJUSTE DE ANCHOS EN CABECERA WEB */}
+                                        {/* AJUSTE DE ANCHOS EN CABECERA WEB */}
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[5%]">#</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[65%]">Producto</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Cant</th>
@@ -513,7 +513,7 @@ const Compras = () => {
                                 </table>
                             </div>
 
-                            {/* 💡 VISTA DE TARJETA (MÓVIL) */}
+                            {/* 💡 VISTA DE TARJETA (MÓVIL) - FIX DE SCROLL MOBILE */}
                             <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
