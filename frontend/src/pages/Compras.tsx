@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon, Edit } from 'lucide-react' // 💡 Agregamos 'Edit'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, DollarSign as DollarIcon, Edit } from 'lucide-react'
 // 💡 IMPORTANTE: Añadir Producto y productosAPI
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
@@ -457,9 +457,12 @@ const Compras = () => {
                                     </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                    {futurosPedidos.map((item) => (
+                                    {futurosPedidos.map((item, index) => ( // 💡 AGREGAMOS EL ÍNDICE AQUÍ
                                         <tr key={item.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
+                                            {/* 💡 CAMBIO APLICADO: Usamos index + 1 para el contador */}
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                                <span className="font-bold text-gray-900">{index + 1}</span>
+                                            </td>
                                             <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {/* Muestra el producto_nombre si existe (viene del JOIN), sino el producto custom */}
                                                 {item.producto_nombre || item.producto}
