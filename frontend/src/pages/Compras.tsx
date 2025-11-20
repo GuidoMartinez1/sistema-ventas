@@ -24,16 +24,22 @@ const Compras = () => {
     const [futurosPedidos, setFuturosPedidos] = useState<FuturoPedido[]>([])
     const [cargandoFuturos, setCargandoFuturos] = useState(false)
 
-    // 💡 ESTADOS PARA EL FORMULARIO DE NUEVO PEDIDO
+    // 💡 ESTADOS DEL FORMULARIO UNIFICADO
     const [productos, setProductos] = useState<Producto[]>([]) // Lista de todos los productos
-    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null) // ID del producto seleccionado
-    const [usarProductoExistente, setUsarProductoExistente] = useState(false) // Toggle: true para usar select/autocomplete
-    const [nuevoProducto, setNuevoProducto] = useState('') // Input string custom
+    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null) // ID del producto seleccionado (NULL si es custom)
+    // ❌ ELIMINADO: const [usarProductoExistente, setUsarProductoExistente] = useState(false)
+    // ❌ ELIMINADO: const [nuevoProducto, setNuevoProducto] = useState('')
     const [nuevaCantidad, setNuevaCantidad] = useState('')
 
-    // 💡 NUEVOS ESTADOS PARA EL AUTOSUGERENCIA
-    const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('') // Texto escrito para buscar producto
+    // 💡 ESTADOS PARA EL AUTOSUGERENCIA
+    const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('') // Campo principal: texto del producto
     const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false) // Controla el dropdown del Autocomplete
+
+    // 💡 Lógica de filtrado para el Autocomplete
+    const productosSugeridos = productos.filter(p =>
+        (p.nombre?.toLowerCase().includes(busquedaProductoExistente.toLowerCase()))
+    ).slice(0, 10); // Limitar a 10 sugerencias para rendimiento
+
 
     // 💡 NUEVO useEffect para cargar productos (solo una vez)
     useEffect(() => {
@@ -55,11 +61,6 @@ const Compras = () => {
         }
     }
 
-    // 💡 Lógica de filtrado para el Autocomplete
-    const productosSugeridos = productos.filter(p =>
-        (p.nombre?.toLowerCase().includes(busquedaProductoExistente.toLowerCase()))
-    ).slice(0, 10); // Limitar a 10 sugerencias para rendimiento
-
     // 💡 FUNCIÓN PARA SELECCIONAR UN PRODUCTO DEL AUTOSUGERENCIA
     const seleccionarProductoAutocomplete = (producto: Producto) => {
         setProductoSeleccionadoId(producto.id || null);
@@ -67,29 +68,31 @@ const Compras = () => {
         setMostrarSugerenciasProducto(false);
     }
 
-    // 💡 FUNCIÓN AGREGAR FUTURO ACTUALIZADA
+    // 💡 FUNCIÓN AGREGAR FUTURO (LÓGICA UNIFICADA)
     const agregarFuturo = async () => {
+        const cantidadTrim = nuevaCantidad.trim() || undefined;
 
-        let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
-            cantidad: nuevaCantidad.trim() || undefined
+        // 1. Validar la cantidad
+        if (!cantidadTrim) {
+            toast.error('Debe ingresar una cantidad.');
+            return;
         }
 
-        if (usarProductoExistente) {
-            // Lógica para producto existente (Autocomplete)
-            if (!productoSeleccionadoId) {
-                toast.error('Debe seleccionar un producto existente de la lista.')
-                return
-            }
-            payload.producto_id = productoSeleccionadoId
-            payload.producto = undefined
+        // 2. Determinar el payload (Existente vs. Custom)
+        let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
+            cantidad: cantidadTrim
+        };
+
+        if (productoSeleccionadoId) {
+            // Caso 1: Se seleccionó un producto existente (ID presente).
+            payload.producto_id = productoSeleccionadoId;
+        } else if (busquedaProductoExistente.trim()) {
+            // Caso 2: No hay ID seleccionado, pero hay texto en el input. -> ¡Es Custom!
+            payload.producto = busquedaProductoExistente.trim();
         } else {
-            // Lógica para producto custom (Input)
-            if (!nuevoProducto.trim()) {
-                toast.error('Ingresa un nombre de producto custom.')
-                return
-            }
-            payload.producto = nuevoProducto.trim()
-            payload.producto_id = undefined
+            // Caso 3: El campo está vacío y no hay ID seleccionado.
+            toast.error('Debe buscar y seleccionar un producto o ingresar un nombre custom.');
+            return;
         }
 
         try {
@@ -99,11 +102,9 @@ const Compras = () => {
             await fetchFuturosPedidos()
 
             // Resetear el formulario
-            setNuevoProducto('')
             setNuevaCantidad('')
             setProductoSeleccionadoId(null)
             setBusquedaProductoExistente('')
-            setUsarProductoExistente(false)
         } catch (error) {
             toast.error('Error al guardar el pedido en la DB.')
             console.error(error)
@@ -339,7 +340,7 @@ const Compras = () => {
                 </div>
             </div>
 
-            {/* MODAL FUTUROS PEDIDOS (REFECTORIZADO A PERSISTENTE CON SELECT/INPUT) */}
+            {/* MODAL FUTUROS PEDIDOS (REFECTORIZADO A PERSISTENTE CON AUTOSUGERENCIA UNIFICADA) */}
             {mostrarFuturos && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20">
                     <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
@@ -352,79 +353,60 @@ const Compras = () => {
                             </button>
                         </div>
 
-                        {/* 💡 Toggle de selección */}
-                        <div className="flex gap-4 mb-3">
-                            <label className="flex items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    checked={usarProductoExistente}
-                                    onChange={() => {
-                                        setUsarProductoExistente(prev => !prev);
-                                        // Limpiar estados de búsqueda/selección al cambiar de modo
-                                        setBusquedaProductoExistente('');
-                                        setProductoSeleccionadoId(null);
-                                    }}
-                                />
-                                Usar **Producto Existente**
-                            </label>
-                        </div>
+                        {/* ❌ ELIMINAMOS EL TOGGLE DE SELECCIÓN */}
+                        {/* ❌ ELIMINAMOS EL ESTADO nuevoProducto*/}
 
                         {/* RESPONSIVE: Input/Botón en fila compacta */}
                         <div className="flex flex-col sm:flex-row gap-2 mb-4">
 
-                            {/* 💡 CAMPO DE SELECCIÓN CONDICIONAL (AUTOSUGERENCIA) */}
-                            {usarProductoExistente ? (
-                                <div className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        placeholder="Escribe para buscar producto..."
-                                        value={busquedaProductoExistente}
-                                        onChange={(e) => {
-                                            setBusquedaProductoExistente(e.target.value);
-                                            // Resetear ID si el usuario empieza a escribir
-                                            if (productoSeleccionadoId && productos.find(p => p.id === productoSeleccionadoId)?.nombre !== e.target.value) {
-                                                setProductoSeleccionadoId(null);
-                                            }
-                                        }}
-                                        className={inputFieldClass}
-                                        onFocus={() => setMostrarSugerenciasProducto(true)}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
-                                    />
-                                    {/* Indicador de selección */}
-                                    {productoSeleccionadoId && !mostrarSugerenciasProducto && (
-                                        <span className="absolute right-3 top-2.5 text-xs text-green-600">
-                                            ✅ Seleccionado
-                                        </span>
-                                    )}
-
-                                    {/* Lista de sugerencias */}
-                                    {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                        <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
-                                            {productosSugeridos.map(p => (
-                                                <li
-                                                    key={p.id}
-                                                    onMouseDown={() => seleccionarProductoAutocomplete(p)}
-                                                    className={`px-3 py-2 cursor-pointer text-sm ${productoSeleccionadoId === p.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'}`}
-                                                >
-                                                    {p.nombre}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
-                                        <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
-                                            No se encontraron resultados.
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
+                            {/* 💡 CAMPO PRINCIPAL (AUTOSUGERENCIA / CUSTOM) */}
+                            <div className="relative flex-1">
                                 <input
                                     type="text"
-                                    placeholder="Nombre del producto custom"
-                                    value={nuevoProducto}
-                                    onChange={(e) => setNuevoProducto(e.target.value)}
-                                    className={`${inputFieldClass} flex-1`}/>
-                            )}
+                                    placeholder="Buscar producto existente o escribir nuevo custom..."
+                                    value={busquedaProductoExistente}
+                                    onChange={(e) => {
+                                        setBusquedaProductoExistente(e.target.value);
+                                        // 💡 Importante: Resetear ID si el usuario empieza a escribir, a menos que el texto coincida con el nombre del ID seleccionado.
+                                        const selectedName = productos.find(p => p.id === productoSeleccionadoId)?.nombre;
+                                        if (productoSeleccionadoId && selectedName !== e.target.value) {
+                                            setProductoSeleccionadoId(null);
+                                        }
+                                    }}
+                                    className={inputFieldClass}
+                                    onFocus={() => setMostrarSugerenciasProducto(true)}
+                                    // Usamos onBlur con setTimeout para permitir el clic en la sugerencia
+                                    onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                                />
+                                {/* Indicador de selección */}
+                                {productoSeleccionadoId && !mostrarSugerenciasProducto && (
+                                    <span className="absolute right-3 top-2.5 text-xs text-green-600">
+                                        ✅ Existente
+                                    </span>
+                                )}
+
+                                {/* Lista de sugerencias */}
+                                {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
+                                    <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
+                                        {productosSugeridos.map(p => (
+                                            <li
+                                                key={p.id}
+                                                // Usar onMouseDown para capturar el clic antes del onBlur del input
+                                                onMouseDown={() => seleccionarProductoAutocomplete(p)}
+                                                className={`px-3 py-2 cursor-pointer text-sm ${productoSeleccionadoId === p.id ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'}`}
+                                            >
+                                                {p.nombre}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {/* Mensaje de "No resultados" */}
+                                {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
+                                    <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
+                                        Escribí el nombre y se guardará como custom.
+                                    </div>
+                                )}
+                            </div>
 
                             <input
                                 type="text"
