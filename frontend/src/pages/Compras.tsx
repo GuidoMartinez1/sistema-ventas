@@ -72,12 +72,6 @@ const Compras = () => {
     const agregarFuturo = async () => {
         const cantidadTrim = nuevaCantidad.trim() || undefined;
 
-        // 1. Validar la cantidad
-        if (!cantidadTrim) {
-            toast.error('Debe ingresar una cantidad.');
-            return;
-        }
-
         // 2. Determinar el payload (Existente vs. Custom)
         let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
             cantidad: cantidadTrim
