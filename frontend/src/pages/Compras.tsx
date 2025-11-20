@@ -30,7 +30,7 @@ const Compras = () => {
     const [busquedaProductoExistente, setBusquedaProductoExistente] = useState('')
     const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false)
 
-    // 💡 NUEVOS ESTADOS PARA EDICIÓN
+    // 💡 ESTADOS PARA EDICIÓN
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [cantidadEditando, setCantidadEditando] = useState<string>('');
 
@@ -363,7 +363,7 @@ const Compras = () => {
 
             {/* MODAL FUTUROS PEDIDOS */}
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20" style={{ display: mostrarFuturos ? 'flex' : 'none' }}>
-                {/* 💡 FIX: max-h-full y overflow-y-auto en el modal wrapper para que el navegador maneje el scroll si el modal es muy largo */}
+                {/* 💡 FIX SCROLL GLOBAL: max-h-full y overflow-y-auto en el modal wrapper para que el navegador maneje el scroll si el modal es muy largo */}
                 <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto flex flex-col">
                     <div className="flex justify-between items-center mb-4 flex-shrink-0">
                         <h2 className="text-xl font-bold flex items-center">
@@ -437,7 +437,7 @@ const Compras = () => {
                     ) : futurosPedidos.length === 0 ? (
                         <p className="text-gray-500">No hay productos en la lista.</p>
                     ) : (
-                        // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll
+                        // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll interno
                         <div className="flex-grow overflow-y-auto mt-2">
                             {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
                             <div className="hidden md:block overflow-x-auto border rounded-lg h-full">
@@ -577,6 +577,7 @@ const Compras = () => {
                     )}
                 </div>
             </div>
+
 
             {/* MODAL DETALLES (Sin cambios) */}
             {mostrarDetalles && compraSeleccionada && (
