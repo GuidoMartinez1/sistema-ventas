@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-// IMPORTACIÓN CORREGIDA: Incluye productosAPI
-import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado, productosAPI } from '../services/api';
+// Se elimina productosAPI de aquí, ya que no es necesaria para el traslado
+import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2, FileText, LayoutList } from 'lucide-react';
 
@@ -307,7 +307,7 @@ const StockDeposito = () => {
         }
     };
 
-    // CORRECCIÓN: Traslado Masivo Global (DOBLE OPERACIÓN)
+    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleMassTransferAll = async () => {
         if (totalStockInDeposito <= 0) {
             return toast.error("El depósito ya está vacío. No hay stock para trasladar.");
@@ -328,18 +328,8 @@ const StockDeposito = () => {
                 const cantidadTotal = Number(item.stock_en_deposito);
                 if (cantidadTotal > 0) {
                     try {
-                        // 1. Reducir stock en depósito
+                        // 1. Reducir stock en depósito (El backend lo hace, y la vista calcula el stock de tienda)
                         await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
-
-                        // 2. CORRECCIÓN: Incrementar stock general (Tienda)
-                        // Asumimos que productosAPI.update recibe el stock total a actualizar
-                        // O bien, si tu backend lo maneja internamente:
-                        // await productosAPI.ajustarStock(item.producto_id, cantidadTotal);
-                        // --- USAMOS UN UPDATE SIMPLIFICADO ASUMIENDO QUE EL BACKEND LO SUMA ---
-                        // ******* IMPORTANTE: Ajustar esta llamada a cómo tu backend maneja el incremento de stock *******
-                        // Si tu endpoint de producto tiene un campo 'stock' y el update lo suma:
-                        await productosAPI.update(item.producto_id, { stock: cantidadTotal });
-
 
                         successCount++;
                     } catch (error) {
@@ -358,6 +348,7 @@ const StockDeposito = () => {
                 toast.success("Depósito ya vacío.");
             }
 
+            // Recargar datos para que la vista calcule el nuevo stock_en_tienda
             await fetchData();
 
         } catch (error) {
@@ -367,7 +358,7 @@ const StockDeposito = () => {
         }
     };
 
-    // CORRECCIÓN: Traslado Masivo por Selección (DOBLE OPERACIÓN)
+    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleMassTransferSelected = async () => {
         if (selectedItems.size === 0) {
             return toast.error("No hay productos seleccionados para trasladar.");
@@ -392,11 +383,8 @@ const StockDeposito = () => {
             for (const item of itemsToTransfer) {
                 const cantidadTotal = Number(item.stock_en_deposito);
                 try {
-                    // 1. Reducir stock en depósito
+                    // 1. Reducir stock en depósito (Esto es suficiente)
                     await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
-
-                    // 2. CORRECCIÓN: Incrementar stock general (Tienda)
-                    await productosAPI.update(item.producto_id, { stock: cantidadTotal }); // Asumiendo que el update lo suma
 
                     successCount++;
                 } catch (error) {
@@ -412,6 +400,7 @@ const StockDeposito = () => {
                 toast.error(`El traslado masivo falló para todos los productos seleccionados (${failCount} errores).`);
             }
 
+            // Recargar datos para que la vista calcule el nuevo stock_en_tienda
             await fetchData();
 
         } catch (error) {
@@ -421,7 +410,7 @@ const StockDeposito = () => {
         }
     };
 
-    // CORRECCIÓN: Traslado de Ítem Individual (DOBLE OPERACIÓN)
+    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProduct) return;
@@ -464,11 +453,8 @@ const StockDeposito = () => {
 
         setIsTransferring(true);
         try {
-            // 1. Reduce stock in the deposit
+            // 1. Reduce stock in the deposit (Esto es suficiente)
             await stockDepositoAPI.transferir(selectedProduct.producto_id, cantidadAMover);
-
-            // 2. CORRECCIÓN: Increase stock in the store (or general stock)
-            await productosAPI.update(selectedProduct.producto_id, { stock: cantidadAMover }); // Asumiendo que el update lo suma
 
             const vacioDeDeposito = cantidadAMover === stockActual;
 
