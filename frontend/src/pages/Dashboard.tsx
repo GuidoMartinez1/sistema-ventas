@@ -52,7 +52,7 @@ const Dashboard = () => {
     const [bolsasAbiertas, setBolsasAbiertas] = useState<BolsaAbierta[]>([])
     const [loading, setLoading] = useState(true)
 
-    // REFACTOR: Inicializa fechaDesde con el primer día del mes actual
+    // Mantiene el inicio por defecto en el mes actual
     const [fechaDesde, setFechaDesde] = useState(getFirstDayOfMonth())
     const [fechaHasta, setFechaHasta] = useState('')
     const [mostrarTodoBajoStock, setMostrarTodoBajoStock] = useState(false)
@@ -82,14 +82,11 @@ const Dashboard = () => {
         }
     }
 
-    // REFACTOR: Función de filtrado genérica que maneja 'fecha' y 'fecha_apertura'
     const filtrarPorRango = <T extends { fecha?: string | null }>(items: T[]) => {
         return items.filter(item => {
-            // Usar 'fecha' o 'fecha_apertura' (para bolsas)
             const rawDate = (item as any).fecha || (item as any).fecha_apertura;
             if (!rawDate) return false
 
-            // Normalizar fecha para comparación de strings (YYYY-MM-DD)
             const fechaItem = new Date(rawDate)
             const year = fechaItem.getFullYear()
             const month = String(fechaItem.getMonth() + 1).padStart(2, '0')
@@ -105,7 +102,6 @@ const Dashboard = () => {
 
     const ventasFiltradas = filtrarPorRango(ventas)
     const comprasFiltradas = filtrarPorRango(compras)
-    // REFACTOR: También filtramos las bolsas abiertas por fecha de apertura
     const bolsasFiltradas = filtrarPorRango(bolsasAbiertas)
 
     const ventasCompletadas = ventasFiltradas.filter(v => v.estado !== 'adeuda')
@@ -127,9 +123,9 @@ const Dashboard = () => {
         setFechaHasta(fechaLocal)
     }
 
-    // REFACTOR: Restablece al mes actual en lugar de limpiar todo
+    // CAMBIO: Ahora limpia las fechas completamente (vacío) en lugar de volver al mes actual
     const limpiarFechas = () => {
-        setFechaDesde(getFirstDayOfMonth())
+        setFechaDesde('')
         setFechaHasta('')
     }
 
@@ -149,7 +145,6 @@ const Dashboard = () => {
         { title: 'Ingresos Totales', value: formatPrice(totalVentasConDeudasMonto), icon: DollarSign, color: 'bg-green-600', iconColor: 'text-green-600', borderColor: 'border-green-600' },
         { title: 'Deudas Pendientes', value: totalDeudas, icon: CreditCard, color: 'bg-yellow-500', iconColor: 'text-yellow-500', borderColor: 'border-yellow-500' },
         { title: 'Monto Deudas', value: formatPrice(totalDeudasMonto), icon: CreditCard, color: 'bg-yellow-600', iconColor: 'text-yellow-600', borderColor: 'border-yellow-600' },
-        // Usamos bolsasFiltradas para respetar el rango de fechas
         { title: 'Bolsas Abiertas', value: bolsasFiltradas.length, icon: AlertTriangle, color: 'bg-red-500', iconColor: 'text-red-500', borderColor: 'border-red-500' },
     ]
 
@@ -189,7 +184,8 @@ const Dashboard = () => {
                             onClick={limpiarFechas}
                             className="px-3 py-2 border border-gray-400 text-gray-700 rounded-lg hover:bg-gray-100 transition flex items-center gap-1 w-full"
                         >
-                            <X className='h-4 w-4' /> Mes Actual
+                            {/* CAMBIO: Etiqueta vuelve a ser Limpiar */}
+                            <X className='h-4 w-4' /> Limpiar
                         </button>
                     </div>
                 </div>
