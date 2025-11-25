@@ -1,6 +1,5 @@
-// src/pages/Gastos.tsx
 import { useEffect, useState } from 'react'
-import { PlusCircle, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil} from 'lucide-react'
+import { PlusCircle, Trash2, Calendar, FileText, TrendingUp, DollarSign as DollarIcon, Tag, Pencil, Filter, X } from 'lucide-react'
 import { Gasto, gastosAPI, cotizacionesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
@@ -9,16 +8,15 @@ const CATEGORIAS = [
     { value: 'CAMIONETA', label: 'Camioneta (Ahorro)' },
     { value: 'COMBUSTIBLE', label: 'Combustible' },
     { value: 'GASTOS_VARIOS', label: 'Gastos Varios (Papelera, etc.)' },
-    { value: 'SERVICIOS_IMPUESTOS', label: 'Servicios/Impuestos (Contadora, Monotributo)' },
+    { value: 'SERVICIOS_IMPUESTOS', label: 'Servicios/Impuestos' },
     { value: 'OTROS', label: 'Otros' },
 ];
 
-// --- Clases genéricas para responsividad y consistencia ---
-const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out text-sm";
-const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
+// --- Clases genéricas ---
+const inputFieldClass = "w-full border border-gray-300 p-2.5 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150 ease-in-out text-sm";
+const cardClass = "bg-white shadow-lg rounded-xl p-4 sm:p-6 border border-gray-100";
 
-
-// Helper para asegurar que el monto es un número, usando 0 si es nulo o string no válido
+// --- Helpers ---
 const safeNumber = (value: number | string | undefined): number => {
     const num = Number(value);
     return isNaN(num) ? 0 : num;
@@ -29,26 +27,21 @@ const formatPrice = (value: number | string | undefined) => {
     return '$' + Number(value).toLocaleString("es-AR", { maximumFractionDigits: 0 });
 };
 
-// Helper para formatear (usado en la tabla)
 const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | 'USD') => {
     const numAmount = safeNumber(amount);
-
     if (currency === 'USD') {
-        // Mantenemos decimales para USD
         return `u$d ${numAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
     }
     return formatPrice(numAmount);
 };
 
-// Helper para obtener el nombre de la categoría
 const getCategoriaLabel = (value: string | undefined): string => {
     if (!value) return 'N/A';
     const cat = CATEGORIAS.find(c => c.value === value);
     return cat ? cat.label : value;
 };
 
-
-// --- CotizacionForm Component (Gestión de la cotización diaria) ---
+// --- Componente: CotizacionForm ---
 const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }) => {
     const [fecha, setFecha] = useState(new Date().toLocaleDateString('en-CA'))
     const [valor, setValor] = useState('')
@@ -58,59 +51,55 @@ const CotizacionForm = ({ onCotizacionSaved }: { onCotizacionSaved: () => void }
         e.preventDefault()
         setLoading(true)
         try {
-            await cotizacionesAPI.create({
-                fecha,
-                valor: safeNumber(valor),
-            })
-            toast.success(`Cotización de ${new Date(fecha).toLocaleDateString()} guardada.`)
+            await cotizacionesAPI.create({ fecha, valor: safeNumber(valor) })
+            toast.success(`Cotización guardada.`)
             setValor('')
             onCotizacionSaved()
         } catch (error) {
-            const msg = (error as any).response?.data?.error || 'Error al guardar la cotización. Revise si ya existe un registro para esa fecha.'
-            toast.error(msg)
+            toast.error('Error al guardar cotización.')
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <div className="p-3 bg-orange-50 border border-orange-300 rounded-lg">
-            <h4 className="text-sm font-semibold text-orange-800 flex items-center mb-2">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Cotización USD Diaria
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 shadow-sm w-full">
+            <h4 className="text-xs font-bold text-orange-800 flex items-center mb-3 uppercase tracking-wide">
+                <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                Actualizar Dólar
             </h4>
-            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2 md:gap-3 items-end">
-                <div className="flex-1 w-full">
-                    <label className="block text-xs font-medium text-orange-700 mb-1">Fecha</label>
-                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={`${inputFieldClass} py-1`} required />
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="w-full sm:w-auto flex-1">
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1 uppercase">Fecha</label>
+                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className="w-full text-xs border-orange-300 rounded p-1.5 focus:ring-orange-500" required />
                 </div>
-                <div className="flex-1 w-full">
-                    <label className="block text-xs font-medium text-orange-700 mb-1">Valor ($ ARS)</label>
+                <div className="w-full sm:w-auto flex-1">
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1 uppercase">Valor ($)</label>
                     <input
                         type="number"
                         value={valor}
                         onChange={e => setValor(e.target.value)}
-                        className={`${inputFieldClass} py-1 border-orange-500`}
+                        className="w-full text-xs border-orange-300 rounded p-1.5 focus:ring-orange-500"
                         step="0.01"
+                        placeholder="0.00"
                         required />
                 </div>
                 <button
                     type="submit"
-                    className="w-full md:w-auto px-3 py-1.5 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition h-fit"
+                    className="w-full sm:w-auto px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded hover:bg-orange-600 transition shadow-sm"
                     disabled={loading || !valor}>
-                    {loading ? 'Guardando...' : 'Guardar'}
+                    {loading ? '...' : 'Guardar'}
                 </button>
             </form>
         </div>
     )
 }
 
-
-// --- Gasto Form Genérico (Usado para crear y editar) ---
+// --- Componente: GastoForm ---
 interface GastoFormProps {
-    initialGasto?: Gasto; // Opcional para editar
+    initialGasto?: Gasto;
     onSave: () => void;
-    onCancel?: () => void; // Solo para edición/modal
+    onCancel?: () => void;
 }
 
 const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel }) => {
@@ -124,7 +113,6 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
     const [cotizacionActual, setCotizacionActual] = useState(1)
     const [cotizacionLoading, setCotizacionLoading] = useState(false)
 
-    // Efecto para buscar la cotización
     useEffect(() => {
         const fetchCotizacion = async () => {
             if (moneda === 'USD' && fecha) {
@@ -132,14 +120,9 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
                 try {
                     const response = await cotizacionesAPI.getByDate(fecha)
                     const valor = safeNumber(response.data.valor)
-
-                    if (valor < 1) {
-                        toast.error(`No hay cotización USD registrada para la fecha ${new Date(fecha).toLocaleDateString()}.`)
-                        setCotizacionActual(0)
-                    } else {
-                        setCotizacionActual(valor)
-                    }
-                } catch (error) {
+                    setCotizacionActual(valor < 1 ? 0 : valor)
+                    if (valor < 1) toast.error(`Sin cotización USD para el ${new Date(fecha).toLocaleDateString()}.`)
+                } catch {
                     setCotizacionActual(0)
                 } finally {
                     setCotizacionLoading(false)
@@ -153,36 +136,26 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
         const montoNum = safeNumber(monto)
 
         if (moneda === 'USD' && (cotizacionActual < 1 || cotizacionLoading)) {
-            toast.error('Debe haber una cotización USD válida registrada para esta fecha.')
+            toast.error('Falta cotización USD válida para esta fecha.')
             return
         }
-
         if (!categoria) {
-            toast.error('Debe seleccionar una categoría para el gasto.')
+            toast.error('Seleccione una categoría.')
             return
         }
 
-        const payload = {
-            concepto,
-            monto: montoNum,
-            fecha: fecha,
-            moneda,
-            categoria,
-        }
+        const payload = { concepto, monto: montoNum, fecha, moneda, categoria }
 
         try {
             if (isEditing && initialGasto?.id) {
                 await gastosAPI.update(initialGasto.id, payload)
-                toast.success('Gasto actualizado con éxito!')
+                toast.success('Gasto actualizado!')
             } else {
                 await gastosAPI.create(payload)
-                toast.success('Gasto registrado con éxito!')
-
-                // Resetear solo al crear
+                toast.success('Gasto registrado!')
                 setConcepto('')
                 setMonto('')
                 setMoneda('ARS')
@@ -191,133 +164,93 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
             }
             onSave()
         } catch (error) {
-            const msg = (error as any).response?.data?.error || `Error al ${isEditing ? 'actualizar' : 'registrar'} el gasto.`
-            toast.error(msg)
+            toast.error(`Error al ${isEditing ? 'actualizar' : 'registrar'} el gasto.`)
         }
     }
 
     const montoFinalARS = safeNumber(monto) * cotizacionActual
-    const esMontoValido = safeNumber(monto) > 0
 
     return (
-        <form onSubmit={handleSubmit} className={`${cardClass} space-y-4 bg-white border border-gray-200 w-full`}>
-            <h3 className="text-xl font-bold flex items-center text-gray-800">
-                {isEditing ? (
-                    <><Pencil className="mr-2 h-5 w-5 text-orange-600" /> Editar Gasto #{initialGasto?.id}</>
-                ) : (
-                    <><PlusCircle className="mr-2 h-5 w-5 text-red-600" /> Registrar Nuevo Gasto</>
+        <form onSubmit={handleSubmit} className={cardClass}>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold flex items-center text-gray-800">
+                    {isEditing ? (
+                        <><Pencil className="mr-2 h-5 w-5 text-blue-600" /> Editar Gasto #{initialGasto?.id}</>
+                    ) : (
+                        <><PlusCircle className="mr-2 h-5 w-5 text-red-600" /> Registrar Gasto</>
+                    )}
+                </h3>
+                {isEditing && (
+                    <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600">
+                        <X className="h-5 w-5" />
+                    </button>
                 )}
-            </h3>
+            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                {/* CAMPO CATEGORIA */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Categoría</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Categoría</label>
                     <select value={categoria} onChange={e => setCategoria(e.target.value)} className={inputFieldClass} required>
-                        {CATEGORIAS.map(cat => (
-                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                        ))}
+                        {CATEGORIAS.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
                     </select>
                 </div>
 
-                {/* Concepto */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Concepto</label>
-                    <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className={inputFieldClass} required />
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Concepto</label>
+                    <input type="text" value={concepto} onChange={e => setConcepto(e.target.value)} className={inputFieldClass} placeholder="Ej: Compra tornillos" required />
                 </div>
 
-                {/* Moneda */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
-                    <div className="flex border border-gray-300 rounded-lg overflow-hidden w-full">
+                <div className="col-span-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Moneda</label>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-300">
                         {['ARS', 'USD'].map((m) => (
                             <button
                                 key={m}
                                 type="button"
                                 onClick={() => setMoneda(m as 'ARS' | 'USD')}
-                                className={`flex-1 py-2 text-sm font-medium transition-colors duration-200 
-                                    ${moneda === m
-                                    ? (m === 'ARS' ? 'bg-blue-600' : 'bg-green-600') + ' text-white shadow-md'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                                }`}
+                                className={`flex-1 py-2 text-xs font-bold transition-colors ${moneda === m ? (m === 'ARS' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white') : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
                             >
-                                {m} ({m === 'ARS' ? '$' : 'u$d'})
+                                {m}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Monto */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Monto ({moneda === 'ARS' ? '$' : 'u$d'})</label>
-                    <input
-                        type="number"
-                        value={monto}
-                        onChange={e => setMonto(e.target.value)}
-                        className={inputFieldClass}
-                        step="0.01"
-                        required />
+                <div className="col-span-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Monto ({moneda === 'ARS' ? '$' : 'u$d'})</label>
+                    <input type="number" value={monto} onChange={e => setMonto(e.target.value)} className={inputFieldClass} step="0.01" required />
                 </div>
 
-                {/* Fecha */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Fecha</label>
-                    <input
-                        type="date"
-                        value={fecha}
-                        onChange={e => setFecha(e.target.value)}
-                        className={inputFieldClass}
-                        required
-                        disabled={isEditing}
-                    />
+                <div className="col-span-1 lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Fecha del Gasto</label>
+                        <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} className={inputFieldClass} required disabled={isEditing} />
+                    </div>
+
+                    {/* Preview Cotización */}
+                    {moneda === 'USD' && (
+                        <div className={`p-2 rounded text-xs border flex items-center justify-between ${cotizacionActual >= 1 ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                            {cotizacionLoading ? <span>Consultando cotización...</span> : (
+                                cotizacionActual >= 1 ?
+                                    <span>1 USD = ${safeNumber(cotizacionActual).toFixed(2)} → <b>Total: {formatPrice(montoFinalARS)}</b></span> :
+                                    <span>⚠️ Sin cotización registrada</span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Panel de Cotización y Previsualización */}
-            {moneda === 'USD' && (
-                <div className="p-3 border rounded-lg" style={{ borderColor: cotizacionActual >= 1 ? '#4CAF50' : '#F44336', backgroundColor: cotizacionActual >= 1 ? '#E8F5E9' : '#FFEBEE' }}>
-                    <label className="block text-sm font-medium" style={{ color: cotizacionActual >= 1 ? '#388E3C' : '#D32F2F' }}>
-                        Cotización USD aplicada:
-                    </label>
-                    {cotizacionLoading ? (
-                        <p className="text-sm text-gray-500">Consultando...</p>
-                    ) : cotizacionActual >= 1 ? (
-                        <>
-                            <p className="text-lg font-bold" style={{ color: '#388E3C' }}>{safeNumber(cotizacionActual).toFixed(2)} ARS</p>
-                            {esMontoValido && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                    Gasto final estimado en ARS: **{formatPrice(montoFinalARS)}**
-                                </p>
-                            )}
-                        </>
-                    ) : (
-                        <p className="text-sm font-semibold text-red-600">
-                            🚨 ¡Cotización no disponible! Debe cargarla en el formulario de arriba.
-                        </p>
-                    )}
-                </div>
-            )}
-
-            {/* Botones de acción */}
-            <div className='flex justify-end space-x-2'>
+            <div className='flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100'>
                 {isEditing && (
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-4 py-2 text-orange-600 font-medium rounded-lg bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition">
                         Cancelar
                     </button>
                 )}
                 <button
                     type="submit"
-                    className={`px-4 py-2 font-medium rounded-lg transition flex items-center justify-center ${isEditing ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                    className={`px-6 py-2 text-sm font-bold rounded-lg text-white shadow-md transition-transform active:scale-95 ${isEditing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}
                     disabled={moneda === 'USD' && cotizacionActual < 1}>
-                    {isEditing ? (
-                        <><Pencil className="h-4 w-4 mr-2" /> Actualizar Gasto</>
-                    ) : (
-                        <><DollarIcon className="h-4 w-4 mr-2" /> Guardar Gasto</>
-                    )}
+                    {isEditing ? 'Actualizar Gasto' : 'Guardar Gasto'}
                 </button>
             </div>
         </form>
@@ -325,17 +258,15 @@ const GastoForm: React.FC<GastoFormProps> = ({ initialGasto, onSave, onCancel })
 }
 
 
-// --- Gastos Component (Listado principal) ---
+// --- Componente Principal: Gastos ---
 const Gastos = () => {
     const [gastos, setGastos] = useState<Gasto[]>([])
     const [loading, setLoading] = useState(true)
     const [cotizacionKey, setCotizacionKey] = useState(0);
     const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
-    // 🆕 ESTADOS PARA EL FILTRO DE FECHAS
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
-
 
     const fetchData = async () => {
         setLoading(true)
@@ -343,82 +274,64 @@ const Gastos = () => {
             const response = await gastosAPI.getAll()
             setGastos(response.data)
         } catch (error) {
-            toast.error('Error al cargar la lista de gastos')
+            toast.error('Error al cargar gastos')
         } finally {
             setLoading(false)
         }
     }
 
-    useEffect(() => {
-        fetchData()
-    }, [cotizacionKey])
+    useEffect(() => { fetchData() }, [cotizacionKey])
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('¿Está seguro de eliminar este gasto?')) return
+        if (!window.confirm('¿Eliminar este gasto?')) return
         try {
             await gastosAPI.delete(id)
-            toast.success('Gasto eliminado.')
+            toast.success('Eliminado.')
             fetchData()
-        } catch (error) {
-            toast.error('Error al eliminar el gasto.')
+        } catch {
+            toast.error('Error al eliminar.')
         }
     }
 
-    const handleEdit = (gasto: Gasto) => {
-        setEditingGasto(gasto);
-    };
-
-    // 🆕 Lógica de filtrado con Fechas
     const filteredGastos = gastos.filter(gasto => {
-        // 1. Filtrar por Categoría
         const categoryMatch = selectedCategory === 'ALL' || gasto.categoria === selectedCategory;
-
-        // 2. Filtrar por Rango de Fechas
         const gastoDate = new Date(gasto.fecha);
         let dateMatch = true;
-
-        if (dateFrom) {
-            const from = new Date(dateFrom);
-            dateMatch = dateMatch && gastoDate >= from;
-        }
-
+        if (dateFrom) dateMatch = dateMatch && gastoDate >= new Date(dateFrom);
         if (dateTo) {
             const to = new Date(dateTo);
-            // Sumamos un día a 'dateTo' para incluir los gastos de ese mismo día
             to.setDate(to.getDate() + 1);
             dateMatch = dateMatch && gastoDate < to;
         }
-
         return categoryMatch && dateMatch;
     });
 
     const totalGastosARS = filteredGastos.reduce((sum, g) => sum + safeNumber(g.monto_ars), 0);
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
-            {/* RESPONSIVE: Apilar en móvil, dos columnas en escritorio */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                {/* Título y descripción (Orden 2 en móvil) */}
-                <div className="order-2 md:order-1 flex-1">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
-                        <DollarIcon className="h-6 w-6 md:h-7 md:w-7 mr-2 text-red-600" />
-                        Gestión de Gastos
+            {/* Header & Cotización */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        <DollarIcon className="h-8 w-8 text-red-600 bg-red-100 p-1.5 rounded-lg" />
+                        Gastos
                     </h1>
-                    <p className="text-gray-600 text-sm md:text-base">Registro y control de egresos operativos del negocio.</p>
+                    <p className="text-gray-500 mt-1 text-sm">Registro de egresos y costos operativos</p>
                 </div>
-                {/* Formulario de Cotización (Orden 1 en móvil) */}
-                <div className="w-full md:w-96 order-1 md:order-2">
+                <div className="w-full lg:w-96">
                     <CotizacionForm onCotizacionSaved={() => setCotizacionKey(prev => prev + 1)} />
                 </div>
             </div>
 
-            {/* Formulario de CREACIÓN/EDICIÓN */}
+            {/* Formulario Principal (Solo se muestra si NO se está editando en modal, para evitar duplicados visuales) */}
             {!editingGasto && <GastoForm onSave={fetchData} />}
 
+            {/* Modal de Edición */}
             {editingGasto && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className='w-full max-w-lg'>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className='w-full max-w-2xl'>
                         <GastoForm
                             initialGasto={editingGasto}
                             onSave={() => { setEditingGasto(null); fetchData(); }}
@@ -428,95 +341,102 @@ const Gastos = () => {
                 </div>
             )}
 
+            {/* Sección de Listado y Filtros */}
             <div className={cardClass}>
-                <div className="flex flex-col space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <FileText className="h-5 w-5 mr-2" /> Listado de Gastos
-                    </h3>
 
-                    {/* 🆕 Controles de Filtrado (Categoría y Fechas) */}
-                    <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+                {/* Header de la lista y Filtros */}
+                <div className="space-y-4 mb-6">
+                    <div className="flex items-center gap-2 text-gray-900 font-semibold border-b pb-2">
+                        <Filter className="h-5 w-5 text-gray-500" />
+                        <span>Filtros y Resumen</span>
+                    </div>
 
-                        {/* Selector de Categoría */}
-                        <select
-                            value={selectedCategory}
-                            onChange={e => setSelectedCategory(e.target.value)}
-                            className="p-2 border border-gray-300 rounded-lg text-sm bg-white hover:border-orange-500 transition duration-150 flex-1 min-w-[200px]"
-                        >
-                            <option value="ALL">Todas las Categorías</option>
-                            {CATEGORIAS.map(cat => (
-                                <option key={cat.value} value={cat.value}>{cat.label}</option>
-                            ))}
-                        </select>
-
-                        {/* Filtros de Fecha */}
-                        <div className='flex gap-2 flex-1 items-center'>
-                            <label className='text-sm text-gray-600 font-medium whitespace-nowrap'>Desde:</label>
-                            <input
-                                type="date"
-                                value={dateFrom}
-                                onChange={e => setDateFrom(e.target.value)}
-                                className={`${inputFieldClass} py-2 flex-1`}
-                            />
-                            <label className='text-sm text-gray-600 font-medium whitespace-nowrap'>Hasta:</label>
-                            <input
-                                type="date"
-                                value={dateTo}
-                                onChange={e => setDateTo(e.target.value)}
-                                className={`${inputFieldClass} py-2 flex-1`}
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                        {/* Categoría (4 columnas) */}
+                        <div className="lg:col-span-4">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Categoría</label>
+                            <select
+                                value={selectedCategory}
+                                onChange={e => setSelectedCategory(e.target.value)}
+                                className={inputFieldClass}
+                            >
+                                <option value="ALL">Todas las Categorías</option>
+                                {CATEGORIAS.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+                            </select>
                         </div>
 
-                        {/* Tarjeta de Total Normalizado (Total Filtrado) */}
-                        <div className="bg-red-100 p-2 rounded-lg flex items-center justify-between min-w-48 lg:min-w-64">
-                            <span className="text-sm font-medium text-red-700 whitespace-nowrap">Total Filtrado (ARS): </span>
-                            <span className="text-lg font-bold text-red-900">{formatPrice(totalGastosARS)}</span>
+                        {/* Fechas (5 columnas) */}
+                        <div className="lg:col-span-5 grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Desde</label>
+                                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputFieldClass} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Hasta</label>
+                                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputFieldClass} />
+                            </div>
+                        </div>
+
+                        {/* Total (3 columnas) */}
+                        <div className="lg:col-span-3">
+                            <div className="bg-red-50 border border-red-100 p-2.5 rounded-lg flex flex-col justify-center items-center h-full">
+                                <span className="text-xs text-red-600 font-bold uppercase tracking-wider">Total Filtrado</span>
+                                <span className="text-xl font-bold text-red-900">{formatPrice(totalGastosARS)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-4">Cargando...</div>
+                    <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div></div>
                 ) : (
-                    <div>
-                        {/* 1. VISTA DE TABLA para Escritorio/Tablet (>= md) */}
-                        <div className="hidden md:block overflow-x-auto">
+                    <>
+                        {/* === VISTA DE TABLA (Desktop) === */}
+                        <div className="hidden lg:block overflow-hidden rounded-lg border border-gray-200">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Monto Original</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Monto ARS</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                    <th className="px-6 py-5 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Detalle</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+                                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Monto Orig.</th>
+                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total (ARS)</th>
+                                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredGastos.map(g => (
-                                    <tr key={g.id} className="hover:bg-red-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{g.id}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium flex items-center">
-                                            <Tag className='h-4 w-4 mr-1 text-red-400' /> {g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}
+                                    <tr key={g.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900">{g.concepto}</div>
+                                            <div className="text-xs text-gray-500 flex items-center mt-1">
+                                                <Calendar className="h-3 w-3 mr-1" />
+                                                {new Date(g.fecha).toLocaleDateString()}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{g.concepto}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                                            <span className={g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                {g.categoria ? getCategoriaLabel(g.categoria) : 'Varios'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center text-sm">
+                                            <span className={`font-medium ${g.moneda === 'USD' ? 'text-green-600' : 'text-gray-500'}`}>
                                                 {formatCurrency(g.monto, g.moneda)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-center">
-                                            {formatPrice(g.monto_ars)}
+                                        <td className="px-6 py-4 text-right">
+                                            <span className="text-sm font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
+                                                {formatPrice(g.monto_ars)}
+                                            </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{new Date(g.fecha).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center space-x-2 justify-center">
-                                            <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
-                                                <Pencil className="h-4 w-4" />
-                                            </button>
-                                            <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900">
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <button onClick={() => setEditingGasto(g)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition">
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                                <button onClick={() => handleDelete(g.id!)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -524,47 +444,56 @@ const Gastos = () => {
                             </table>
                         </div>
 
-                        {/* 2. VISTA DE TARJETAS (Cards) para Móvil (< md) */}
-                        <div className="md:hidden space-y-3">
+                        {/* === VISTA DE CARDS (Mobile / Tablet) === */}
+                        <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                             {filteredGastos.map(g => (
-                                <div key={g.id} className="p-4 border border-gray-200 rounded-lg shadow-sm hover:bg-red-50">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <p className="text-sm font-bold text-gray-900 truncate">
-                                            #{g.id} - {g.concepto}
-                                        </p>
-                                        <div className="flex space-x-2">
-                                            <button onClick={() => handleEdit(g)} className="text-blue-600 hover:text-blue-800">
+                                <div key={g.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-gray-900 line-clamp-2">{g.concepto}</h3>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${g.moneda === 'USD' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                {g.moneda}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center text-xs text-gray-500 mb-3">
+                                            <Calendar className="h-3.5 w-3.5 mr-1" />
+                                            {new Date(g.fecha).toLocaleDateString()}
+                                            <span className="mx-2">•</span>
+                                            <Tag className="h-3.5 w-3.5 mr-1" />
+                                            {g.categoria ? getCategoriaLabel(g.categoria) : 'Varios'}
+                                        </div>
+
+                                        <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg mb-3">
+                                            <span className="text-xs text-gray-500">Monto Orig.</span>
+                                            <span className="text-sm font-medium text-gray-800">{formatCurrency(g.monto, g.moneda)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                        <div>
+                                            <span className="block text-[10px] uppercase text-gray-500 font-bold">Total Final</span>
+                                            <span className="text-lg font-bold text-red-600">{formatPrice(g.monto_ars)}</span>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => setEditingGasto(g)} className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100">
                                                 <Pencil className="h-4 w-4" />
                                             </button>
-                                            <button onClick={() => handleDelete(g.id!)} className="text-red-600 hover:text-red-900">
+                                            <button onClick={() => handleDelete(g.id!)} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center mb-1 border-b border-red-100 pb-1">
-                                        <span className="text-xs font-medium text-gray-500 flex items-center"><Tag className="h-3 w-3 mr-1" /> Categoría:</span>
-                                        <span className="text-sm font-medium text-gray-700">{g.categoria ? getCategoriaLabel(g.categoria) : 'Sin Categoría'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-medium text-gray-500 flex items-center"><Calendar className="h-3 w-3 mr-1" /> Fecha:</span>
-                                        <span className="text-sm text-gray-700">{new Date(g.fecha).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-medium text-gray-500">Monto Original:</span>
-                                        <span className={`text-sm font-medium ${g.moneda === 'USD' ? 'text-blue-600' : 'text-gray-800'}`}>
-                                            {formatCurrency(g.monto, g.moneda)}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2 border-t border-red-200 mt-2">
-                                        <span className="text-sm font-bold text-red-700">Monto ARS (Normalizado):</span>
-                                        <span className="text-lg font-bold text-red-900">
-                                            {formatPrice(g.monto_ars)}
-                                        </span>
-                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
+
+                        {filteredGastos.length === 0 && (
+                            <div className="text-center py-12 text-gray-500">
+                                No se encontraron gastos con estos filtros.
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
