@@ -301,7 +301,7 @@ const BolsasAbiertas = () => {
                                     ? 'bg-red-50 text-red-700 border border-red-200'
                                     : 'bg-green-50 text-green-700 border border-green-200'
                             }`}>
-                              {bolsa.stock_actual || 0} u.
+                              {bolsa.stock_actual || 0} unidades
                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
