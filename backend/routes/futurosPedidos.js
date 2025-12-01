@@ -23,7 +23,7 @@ const baseQuery = `
 router.get("/", async (req, res) => {
     try {
         // Uso de la consulta base para incluir el nombre del producto
-        const result = await pool.query(`${baseQuery} ORDER BY fp.id ASC`)
+        const result = await pool.query(`${baseQuery} ORDER BY fp.id DESC`)
         res.json(result.rows)
     } catch (err) {
         console.error("Error GET /futuros-pedidos:", err)
