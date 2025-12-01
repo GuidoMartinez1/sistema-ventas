@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { futurosPedidosAPI, productosAPI, FuturoPedido, Producto } from "../services/api"
 import { toast } from "react-toastify"
-import * as XLSX from 'xlsx'; // <--- 1. Importar librería
+import * as XLSX from 'xlsx';
 
 const FuturosPedidos: React.FC = () => {
     const [futurosPedidos, setFuturosPedidos] = useState<FuturoPedido[]>([])
@@ -26,6 +26,7 @@ const FuturosPedidos: React.FC = () => {
         setLoading(true)
         try {
             const res = await futurosPedidosAPI.getAll()
+            // Ya confiamos en que el backend trae el orden correcto (DESC)
             setFuturosPedidos(res.data)
         } catch {
             toast.error("Error al cargar futuros pedidos")
@@ -42,27 +43,22 @@ const FuturosPedidos: React.FC = () => {
         setEditandoId(null)
     }
 
-    // --- 2. Lógica de Exportación a Excel ---
+    // --- Lógica de Exportación a Excel ---
     const handleExportarExcel = () => {
         if (futurosPedidos.length === 0) {
             toast.warning("No hay datos para exportar");
             return;
         }
 
-        // Preparamos los datos para que sean legibles en el Excel
-        // Usamos la misma lógica que tu tabla para resolver el nombre
         const datosParaExcel = futurosPedidos.map(fp => ({
             ID: fp.id,
             Producto: fp.producto_nombre || productos.find((p) => p.id === fp.producto_id)?.nombre || "-",
             Cantidad: fp.cantidad,
-            // Puedes agregar más columnas si quieres, ej: Fecha de creación
-            // Fecha: fp.creado_en
         }));
 
-        // Crear hoja de trabajo
         const worksheet = XLSX.utils.json_to_sheet(datosParaExcel);
 
-        // Ajustar ancho de columnas (Opcional, para que se vea pro)
+        // Ajuste visual de columnas del Excel
         const wscols = [
             { wch: 5 },  // ID width
             { wch: 40 }, // Producto width
@@ -70,14 +66,11 @@ const FuturosPedidos: React.FC = () => {
         ];
         worksheet['!cols'] = wscols;
 
-        // Crear libro y agregar hoja
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Futuros Pedidos");
 
-        // Descargar archivo
         XLSX.writeFile(workbook, "Futuros_Pedidos.xlsx");
     };
-    // ----------------------------------------
 
     const handleSave = async () => {
         if (!cantidad.trim()) {
@@ -139,32 +132,19 @@ const FuturosPedidos: React.FC = () => {
     }
 
     return (
-        <div className="p-6">
-            {/* Cabecera con Flex para separar Título y Botón */}
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Futuros Pedidos</h2>
+        <div className="p-4">
 
-                {/* 3. Botón Exportar */}
-                <button
-                    onClick={handleExportarExcel}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2"
-                >
-                    {/* Icono simple de descarga (opcional) */}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Exportar Excel
-                </button>
-            </div>
+            {/* Título simple (Si el modal ya tiene título, puedes quitar esto) */}
+            <h2 className="text-xl font-bold mb-4">Futuros Pedidos</h2>
 
-            {/* Formulario */}
-            <div className="border rounded p-4 mb-6 bg-white shadow-sm">
-                <h3 className="text-lg font-semibold mb-3">
-                    {editandoId ? "Editar Pedido" : "Nuevo Pedido"}
+            {/* --- FORMULARIO --- */}
+            <div className="border rounded p-4 mb-4 bg-gray-50 shadow-sm">
+                <h3 className="text-sm font-semibold mb-3 uppercase text-gray-500">
+                    {editandoId ? "Editar Ítem" : "Agregar Nuevo Ítem"}
                 </h3>
-                {/* ... Resto del formulario igual ... */}
+
                 <div className="flex gap-4 mb-3">
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
                         <input
                             type="radio"
                             checked={usarProductoExistente}
@@ -172,7 +152,7 @@ const FuturosPedidos: React.FC = () => {
                         />
                         Producto existente
                     </label>
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
                         <input
                             type="radio"
                             checked={!usarProductoExistente}
@@ -182,89 +162,109 @@ const FuturosPedidos: React.FC = () => {
                     </label>
                 </div>
 
-                {usarProductoExistente ? (
-                    <select
-                        className="border rounded px-3 py-2 w-full mb-3"
-                        value={productoSeleccionado || ""}
-                        onChange={(e) => setProductoSeleccionado(Number(e.target.value))}
-                    >
-                        <option value="">-- Seleccionar producto --</option>
-                        {productos.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.nombre}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <input
-                        type="text"
-                        placeholder="Nombre del producto"
-                        className="border rounded px-3 py-2 w-full mb-3"
-                        value={productoCustom}
-                        onChange={(e) => setProductoCustom(e.target.value)}
-                    />
-                )}
+                <div className="flex gap-2 items-end">
+                    <div className="flex-grow">
+                        {usarProductoExistente ? (
+                            <select
+                                className="border rounded px-3 py-2 w-full text-sm bg-white"
+                                value={productoSeleccionado || ""}
+                                onChange={(e) => setProductoSeleccionado(Number(e.target.value))}
+                            >
+                                <option value="">-- Seleccionar producto --</option>
+                                {productos.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                placeholder="Nombre del producto"
+                                className="border rounded px-3 py-2 w-full text-sm"
+                                value={productoCustom}
+                                onChange={(e) => setProductoCustom(e.target.value)}
+                            />
+                        )}
+                    </div>
 
-                <input
-                    type="text"
-                    placeholder="Cantidad"
-                    className="border rounded px-3 py-2 w-full mb-3"
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value)}
-                />
+                    <div className="w-24">
+                        <input
+                            type="text"
+                            placeholder="Cant."
+                            className="border rounded px-3 py-2 w-full text-sm"
+                            value={cantidad}
+                            onChange={(e) => setCantidad(e.target.value)}
+                        />
+                    </div>
 
-                <div className="flex gap-2">
                     <button
                         onClick={handleSave}
-                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium h-[38px]"
                     >
                         {editandoId ? "Actualizar" : "Agregar"}
                     </button>
+
                     {editandoId && (
                         <button
                             onClick={resetForm}
-                            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+                            className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded text-sm h-[38px]"
                         >
-                            Cancelar
+                            X
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Tabla de pedidos */}
+            {/* --- BARRA DE HERRAMIENTAS (Botón visible aquí) --- */}
+            <div className="flex justify-end mb-2">
+                <button
+                    onClick={handleExportarExcel}
+                    className="flex items-center gap-2 text-green-700 bg-white border border-green-200 hover:bg-green-50 px-3 py-1.5 rounded text-sm transition-colors shadow-sm"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Descargar Excel
+                </button>
+            </div>
+
+            {/* --- TABLA --- */}
             {loading ? (
-                <p>Cargando...</p>
+                <p className="text-center py-4 text-gray-500">Cargando...</p>
             ) : (
-                <div className="overflow-x-auto"> {/* Wrapper para scroll en moviles */}
-                    <table className="w-full border bg-white shadow-sm">
-                        <thead className="bg-gray-100">
+                <div className="border rounded overflow-hidden shadow-sm">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-100 text-gray-600 font-medium">
                         <tr>
-                            <th className="border px-2 py-1 text-left">ID</th>
-                            <th className="border px-2 py-1 text-left">Producto</th>
-                            <th className="border px-2 py-1 text-left">Cantidad</th>
-                            <th className="border px-2 py-1 text-center">Acciones</th>
+                            <th className="px-4 py-2 border-b">#</th>
+                            <th className="px-4 py-2 border-b">PRODUCTO</th>
+                            <th className="px-4 py-2 text-center border-b">CANT</th>
+                            <th className="px-4 py-2 text-center border-b">ACCIÓN</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        {futurosPedidos.map((fp) => (
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                        {futurosPedidos.map((fp, index) => (
                             <tr key={fp.id} className="hover:bg-gray-50">
-                                <td className="border px-2 py-1">{fp.id}</td>
-                                <td className="border px-2 py-1">
+                                <td className="px-4 py-2 font-bold text-gray-700">{index + 1}</td>
+                                <td className="px-4 py-2">
                                     {fp.producto_nombre || productos.find((p) => p.id === fp.producto_id)?.nombre || "-"}
                                 </td>
-                                <td className="border px-2 py-1">{fp.cantidad}</td>
-                                <td className="border px-2 py-1 flex gap-2 justify-center">
+                                <td className="px-4 py-2 text-center">{fp.cantidad}</td>
+                                <td className="px-4 py-2 flex justify-center gap-2">
                                     <button
-                                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                                        className="text-blue-500 hover:text-blue-700 p-1 transition-colors"
                                         onClick={() => handleEdit(fp)}
+                                        title="Editar"
                                     >
-                                        Editar
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
                                     <button
-                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                        className="text-red-500 hover:text-red-700 p-1 transition-colors"
                                         onClick={() => handleDelete(fp.id!)}
+                                        title="Eliminar"
                                     >
-                                        Eliminar
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </td>
                             </tr>
