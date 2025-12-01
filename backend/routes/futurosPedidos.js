@@ -17,7 +17,7 @@ const baseQuery = `
         futuros_pedidos fp
     LEFT JOIN 
         productos p ON fp.producto_id = p.id
-    ORDER BY fp.creado_en DESC
+    ORDER BY fp.id DESC
 `
 
 // GET /futuros-pedidos -> listar todos
