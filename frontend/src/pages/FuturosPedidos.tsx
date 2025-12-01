@@ -25,7 +25,10 @@ const FuturosPedidos: React.FC = () => {
         setLoading(true)
         try {
             const res = await futurosPedidosAPI.getAll()
-            setFuturosPedidos(res.data)
+            // ordenamiento descendente
+            const pedidosOrdenados = res.data.sort((a, b) => (b.id || 0) - (a.id || 0))
+            setFuturosPedidos(pedidosOrdenados)
+            //ordenamiento descendente
         } catch {
             toast.error("Error al cargar futuros pedidos")
         } finally {
