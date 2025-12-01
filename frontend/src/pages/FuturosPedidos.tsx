@@ -25,10 +25,15 @@ const FuturosPedidos: React.FC = () => {
         setLoading(true)
         try {
             const res = await futurosPedidosAPI.getAll()
-            // ordenamiento descendente
-            const pedidosOrdenados = res.data.sort((a, b) => (b.id || 0) - (a.id || 0))
-            setFuturosPedidos(pedidosOrdenados)
-            //ordenamiento descendente
+
+            console.log("Original:", res.data); // Mirá la consola (F12) para ver qué llega
+            // 2. Usamos Number() para asegurar que no sean strings "10" vs "2"
+            const ordenados = [...res.data].sort((a, b) => {
+                return Number(b.id) - Number(a.id);
+            })
+            console.log("Ordenado:", ordenados); // Debería mostrar el ID más alto primero
+
+            setFuturosPedidos(ordenados)
         } catch {
             toast.error("Error al cargar futuros pedidos")
         } finally {
