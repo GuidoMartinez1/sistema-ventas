@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download } from 'lucide-react' // <--- AGREGUÉ Download
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import * as XLSX from 'xlsx'; // <--- IMPORTANTE: Importar librería Excel
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -60,6 +61,27 @@ const Compras = () => {
             setCargandoFuturos(false)
         }
     }
+
+    // --- NUEVA LÓGICA DE EXPORTACIÓN A EXCEL ---
+    const handleExportarExcel = () => {
+        if (futurosPedidos.length === 0) {
+            toast.error("No hay datos para exportar");
+            return;
+        }
+
+        const datosParaExcel = futurosPedidos.map(fp => ({
+            ID: fp.id,
+            Producto: fp.producto_nombre || fp.producto || "-",
+            Cantidad: fp.cantidad,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(datosParaExcel);
+        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }]; // Anchos
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Futuros Pedidos");
+        XLSX.writeFile(workbook, "Futuros_Pedidos.xlsx");
+    };
+    // -------------------------------------------
 
     // 💡 FUNCIÓN PARA SELECCIONAR UN PRODUCTO DEL AUTOSUGERENCIA
     const seleccionarProductoAutocomplete = (producto: Producto) => {
@@ -289,7 +311,6 @@ const Compras = () => {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {/* CÓDIGO CORREGIDO: Eliminamos el DollarIcon */}
                                     <span className='text-red-600 font-bold'>{formatPrice(compra.total)}</span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -363,19 +384,31 @@ const Compras = () => {
 
             {/* MODAL FUTUROS PEDIDOS */}
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex justify-center items-start pt-4 md:pt-20" style={{ display: mostrarFuturos ? 'flex' : 'none' }}>
-                {/* 💡 FIX SCROLL GLOBAL: El modal ocupa 90vh y tiene su propio scroll si es necesario */}
+
                 <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto flex flex-col">
                     <div className="flex justify-between items-center mb-4 flex-shrink-0">
-                        <h2 className="text-xl font-bold flex items-center">
-                            <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
-                        </h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold flex items-center">
+                                <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
+                            </h2>
+                            {/* 🔥 NUEVO BOTÓN EXCEL VISIBLE */}
+                            <button
+                                onClick={handleExportarExcel}
+                                className="bg-green-100 text-green-700 hover:bg-green-200 p-2 rounded-full transition-colors flex items-center justify-center border border-green-200"
+                                title="Exportar a Excel"
+                            >
+                                <Download className="h-5 w-5" />
+                            </button>
+                        </div>
+
                         <button onClick={() => setMostrarFuturos(false)} className="text-gray-500 hover:text-gray-700 p-1">
                             <X className="h-6 w-6" />
                         </button>
                     </div>
 
                     {/* Formulario de creación (flex-shrink-0) */}
-                    <div className="flex flex-col sm:flex-row gap-2 mb-4 flex-shrink-0">
+                    {/* 🔥 ARREGLO VISUAL: relative y z-50 para que el autocomplete tape la tabla */}
+                    <div className="flex flex-col sm:flex-row gap-2 mb-4 flex-shrink-0 relative z-50">
                         <div className="relative flex-1">
                             <input
                                 type="text"
@@ -399,7 +432,7 @@ const Compras = () => {
                             )}
 
                             {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">
+                                <ul className="absolute z-50 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
                                     {productosSugeridos.map(p => (
                                         <li
                                             key={p.id}
@@ -412,7 +445,7 @@ const Compras = () => {
                                 </ul>
                             )}
                             {mostrarSugerenciasProducto && productosSugeridos.length === 0 && busquedaProductoExistente.length > 0 && (
-                                <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
+                                <div className="absolute z-50 w-full bg-white border rounded shadow mt-1 px-3 py-2 text-sm text-gray-500">
                                     Escribí el nombre y se guardará como custom.
                                 </div>
                             )}
@@ -438,13 +471,12 @@ const Compras = () => {
                         <p className="text-gray-500">No hay productos en la lista.</p>
                     ) : (
                         // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll interno
-                        <div className="flex-grow overflow-y-auto mt-2">
+                        <div className="flex-grow overflow-y-auto mt-2 relative z-0">
                             {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
-                            <div className="hidden md:block overflow-x-auto border rounded-lg h-full pb-3"> {/* 💡 FIX ESPACIO: Añadido pb-3 aquí para margen inferior */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg h-full pb-3">
                                 <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50 sticky top-0 z-10"> {/* Sticky header para web */}
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
                                     <tr>
-                                        {/* AJUSTE DE ANCHOS EN CABECERA WEB */}
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[5%]">#</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[65%]">Producto</th>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Cant</th>
@@ -516,7 +548,7 @@ const Compras = () => {
                             </div>
 
                             {/* 💡 VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3"> {/* 💡 FIX ESPACIO: Añadido pb-3 aquí para margen inferior */}
+                            <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
