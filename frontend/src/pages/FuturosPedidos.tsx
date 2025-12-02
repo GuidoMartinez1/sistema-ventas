@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react"
 import { futurosPedidosAPI, productosAPI, FuturoPedido, Producto } from "../services/api"
 import { toast } from "react-toastify"
-import * as XLSX from 'xlsx'; // <--- ASEGURATE DE TENER ESTO INSTALADO: npm install xlsx
+// IMPORTANTE: Si esto marca error, ejecuta en tu terminal: npm install xlsx
+import * as XLSX from 'xlsx';
 
 const FuturosPedidos: React.FC = () => {
     const [futurosPedidos, setFuturosPedidos] = useState<FuturoPedido[]>([])
@@ -26,7 +27,6 @@ const FuturosPedidos: React.FC = () => {
         setLoading(true)
         try {
             const res = await futurosPedidosAPI.getAll()
-            // Asumimos que el backend ya trae el orden correcto (DESC)
             setFuturosPedidos(res.data)
         } catch {
             toast.error("Error al cargar futuros pedidos")
@@ -57,9 +57,7 @@ const FuturosPedidos: React.FC = () => {
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(datosParaExcel);
-        // Anchos de columna
-        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }];
-
+        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }]; // Anchos
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Futuros Pedidos");
         XLSX.writeFile(workbook, "Futuros_Pedidos.xlsx");
@@ -101,7 +99,6 @@ const FuturosPedidos: React.FC = () => {
     const handleEdit = (pedido: FuturoPedido) => {
         setEditandoId(pedido.id || null)
         setCantidad(pedido.cantidad || "")
-
         if (pedido.producto_id) {
             setUsarProductoExistente(true)
             setProductoSeleccionado(pedido.producto_id)
@@ -126,100 +123,48 @@ const FuturosPedidos: React.FC = () => {
 
     return (
         <div className="p-4">
-
-            {/* Título de la sección */}
             <h2 className="text-xl font-bold mb-4">Futuros Pedidos</h2>
 
-            {/* --- FORMULARIO --- */}
+            {/* Formulario */}
             <div className="border rounded p-4 bg-gray-50 shadow-sm mb-4">
                 <h3 className="text-sm font-semibold mb-3 text-gray-600 uppercase">
                     {editandoId ? "Editar Pedido" : "Nuevo Pedido"}
                 </h3>
-
+                {/* Inputs y Botones del Formulario */}
                 <div className="flex gap-4 mb-3 text-sm">
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            checked={usarProductoExistente}
-                            onChange={() => setUsarProductoExistente(true)}
-                        />
+                        <input type="radio" checked={usarProductoExistente} onChange={() => setUsarProductoExistente(true)} />
                         Producto existente
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            checked={!usarProductoExistente}
-                            onChange={() => setUsarProductoExistente(false)}
-                        />
+                        <input type="radio" checked={!usarProductoExistente} onChange={() => setUsarProductoExistente(false)} />
                         Producto custom
                     </label>
                 </div>
-
-                {usarProductoExistente ? (
-                    <select
-                        className="border rounded px-3 py-2 w-full mb-3 text-sm bg-white"
-                        value={productoSeleccionado || ""}
-                        onChange={(e) => setProductoSeleccionado(Number(e.target.value))}
-                    >
-                        <option value="">-- Seleccionar producto --</option>
-                        {productos.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.nombre}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <input
-                        type="text"
-                        placeholder="Nombre del producto"
-                        className="border rounded px-3 py-2 w-full mb-3 text-sm"
-                        value={productoCustom}
-                        onChange={(e) => setProductoCustom(e.target.value)}
-                    />
-                )}
-
                 <div className="flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="Cantidad"
-                        className="border rounded px-3 py-2 w-1/3 text-sm"
-                        value={cantidad}
-                        onChange={(e) => setCantidad(e.target.value)}
-                    />
-
-                    <button
-                        onClick={handleSave}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium flex-grow"
-                    >
+                    <div className="flex-grow">
+                        {usarProductoExistente ? (
+                            <select className="border rounded px-3 py-2 w-full text-sm bg-white" value={productoSeleccionado || ""} onChange={(e) => setProductoSeleccionado(Number(e.target.value))}>
+                                <option value="">-- Seleccionar producto --</option>
+                                {productos.map((p) => (<option key={p.id} value={p.id}>{p.nombre}</option>))}
+                            </select>
+                        ) : (
+                            <input type="text" placeholder="Nombre del producto" className="border rounded px-3 py-2 w-full text-sm" value={productoCustom} onChange={(e) => setProductoCustom(e.target.value)} />
+                        )}
+                    </div>
+                    <div className="w-24">
+                        <input type="text" placeholder="Cant." className="border rounded px-3 py-2 w-full text-sm text-center" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
+                    </div>
+                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">
                         {editandoId ? "Actualizar" : "Agregar"}
                     </button>
                     {editandoId && (
-                        <button
-                            onClick={resetForm}
-                            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm"
-                        >
-                            Cancelar
-                        </button>
+                        <button onClick={resetForm} className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded text-sm">X</button>
                     )}
                 </div>
             </div>
 
-            {/* --- BARRA DE HERRAMIENTAS (Aquí está el botón visible) --- */}
-            {/* Usamos 'sticky' para probar si ayuda, y z-index alto */}
-            <div className="flex justify-end items-center mb-2 px-1">
-                <button
-                    onClick={handleExportarExcel}
-                    className="flex items-center gap-2 text-sm text-green-700 font-medium hover:text-green-900 transition-colors bg-green-50 px-3 py-1 rounded border border-green-200"
-                >
-                    {/* Icono de descarga */}
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Descargar Excel
-                </button>
-            </div>
-
-            {/* --- TABLA --- */}
+            {/* TABLA CON BOTÓN INTEGRADO EN EL ENCABEZADO */}
             {loading ? (
                 <p className="text-center text-gray-500 py-4">Cargando...</p>
             ) : (
@@ -227,10 +172,25 @@ const FuturosPedidos: React.FC = () => {
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-xs">
                         <tr>
-                            <th className="px-4 py-2 border-b">#</th>
+                            <th className="px-4 py-2 border-b w-12">#</th>
                             <th className="px-4 py-2 border-b">Producto</th>
-                            <th className="px-4 py-2 border-b text-center">Cant</th>
-                            <th className="px-4 py-2 border-b text-center">Acciones</th>
+                            <th className="px-4 py-2 border-b text-center w-20">Cant</th>
+
+                            {/* AQUI ESTA EL CAMBIO: Botón Excel dentro del Header */}
+                            <th className="px-4 py-2 border-b text-center w-32">
+                                <div className="flex items-center justify-center gap-2">
+                                    <span>Acciones</span>
+                                    <button
+                                        onClick={handleExportarExcel}
+                                        title="Descargar Excel"
+                                        className="text-green-600 hover:text-green-800 bg-green-100 hover:bg-green-200 p-1 rounded transition-all"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
@@ -242,17 +202,11 @@ const FuturosPedidos: React.FC = () => {
                                 </td>
                                 <td className="px-4 py-2 text-center">{fp.cantidad}</td>
                                 <td className="px-4 py-2 flex justify-center gap-2">
-                                    <button
-                                        className="text-blue-500 hover:text-blue-700 font-medium"
-                                        onClick={() => handleEdit(fp)}
-                                    >
-                                        Editar
+                                    <button className="text-blue-500 hover:text-blue-700 font-medium" onClick={() => handleEdit(fp)}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
-                                    <button
-                                        className="text-red-500 hover:text-red-700 font-medium ml-2"
-                                        onClick={() => handleDelete(fp.id!)}
-                                    >
-                                        Eliminar
+                                    <button className="text-red-500 hover:text-red-700 font-medium ml-2" onClick={() => handleDelete(fp.id!)}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </td>
                             </tr>
