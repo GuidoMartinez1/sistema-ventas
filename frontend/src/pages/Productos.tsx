@@ -127,16 +127,14 @@ const Productos = () => {
 
     const handleAddToFuture = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!futureQuantity || !futureProduct) {
-            toast.error("Ingrese una cantidad válida");
-            return;
-        }
+
+        // REFACTORIZADO: Ya no validamos !futureQuantity, solo que exista el producto
+        if (!futureProduct) return;
 
         try {
-            // Se envía el ID del producto existente
             await futurosPedidosAPI.create({
                 producto_id: futureProduct.id,
-                cantidad: futureQuantity
+                cantidad: futureQuantity // Puede ir vacío
             });
 
             toast.success(`Agregado a Pedidos Futuros: ${futureProduct.nombre}`);
@@ -864,7 +862,7 @@ const Productos = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="btn-primary bg-blue-600 hover:bg-blue-700 text-sm"
+                                        className="btn-primary bg-orange-600 hover:bg-orange-700 text-sm"
                                     >
                                         Agregar
                                     </button>
