@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download } from 'lucide-react' // <--- AGREGUÉ Download
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download } from 'lucide-react'
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import * as XLSX from 'xlsx'; // <--- IMPORTANTE: Importar librería Excel
+import * as XLSX from 'xlsx';
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -62,7 +62,7 @@ const Compras = () => {
         }
     }
 
-    // --- NUEVA LÓGICA DE EXPORTACIÓN A EXCEL ---
+    // --- LÓGICA DE EXPORTACIÓN A EXCEL ---
     const handleExportarExcel = () => {
         if (futurosPedidos.length === 0) {
             toast.error("No hay datos para exportar");
@@ -76,7 +76,7 @@ const Compras = () => {
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(datosParaExcel);
-        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }]; // Anchos
+        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }];
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Futuros Pedidos");
         XLSX.writeFile(workbook, "Futuros_Pedidos.xlsx");
@@ -86,14 +86,32 @@ const Compras = () => {
     // 💡 FUNCIÓN PARA SELECCIONAR UN PRODUCTO DEL AUTOSUGERENCIA
     const seleccionarProductoAutocomplete = (producto: Producto) => {
         setProductoSeleccionadoId(producto.id || null);
-        setBusquedaProductoExistente(producto.nombre); // Muestra el nombre completo en el input
+        setBusquedaProductoExistente(producto.nombre);
         setMostrarSugerenciasProducto(false);
     }
 
-    // 💡 FUNCIÓN AGREGAR FUTURO (LÓGICA UNIFICADA)
+    // 💡 FUNCIÓN AGREGAR FUTURO (VALIDADA)
     const agregarFuturo = async () => {
         const cantidadTrim = nuevaCantidad.trim() || undefined;
 
+        // 1. VALIDACIÓN DE DUPLICADOS
+        const esDuplicado = futurosPedidos.some(fp => {
+            // Si seleccionó un producto existente (ID), comparamos IDs
+            if (productoSeleccionadoId) {
+                return fp.producto_id === productoSeleccionadoId;
+            }
+            // Si es custom (Nombre), comparamos texto (ignorando mayúsculas/minúsculas)
+            const nombreNuevo = busquedaProductoExistente.trim().toLowerCase();
+            const nombreExistente = (fp.producto_nombre || fp.producto || "").trim().toLowerCase();
+            return nombreNuevo === nombreExistente;
+        });
+
+        if (esDuplicado) {
+            toast.error('¡Este producto ya está en la lista!');
+            return;
+        }
+
+        // 2. PREPARAR PAYLOAD
         let payload: { producto?: string; cantidad?: string; producto_id?: number } = {
             cantidad: cantidadTrim
         };
@@ -113,7 +131,7 @@ const Compras = () => {
 
             await fetchFuturosPedidos()
 
-            // Resetear el formulario de creación
+            // Resetear el formulario
             setNuevaCantidad('')
             setProductoSeleccionadoId(null)
             setBusquedaProductoExistente('')
@@ -266,7 +284,7 @@ const Compras = () => {
                 </div>
             </div>
 
-            {/* LISTADO DE COMPRAS (Sin cambios) */}
+            {/* LISTADO DE COMPRAS */}
             <div className={cardClass}>
                 {/* VISTA DE TABLA (ESCRITORIO) */}
                 <div className="hidden md:block overflow-x-auto">
@@ -391,7 +409,6 @@ const Compras = () => {
                             <h2 className="text-xl font-bold flex items-center">
                                 <ClipboardList className="h-5 w-5 mr-2" /> Futuros Pedidos
                             </h2>
-                            {/* 🔥 NUEVO BOTÓN EXCEL VISIBLE */}
                             <button
                                 onClick={handleExportarExcel}
                                 className="bg-green-100 text-green-700 hover:bg-green-200 p-2 rounded-full transition-colors flex items-center justify-center border border-green-200"
@@ -407,7 +424,6 @@ const Compras = () => {
                     </div>
 
                     {/* Formulario de creación (flex-shrink-0) */}
-                    {/* 🔥 ARREGLO VISUAL: relative y z-50 para que el autocomplete tape la tabla */}
                     <div className="flex flex-col sm:flex-row gap-2 mb-4 flex-shrink-0 relative z-50">
                         <div className="relative flex-1">
                             <input
@@ -425,11 +441,8 @@ const Compras = () => {
                                 onFocus={() => setMostrarSugerenciasProducto(true)}
                                 onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
                             />
-                            {productoSeleccionadoId && !mostrarSugerenciasProducto && (
-                                <span className="absolute right-3 top-2.5 text-xs text-green-600">
-                                    ✅ Existente
-                                </span>
-                            )}
+
+                            {/* 🔥 AQUÍ ELIMINÉ EL TAG "EXISTENTE" QUE PEDISTE 🔥 */}
 
                             {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
                                 <ul className="absolute z-50 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
@@ -464,15 +477,15 @@ const Compras = () => {
                         </button>
                     </div>
 
-                    {/* 💡 Muestra el estado de carga o la tabla/tarjetas */}
+                    {/* Muestra el estado de carga o la tabla/tarjetas */}
                     {cargandoFuturos ? (
                         <p className="text-blue-500">Cargando pedidos...</p>
                     ) : futurosPedidos.length === 0 ? (
                         <p className="text-gray-500">No hay productos en la lista.</p>
                     ) : (
-                        // 💡 CONTENEDOR DE LISTAS: Ocupa el espacio restante y tiene scroll interno
+                        // CONTENEDOR DE LISTAS
                         <div className="flex-grow overflow-y-auto mt-2 relative z-0">
-                            {/* 💡 VISTA DE TABLA (ESCRITORIO/TABLET) */}
+                            {/* VISTA DE TABLA (ESCRITORIO/TABLET) */}
                             <div className="hidden md:block overflow-x-auto border rounded-lg h-full pb-3">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
@@ -547,7 +560,7 @@ const Compras = () => {
                                 </table>
                             </div>
 
-                            {/* 💡 VISTA DE TARJETA (MÓVIL) */}
+                            {/* VISTA DE TARJETA (MÓVIL) */}
                             <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3">
                                 {futurosPedidos.map((item, index) => (
                                     <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
