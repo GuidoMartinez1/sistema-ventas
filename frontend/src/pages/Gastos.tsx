@@ -35,6 +35,16 @@ const formatCurrency = (amount: number | string | undefined, currency: 'ARS' | '
     return formatPrice(numAmount);
 };
 
+const formatDateUTC = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    // Usamos métodos UTC para evitar que reste horas por la zona horaria local
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+}
+
 const getCategoriaLabel = (value: string | undefined): string => {
     if (!value) return 'N/A';
     const cat = CATEGORIAS.find(c => c.value === value);
@@ -410,7 +420,7 @@ const Gastos = () => {
                                             <div className="text-sm font-medium text-gray-900">{g.concepto}</div>
                                             <div className="text-xs text-gray-500 flex items-center mt-1">
                                                 <Calendar className="h-3 w-3 mr-1" />
-                                                {new Date(g.fecha).toLocaleDateString()}
+                                                {formatDateUTC(g.fecha)}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -458,7 +468,7 @@ const Gastos = () => {
 
                                         <div className="flex items-center text-xs text-gray-500 mb-3">
                                             <Calendar className="h-3.5 w-3.5 mr-1" />
-                                            {new Date(g.fecha).toLocaleDateString()}
+                                            {formatDateUTC(g.fecha)}
                                             <span className="mx-2">•</span>
                                             <Tag className="h-3.5 w-3.5 mr-1" />
                                             {g.categoria ? getCategoriaLabel(g.categoria) : 'Varios'}
