@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package, Download } from 'lucide-react'
-import { productosAPI, categoriasAPI } from '../services/api'
+import { Plus, Edit, Trash2, Package, Download, ClipboardList } from 'lucide-react' // <--- 1. Agregado ClipboardList
+import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api' // <--- 2. Agregado futurosPedidosAPI
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
-// Clases de utilidad (Se mantienen las optimizaciones de responsividad)
+// Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 
@@ -70,6 +70,8 @@ const Productos = () => {
     const [productos, setProductos] = useState<Producto[]>([])
     const [categorias, setCategorias] = useState<Categoria[]>([])
     const [loading, setLoading] = useState(true)
+
+    // Estados del Modal de Productos
     const [showModal, setShowModal] = useState(false)
     const [editingProducto, setEditingProducto] = useState<Producto | null>(null)
     const [formData, setFormData] = useState({
@@ -83,6 +85,13 @@ const Productos = () => {
         categoria_id: '',
         codigo: ''
     })
+
+    // --- 3. NUEVOS ESTADOS PARA FUTUROS PEDIDOS ---
+    const [showFutureModal, setShowFutureModal] = useState(false)
+    const [futureProduct, setFutureProduct] = useState<Producto | null>(null)
+    const [futureQuantity, setFutureQuantity] = useState('')
+    // ----------------------------------------------
+
     const [busqueda, setBusqueda] = useState('')
     const [stockFiltro, setStockFiltro] = useState('')
     const [categoriaFiltro, setCategoriaFiltro] = useState('')
@@ -108,6 +117,38 @@ const Productos = () => {
             setLoading(false)
         }
     }
+
+    // --- 4. NUEVAS FUNCIONES PARA FUTUROS PEDIDOS ---
+    const openFutureModal = (producto: Producto) => {
+        setFutureProduct(producto);
+        setFutureQuantity('');
+        setShowFutureModal(true);
+    }
+
+    const handleAddToFuture = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!futureQuantity || !futureProduct) {
+            toast.error("Ingrese una cantidad válida");
+            return;
+        }
+
+        try {
+            // Se envía el ID del producto existente
+            await futurosPedidosAPI.create({
+                producto_id: futureProduct.id,
+                cantidad: futureQuantity
+            });
+
+            toast.success(`Agregado a Pedidos Futuros: ${futureProduct.nombre}`);
+            setShowFutureModal(false);
+            setFutureProduct(null);
+            setFutureQuantity('');
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al agregar a pedidos futuros");
+        }
+    }
+    // ------------------------------------------------
 
     const exportarProductosExcel = async () => {
         try {
@@ -344,21 +385,6 @@ const Productos = () => {
         )
     }
 
-    // Función de ayuda para formatear Kilos sin '.00'
-    const formatKilos = (kilos: number | undefined | string) => {
-        if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
-
-        const kiloValue = Number(kilos); // Convertimos el valor a Number
-
-        // Verifica si es un número entero
-        if (Number.isInteger(kiloValue)) {
-            return kiloValue.toString();
-        }
-
-        // Si no es entero, usa toFixed(2)
-        return kiloValue.toFixed(2);
-    };
-
     return (
         // Contenedor con límite de ancho para estética en pantallas grandes
         <div className="p-4 md:p-8 space-y-6 max-w-screen-xl mx-auto">
@@ -553,6 +579,14 @@ const Productos = () => {
                                                 📦
                                             </button>
                                         )}
+                                        {/* 5. BOTÓN AGREGAR FUTUROS (DESKTOP) */}
+                                        <button
+                                            onClick={() => openFutureModal(producto)}
+                                            className="text-blue-600 hover:text-blue-900 p-1"
+                                            title="Agregar a Pedidos Futuros"
+                                        >
+                                            <ClipboardList className="h-4 w-4" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -584,6 +618,10 @@ const Productos = () => {
                                             📦
                                         </button>
                                     )}
+                                    {/* 6. BOTÓN AGREGAR FUTUROS (MÓVIL) */}
+                                    <button onClick={() => openFutureModal(producto)} className="text-blue-600 hover:text-blue-900 p-1">
+                                        <ClipboardList className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
 
@@ -632,7 +670,7 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Modal Productos */}
             {showModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
@@ -788,6 +826,55 @@ const Productos = () => {
                     </div>
                 </div>
             )}
+
+            {/* 7. NUEVO MODAL PARA AGREGAR A FUTUROS PEDIDOS */}
+            {showFutureModal && futureProduct && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-40 mx-auto p-5 border w-11/12 max-w-sm shadow-lg rounded-md bg-white">
+                        <div className="mt-2 text-center">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                Agregar a Pedidos Futuros
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                {futureProduct.nombre}
+                            </p>
+
+                            <form onSubmit={handleAddToFuture} className="space-y-4">
+                                <div>
+                                    <label className="block text-left text-sm font-medium text-gray-700 mb-1">
+                                        Cantidad a pedir
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={futureQuantity}
+                                        onChange={(e) => setFutureQuantity(parseNumericInput(e.target.value))}
+                                        className={inputFieldClass}
+                                        placeholder="Ej: 5"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end space-x-2 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFutureModal(false)}
+                                        className="btn-secondary text-sm"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn-primary bg-blue-600 hover:bg-blue-700 text-sm"
+                                    >
+                                        Agregar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }
