@@ -862,8 +862,7 @@ const Productos = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="btn-primary bg-orange-600 hover:bg-orange-700 text-sm"
-                                    >
+                                        className="btn-primary bg-orange-600 hover:bg-orange-700 text-sm">
                                         Agregar
                                     </button>
                                 </div>
