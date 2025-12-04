@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download, Calculator } from 'lucide-react'
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -9,7 +9,6 @@ import * as XLSX from 'xlsx';
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out text-sm";
-
 
 const Compras = () => {
     const navigate = useNavigate()
@@ -35,12 +34,10 @@ const Compras = () => {
     const [editandoId, setEditandoId] = useState<number | null>(null);
     const [cantidadEditando, setCantidadEditando] = useState<string>('');
 
-
     // 💡 Lógica de filtrado para el Autocomplete
     const productosSugeridos = productos.filter(p =>
         (p.nombre?.toLowerCase().includes(busquedaProductoExistente.toLowerCase()))
     ).slice(0, 10);
-
 
     // 💡 NUEVO useEffect para cargar productos (solo una vez)
     useEffect(() => {
@@ -62,24 +59,56 @@ const Compras = () => {
         }
     }
 
-    // --- LÓGICA DE EXPORTACIÓN A EXCEL ---
+    // 🔥 HELPER: Calcular Costo Estimado (Cantidad * Precio Costo)
+    const calcularCostoEstimado = (cantidad: string | number | undefined, precioCosto: number | undefined) => {
+        if (!cantidad || !precioCosto) return 0;
+        const cantNum = parseFloat(cantidad.toString());
+        const costoNum = parseFloat(precioCosto.toString());
+        if (isNaN(cantNum) || isNaN(costoNum)) return 0;
+        return cantNum * costoNum;
+    };
+
+    // 🔥 HELPER: Calcular TOTAL acumulado de la lista
+    const totalEstimadoFuturos = futurosPedidos.reduce((acc, curr) => {
+        // Usamos 'as any' para acceder a precio_costo si TypeScript no lo detecta en la interfaz FuturoPedido
+        const costo = (curr as any).precio_costo;
+        return acc + calcularCostoEstimado(curr.cantidad, costo);
+    }, 0);
+
+    // --- LÓGICA DE EXPORTACIÓN A EXCEL ACTUALIZADA ---
     const handleExportarExcel = () => {
         if (futurosPedidos.length === 0) {
             toast.error("No hay datos para exportar");
             return;
         }
 
-        const datosParaExcel = futurosPedidos.map(fp => ({
-            ID: fp.id,
-            Producto: fp.producto_nombre || fp.producto || "-",
-            Cantidad: fp.cantidad,
-        }));
+        const datosParaExcel = futurosPedidos.map(fp => {
+            const costoUnit = (fp as any).precio_costo;
+            const gastoEst = calcularCostoEstimado(fp.cantidad, costoUnit);
+
+            return {
+                ID: fp.id,
+                Producto: fp.producto_nombre || fp.producto || "-",
+                Cantidad: fp.cantidad,
+                'Costo Unit.': costoUnit ? formatPrice(costoUnit) : '-',
+                'Gasto Estimado': gastoEst > 0 ? formatPrice(gastoEst) : '-'
+            };
+        });
+
+        // Fila de Total
+        datosParaExcel.push({
+            ID: '',
+            Producto: 'TOTAL ESTIMADO',
+            Cantidad: '',
+            'Costo Unit.': '',
+            'Gasto Estimado': formatPrice(totalEstimadoFuturos)
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(datosParaExcel);
-        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }];
+        worksheet['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Futuros Pedidos");
-        XLSX.writeFile(workbook, "Futuros_Pedidos.xlsx");
+        XLSX.writeFile(workbook, "Futuros_Pedidos_Con_Costos.xlsx");
     };
     // -------------------------------------------
 
@@ -96,11 +125,9 @@ const Compras = () => {
 
         // 1. VALIDACIÓN DE DUPLICADOS
         const esDuplicado = futurosPedidos.some(fp => {
-            // Si seleccionó un producto existente (ID), comparamos IDs
             if (productoSeleccionadoId) {
                 return fp.producto_id === productoSeleccionadoId;
             }
-            // Si es custom (Nombre), comparamos texto (ignorando mayúsculas/minúsculas)
             const nombreNuevo = busquedaProductoExistente.trim().toLowerCase();
             const nombreExistente = (fp.producto_nombre || fp.producto || "").trim().toLowerCase();
             return nombreNuevo === nombreExistente;
@@ -128,7 +155,6 @@ const Compras = () => {
         try {
             await futurosPedidosAPI.create(payload)
             toast.success('Pedido agregado a la lista.')
-
             await fetchFuturosPedidos()
 
             // Resetear el formulario
@@ -150,13 +176,11 @@ const Compras = () => {
     // 💡 NUEVA FUNCIÓN: Actualizar pedido
     const actualizarPedido = async () => {
         if (!editandoId) return;
-
         const cantidadTrim = cantidadEditando.trim() || undefined;
 
         try {
             await futurosPedidosAPI.update(editandoId, { cantidad: cantidadTrim });
             toast.success('Pedido actualizado.');
-
             setEditandoId(null);
             setCantidadEditando('');
             await fetchFuturosPedidos();
@@ -166,12 +190,10 @@ const Compras = () => {
         }
     };
 
-    // 💡 FUNCIÓN CANCELAR EDICIÓN
     const cancelarEdicion = () => {
         setEditandoId(null);
         setCantidadEditando('');
     };
-
 
     const eliminarFuturo = async (id: number) => {
         try {
@@ -235,7 +257,6 @@ const Compras = () => {
         }
     };
 
-    // NUEVA FUNCIÓN: Eliminar compra
     const handleEliminarCompra = async (compraId: number) => {
         if (!confirm("¿Estás seguro de que quieres eliminar esta compra? Esta acción revertirá el stock y el costo del producto si se modificó.")) {
             return;
@@ -244,9 +265,9 @@ const Compras = () => {
         try {
             await comprasAPI.delete(compraId);
             toast.success("Compra eliminada y stock/costo revertido correctamente. ¡Revisa tu inventario!");
-            setMostrarDetalles(false); // Cierra el modal
-            setCompraSeleccionada(null); // Limpia la selección
-            fetchCompras(); // Recarga la lista de compras
+            setMostrarDetalles(false);
+            setCompraSeleccionada(null);
+            fetchCompras();
         } catch (error) {
             console.error("Error al eliminar la compra:", error);
             toast.error("Error al eliminar la compra. Verifica la consola.");
@@ -332,9 +353,9 @@ const Compras = () => {
                                     <span className='text-red-600 font-bold'>{formatPrice(compra.total)}</span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {compra.estado || 'Completada'}
-                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      {compra.estado || 'Completada'}
+                                    </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <button
@@ -387,8 +408,8 @@ const Compras = () => {
                                 <div className="col-span-1">
                                     <span className="text-xs text-gray-500 block">Estado</span>
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {compra.estado || 'Completada'}
-                        </span>
+                                      {compra.estado || 'Completada'}
+                                    </span>
                                 </div>
                                 <div className="col-span-1">
                                     <span className="text-xs text-gray-500 block">Total</span>
@@ -442,8 +463,6 @@ const Compras = () => {
                                 onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
                             />
 
-                            {/* 🔥 AQUÍ ELIMINÉ EL TAG "EXISTENTE" QUE PEDISTE 🔥 */}
-
                             {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
                                 <ul className="absolute z-50 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
                                     {productosSugeridos.map(p => (
@@ -477,6 +496,16 @@ const Compras = () => {
                         </button>
                     </div>
 
+                    {/* 🔥 RESUMEN DE GASTOS ESTIMADOS (NUEVO) */}
+                    {totalEstimadoFuturos > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center flex-shrink-0">
+                             <span className="text-blue-800 font-medium flex items-center text-sm sm:text-base">
+                                <Calculator className="h-4 w-4 mr-2"/> Total Estimado de Reposición:
+                            </span>
+                            <span className="text-lg sm:text-xl font-bold text-blue-900">{formatPrice(totalEstimadoFuturos)}</span>
+                        </div>
+                    )}
+
                     {/* Muestra el estado de carga o la tabla/tarjetas */}
                     {cargandoFuturos ? (
                         <p className="text-blue-500">Cargando pedidos...</p>
@@ -491,60 +520,102 @@ const Compras = () => {
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[5%]">#</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[65%]">Producto</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Cant</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">Acción</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[45%]">Producto</th>
+                                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase w-[15%]">Cant</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase w-[20%]">Gasto Est.</th>
+                                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase w-[15%]">Acción</th>
                                     </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                    {futurosPedidos.map((item, index) => (
-                                        <tr key={item.id}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                                                <span className="font-bold text-gray-900">{index + 1}</span>
-                                            </td>
-                                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                                                {item.producto_nombre || item.producto}
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                {editandoId === item.id ? (
-                                                    <input
-                                                        type="text"
-                                                        value={cantidadEditando}
-                                                        onChange={(e) => setCantidadEditando(e.target.value)}
-                                                        className="w-16 text-center border rounded px-1 py-0.5 text-xs"
-                                                    />
-                                                ) : (
-                                                    item.cantidad || '-'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap">
-                                                <div className="flex gap-2">
-                                                    {editandoId === item.id ? (
-                                                        <>
-                                                            <button
-                                                                onClick={actualizarPedido}
-                                                                className="text-green-600 hover:text-green-800 p-1"
-                                                                title="Guardar"
-                                                            >
-                                                                ✅
-                                                            </button>
-                                                            <button
-                                                                onClick={cancelarEdicion}
-                                                                className="text-gray-600 hover:text-gray-800 p-1"
-                                                                title="Cancelar"
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => iniciarEdicion(item)}
-                                                            className="text-blue-500 hover:text-blue-700 p-1"
-                                                            title="Editar cantidad"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </button>
+                                    {futurosPedidos.map((item, index) => {
+                                        // Cálculo por fila
+                                        const costoEstimado = calcularCostoEstimado(item.cantidad, (item as any).precio_costo);
+
+                                        return (
+                                            <tr key={item.id}>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                                    <span className="font-bold text-gray-900">{index + 1}</span>
+                                                </td>
+                                                <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                                                    {item.producto_nombre || item.producto}
+                                                    {!(item as any).precio_costo && item.producto_id && (
+                                                        <span className="text-xs text-red-400 block font-normal">(Sin costo registrado)</span>
                                                     )}
+                                                </td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-center">
+                                                    {editandoId === item.id ? (
+                                                        <input
+                                                            type="text"
+                                                            value={cantidadEditando}
+                                                            onChange={(e) => setCantidadEditando(e.target.value)}
+                                                            className="w-16 text-center border rounded px-1 py-0.5 text-xs"
+                                                        />
+                                                    ) : (
+                                                        item.cantidad || '-'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm font-bold text-gray-700 text-right">
+                                                    {costoEstimado > 0 ? formatPrice(costoEstimado) : <span className="text-gray-300">-</span>}
+                                                </td>
+                                                <td className="px-4 py-2 whitespace-nowrap">
+                                                    <div className="flex justify-center gap-2">
+                                                        {editandoId === item.id ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={actualizarPedido}
+                                                                    className="text-green-600 hover:text-green-800 p-1"
+                                                                    title="Guardar"
+                                                                >
+                                                                    ✅
+                                                                </button>
+                                                                <button
+                                                                    onClick={cancelarEdicion}
+                                                                    className="text-gray-600 hover:text-gray-800 p-1"
+                                                                    title="Cancelar"
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => iniciarEdicion(item)}
+                                                                className="text-blue-500 hover:text-blue-700 p-1"
+                                                                title="Editar cantidad"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => eliminarFuturo(item.id!)}
+                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* VISTA DE TARJETA (MÓVIL) */}
+                            <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3">
+                                {futurosPedidos.map((item, index) => {
+                                    const costoEstimado = calcularCostoEstimado(item.cantidad, (item as any).precio_costo);
+                                    return (
+                                        <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="min-w-0 flex-1 pr-2">
+                                                    <h4 className="text-sm font-bold text-gray-900">
+                                                        {index + 1}. {item.producto_nombre || item.producto}
+                                                    </h4>
+                                                </div>
+
+                                                {/* Botones de acción (Eliminar) */}
+                                                <div className="flex space-x-2 flex-shrink-0">
                                                     <button
                                                         onClick={() => eliminarFuturo(item.id!)}
                                                         className="text-red-500 hover:text-red-700 p-1"
@@ -553,70 +624,52 @@ const Compras = () => {
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* VISTA DE TARJETA (MÓVIL) */}
-                            <div className="md:hidden space-y-3 h-full overflow-y-auto pb-3">
-                                {futurosPedidos.map((item, index) => (
-                                    <div key={item.id} className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="min-w-0 flex-1 pr-2">
-                                                <h4 className="text-sm font-bold text-gray-900">
-                                                    {index + 1}. {item.producto_nombre || item.producto}
-                                                </h4>
                                             </div>
 
-                                            {/* Botones de acción (Eliminar) */}
-                                            <div className="flex space-x-2 flex-shrink-0">
-                                                <button
-                                                    onClick={() => eliminarFuturo(item.id!)}
-                                                    className="text-red-500 hover:text-red-700 p-1"
-                                                    title="Eliminar"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                            {/* Campo de Cantidad y Edición */}
+                                            <div className="flex justify-between items-center border-t pt-2 mt-2">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs text-gray-600 font-medium">Cantidad:</span>
+                                                    {editandoId === item.id ? (
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <input
+                                                                type="text"
+                                                                value={cantidadEditando}
+                                                                onChange={(e) => setCantidadEditando(e.target.value)}
+                                                                className="w-16 text-center border rounded px-1 py-0.5 text-xs"
+                                                            />
+                                                            <button onClick={actualizarPedido} className="text-green-600" title="Guardar">
+                                                                ✅
+                                                            </button>
+                                                            <button onClick={cancelarEdicion} className="text-gray-600" title="Cancelar">
+                                                                <X className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="font-bold text-sm text-gray-800">{item.cantidad || '-'}</span>
+                                                            <button
+                                                                onClick={() => iniciarEdicion(item)}
+                                                                className="text-blue-500 hover:text-blue-700"
+                                                                title="Editar cantidad"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Gasto Estimado en Móvil */}
+                                                <div className="text-right">
+                                                    <span className="text-xs text-gray-500 block">Gasto Est.</span>
+                                                    <span className="font-bold text-blue-700 text-sm">
+                                                        {costoEstimado > 0 ? formatPrice(costoEstimado) : '-'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        {/* Campo de Cantidad y Edición */}
-                                        <div className="flex justify-between items-center border-t pt-2 mt-2">
-                                            <span className="text-xs text-gray-600 font-medium">Cantidad:</span>
-
-                                            {editandoId === item.id ? (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={cantidadEditando}
-                                                        onChange={(e) => setCantidadEditando(e.target.value)}
-                                                        className="w-16 text-center border rounded px-1 py-0.5 text-xs"
-                                                    />
-                                                    <button onClick={actualizarPedido} className="text-green-600" title="Guardar">
-                                                        ✅
-                                                    </button>
-                                                    <button onClick={cancelarEdicion} className="text-gray-600" title="Cancelar">
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-bold text-sm text-gray-800">{item.cantidad || '-'}</span>
-                                                    <button
-                                                        onClick={() => iniciarEdicion(item)}
-                                                        className="text-blue-500 hover:text-blue-700"
-                                                        title="Editar cantidad"
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -643,7 +696,7 @@ const Compras = () => {
                                 </button>
                             </div>
 
-                            {/* BOTÓN ELIMINAR (AÑADIDO) */}
+                            {/* BOTÓN ELIMINAR */}
                             <div className="flex gap-2 mb-4 border-b pb-4">
                                 <button
                                     onClick={() => handleEliminarCompra(compraSeleccionada.id!)}

@@ -13,6 +13,7 @@ const baseQuery = `
         fp.creado_en, 
         fp.producto_id,
         p.nombre AS producto_nombre
+        p.precio_costo
     FROM 
         futuros_pedidos fp
     LEFT JOIN 
