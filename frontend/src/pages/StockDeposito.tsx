@@ -53,18 +53,20 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
 
     // 💡 LÓGICA CLAVE: Agrupar los reportes por fecha
     const groupedReports = useMemo(() => {
-        const groups: { [fecha: string]: { items: Traslado[], totalKilosDia: number } } = {};
+        const groups: { [fecha: string]: { items: Traslado[], totalKilosDia: number, totalUnidadesDia: number } } = {};
 
         reporteList.forEach(item => {
             const dateKey = item.fecha_dia; // Usamos la fecha_dia devuelta por el backend
 
             if (!groups[dateKey]) {
-                groups[dateKey] = { items: [], totalKilosDia: 0 };
+                groups[dateKey] = { items: [], totalKilosDia: 0, totalUnidadesDia: 0 };
             }
 
             groups[dateKey].items.push(item);
             // El peso_total_movido ya viene calculado por el backend
             groups[dateKey].totalKilosDia += Number(item.peso_total_movido) || 0;
+
+            groups[dateKey].totalUnidadesDia += Number(item.total_unidades_movidas) || 0;
         });
 
         return groups;
@@ -119,9 +121,13 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
                                 <Calendar className="h-4 w-4 mr-2 inline-block"/>
                                 TRASLADOS DEL DÍA: {formatDate(dateKey)}
                             </td>
-                            <td className="px-3 py-3 text-right font-bold text-orange-600 text-base">
-                                {/* 💡 Total Kilos del día */}
-                                {formatNumber(group.totalKilosDia)} kg
+                            <td colSpan={2} className="px-3 py-3 text-right font-bold text-base">
+                                <span className="text-gray-600 mr-4">
+                                    {group.totalUnidadesDia} uds.
+                                </span>
+                                <span className="text-orange-600">
+                                    {formatNumber(group.totalKilosDia)} kg
+                                </span>
                             </td>
                             <td className="px-3 py-3"></td>
                         </tr>
