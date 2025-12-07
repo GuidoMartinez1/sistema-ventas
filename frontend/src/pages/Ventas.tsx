@@ -69,7 +69,7 @@ const Ventas = () => {
   }
 
   const hoy = () => {
-    const hoyStr = new Date().toISOString().split('T')[0]
+    const hoyStr = format(new Date(), 'yyyy-MM-dd')
     setFechaDesde(hoyStr)
     setFechaHasta(hoyStr)
   }
@@ -82,7 +82,7 @@ const Ventas = () => {
 
   // Filtrado en front
   const ventasFiltradas = ventas.filter((venta) => {
-    const fechaVenta = new Date(venta.fecha ?? '').toISOString().split('T')[0];
+    const fechaVenta = venta.fecha ? format(new Date(venta.fecha), 'yyyy-MM-dd') : '';
     const cumpleFechaDesde = fechaDesde ? fechaVenta >= fechaDesde : true
     const cumpleFechaHasta = fechaHasta ? fechaVenta <= fechaHasta : true
     const cumpleEstado =
