@@ -117,18 +117,23 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
                     <React.Fragment key={dateKey}>
                         {/* 📌 FILA DE GRUPO: TOTALIZADOR POR FECHA */}
                         <tr className="bg-gray-100 border-t border-b border-gray-300">
-                            <td colSpan={3} className="px-3 py-3 text-left font-bold text-gray-700 text-sm">
+                            {/* Título: Ocupa 'Producto' y 'Kg/U' (2 columnas) */}
+                            <td colSpan={2} className="px-3 py-3 text-left font-bold text-gray-700 text-sm">
                                 <Calendar className="h-4 w-4 mr-2 inline-block"/>
                                 TRASLADOS DEL DÍA: {formatDate(dateKey)}
                             </td>
-                            <td colSpan={2} className="px-3 py-3 text-right font-bold text-base">
-                                <span className="text-gray-600 mr-4">
-                                    {group.totalUnidadesDia} uds.
-                                </span>
-                                <span className="text-orange-600">
-                                    {formatNumber(group.totalKilosDia)} kg
-                                </span>
+
+                            {/* Total Unidades: Alineado a la columna 'Unidades' */}
+                            <td className="px-3 py-3 text-right font-bold text-base text-gray-700">
+                                {group.totalUnidadesDia} uds.
                             </td>
+
+                            {/* Total Kilos: Alineado a la columna 'Peso Movido' */}
+                            <td className="px-3 py-3 text-right font-bold text-base text-orange-600">
+                                {formatNumber(group.totalKilosDia)} kg
+                            </td>
+
+                            {/* Celda vacía para completar la tabla (5ta columna) */}
                             <td className="px-3 py-3"></td>
                         </tr>
 
@@ -145,7 +150,6 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
                                     {traslado.total_unidades_movidas} uds
                                 </td>
                                 <td className="px-3 py-2 text-sm text-right font-medium text-gray-700">
-                                    {/* Peso total movido (ya calculado por el backend) */}
                                     {formatKilos(traslado.peso_total_movido)} kg
                                 </td>
                                 <td className="px-3 py-2"></td>
