@@ -582,6 +582,15 @@ const NuevaVenta = () => {
                         <span className="font-medium uppercase">{metodoPago}</span>
                     </div>
 
+                    {/* ✅ AGREGAR ESTO: Si es MercadoPago, mostramos el Alias */}
+                    {metodoPago === 'mercadopago' && (
+                        <div className="mb-4 text-center bg-gray-100 p-2 rounded border border-gray-200">
+                            <span className="text-xs text-gray-500 uppercase tracking-wide block">Alias para transferir:</span>
+                            <span className="text-xl font-bold text-gray-900 block">alimar25</span>
+                        </div>
+                    )}
+                    {/* ----------------------------------------------------- */}
+
                     <div className="flex justify-between items-center text-3xl font-bold mt-2">
                         <span>TOTAL:</span>
                         <span>{formatPrice(total)}</span>
