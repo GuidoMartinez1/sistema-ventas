@@ -428,79 +428,102 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET REAL DE IMPRESIÓN (ID: ticket-imprimible)                                  */}
-            {/* Aquí están los ajustes de MÁRGENES y ESPACIOS BLANCOS para corte.                 */}
+            {/* TICKET REAL DE IMPRESIÓN (Optimizado para Térmica 58mm)                           */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
-                {/* Ajuste de PADDING: 5px lados, 40px abajo para corte seguro */}
-                <div style={{ width: '58mm', padding: '5px 5px 40px 5px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '12px' }}>
+                <div style={{
+                    width: '58mm',
+                    padding: '5px 5px 40px 5px', // Margen abajo para el corte
+                    backgroundColor: 'white',
+                    color: 'black',
+                    // FUENTE RETRO: Courier New se ve nítida en térmicas porque es cuadrada
+                    fontFamily: "'Courier New', Courier, monospace",
+                    fontSize: '12px',
+                    fontWeight: 'bold', // Negrita ayuda a definir los bordes en térmicas
+                    lineHeight: '1.2'
+                }}>
 
                     {/* Encabezado */}
-                    <div className="text-center mb-4 border-b border-dashed border-black pb-2">
-                        <h2 className="text-xl font-bold uppercase">AliMar</h2>
-                        <p className="text-[10px] mt-1">{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</p>
+                    <div className="text-center mb-2 border-b-2 border-dashed border-black pb-2">
+                        {/* Título más grande y limpio */}
+                        <h2 style={{ fontSize: '20px', marginBottom: '5px' }}>ALIMAR</h2>
+                        <p className="text-[10px]">
+                            {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
+                        </p>
                     </div>
 
                     {/* Items */}
-                    <div className="mb-4">
+                    <div className="mb-2">
                         {cartItems.map((item, idx) => (
-                            <div key={idx} className="flex justify-between mb-2 border-b border-gray-200 pb-1 leading-tight">
-                                <div className="w-2/3 pr-1"><span className="font-bold">{item.cantidad}x </span><span>{item.es_custom ? item.descripcion : item.producto_nombre}</span></div>
-                                <div className="font-bold text-right">{formatPrice(item.subtotal)}</div>
+                            <div key={idx} className="flex justify-between mb-2 border-b border-black pb-1 leading-tight">
+                                <div className="w-2/3 pr-1">
+                                    {/* Cantidad y Nombre bien separados */}
+                                    <span style={{ fontSize: '14px' }}>{item.cantidad}x </span>
+                                    <span className="uppercase">{item.es_custom ? item.descripcion : item.producto_nombre}</span>
+                                </div>
+                                <div className="text-right" style={{ fontSize: '14px' }}>
+                                    {formatPrice(item.subtotal)}
+                                </div>
                             </div>
                         ))}
                     </div>
 
                     {/* Totales */}
-                    <div className="border-t border-dashed border-black pt-2 mt-2">
-                        <div className="flex justify-between text-xs mb-1"><span>Pago:</span><span className="uppercase font-bold">{metodoPago}</span></div>
-                        {metodoPago === 'mercadopago' && (<div className="my-2 text-center border border-black p-1 rounded"><p className="text-[10px] uppercase">Alias:</p><p className="font-bold text-lg">alimar25</p></div>)}
-                        <div className="flex justify-between text-xl font-bold mt-4"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
+                    <div className="border-t-2 border-dashed border-black pt-2 mt-2">
+                        <div className="flex justify-between text-xs mb-1">
+                            <span>PAGO:</span>
+                            <span className="uppercase">{metodoPago}</span>
+                        </div>
+
+                        {metodoPago === 'mercadopago' && (
+                            <div className="my-2 text-center border-2 border-black p-1 rounded">
+                                <p className="text-[10px] uppercase">ALIAS:</p>
+                                <p style={{ fontSize: '14px' }}>alimar25</p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between mt-3" style={{ fontSize: '18px' }}>
+                            <span>TOTAL:</span>
+                            <span>{formatPrice(total)}</span>
+                        </div>
                     </div>
 
-                    {/* Footer y Espacio de Corte */}
+                    {/* Footer */}
                     <div className="mt-6 text-center text-[10px]">
                         <p>*** GRACIAS ***</p>
-                        <p className="mt-4">- - - - - - - - - - -</p> {/* Línea de corte visual */}
+                        <p className="mt-4">- - - - - - - - - - -</p>
                     </div>
                 </div>
             </div>
 
             {/* CSS MÁGICO PARA IMPRIMIR SOLO EL TICKET */}
             <style>{`
-                /* Por defecto, el ticket imprimible está oculto en la pantalla normal */
-                #ticket-imprimible {
-                    display: none;
-                }
+                #ticket-imprimible { display: none; }
 
                 @media print {
-                    /* Ocultar TODO lo que tenga la clase no-print (o sea, toda la app) */
-                    body * {
-                        visibility: hidden;
-                    }
-                    .no-print, .no-print * {
-                        display: none !important;
-                    }
-
-                    /* Hacer visible SOLO el ticket */
+                    body * { visibility: hidden; }
+                    .no-print, .no-print * { display: none !important; }
+                    
                     #ticket-imprimible, #ticket-imprimible * {
                         visibility: visible;
                         display: block !important;
                     }
 
-                    /* Posicionar el ticket arriba a la izquierda de la hoja */
                     #ticket-imprimible {
                         position: absolute;
                         left: 0;
                         top: 0;
-                        width: 58mm; /* Forzar ancho */
+                        width: 58mm;
                     }
 
-                    /* Limpiar márgenes de la hoja */
-                    @page {
-                        margin: 0;
-                        size: auto;
+                    /* Forzar contraste máximo para la impresora */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        text-rendering: optimizeLegibility;
                     }
+
+                    @page { margin: 0; size: auto; }
                 }
             `}</style>
         </div>
