@@ -621,52 +621,54 @@ const NuevaVenta = () => {
 
             {/* ================================================================================= */}
             {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm)                                        */}
-            {/* OJO: Usamos height:0 y overflow:hidden en lugar de display:none para que imprima  */}
+            {/* TÉCNICA ROBUSTA: Usamos 'visibility: hidden' y 'position: absolute'               */}
+            {/* Esto garantiza que el elemento EXISTA en el DOM para que la librería lo encuentre */}
             {/* ================================================================================= */}
-            <div style={{ display: 'none' }}>
+            <div style={{ position: 'absolute', visibility: 'hidden', zIndex: -100, top: 0, left: 0 }}>
                 <div
                     ref={printRef}
                     style={{
-                        padding: '5px',
-                        width: '58mm', // Ancho exacto papel térmico
+                        padding: '2mm', // Padding pequeño para aprovechar papel
+                        width: '58mm',  // Ancho exacto
                         fontFamily: 'monospace',
                         color: 'black',
-                        fontSize: '12px',
-                        backgroundColor: 'white', // Fondo blanco imperativo
-                        margin: '0 auto' // Centrado por si acaso
+                        backgroundColor: 'white',
                     }}
                 >
-                    <div className="text-center mb-2 border-b border-dashed border-black pb-2">
-                        <h2 className="text-xl font-bold">ALIMAR</h2>
+                    {/* ENCABEZADO */}
+                    <div className="text-center mb-2 pb-2 border-b border-dashed border-black">
+                        <h2 className="text-xl font-bold uppercase">AliMar</h2>
                         <p className="text-[10px] mt-1">
                             {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
 
+                    {/* ITEMS */}
                     <div className="mb-2">
                         {cartItems.map((item, idx) => (
-                            <div key={idx} className="flex justify-between mb-1 border-b border-gray-200 pb-1">
-                                <div className="w-2/3 leading-tight">
+                            <div key={idx} className="flex justify-between mb-1 text-[12px]">
+                                <div className="w-2/3 leading-tight pr-1">
                                     <span className="font-bold">{item.cantidad}x </span>
                                     <span>{item.es_custom ? item.descripcion : item.producto_nombre}</span>
                                 </div>
-                                <div className="font-bold text-right">
+                                <div className="font-bold whitespace-nowrap">
                                     {formatPrice(item.subtotal)}
                                 </div>
                             </div>
                         ))}
                     </div>
 
+                    {/* TOTALES */}
                     <div className="border-t border-dashed border-black pt-2 mt-2">
-                        <div className="flex justify-between text-xs mb-1">
+                        <div className="flex justify-between text-[11px] mb-1">
                             <span>Pago:</span>
                             <span className="uppercase font-bold">{metodoPago}</span>
                         </div>
 
                         {metodoPago === 'mercadopago' && (
                             <div className="my-2 text-center border border-black p-1 rounded">
-                                <p className="text-[10px] uppercase">Alias:</p>
-                                <p className="font-bold text-lg">alimar25</p>
+                                <p className="text-[9px] uppercase">Alias Transferencia:</p>
+                                <p className="font-bold text-base">alimar25</p>
                             </div>
                         )}
 
@@ -676,8 +678,9 @@ const NuevaVenta = () => {
                         </div>
                     </div>
 
+                    {/* FOOTER */}
                     <div className="mt-4 text-center text-[10px]">
-                        <p>*** GRACIAS POR TU COMPRA ***</p>
+                        <p>*** GRACIAS POR SU COMPRA ***</p>
                     </div>
                 </div>
             </div>
