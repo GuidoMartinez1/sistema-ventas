@@ -6,7 +6,6 @@ import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
-// Eliminamos react-to-print para usar el método nativo infalible
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -25,7 +24,6 @@ const NuevaVenta = () => {
 
     // --- REFS ---
     const ticketRef = useRef<HTMLDivElement>(null) // Para la foto de WhatsApp
-    // Ya no necesitamos printRef para la librería, usaremos ID
 
     // --- STATES ---
     const [productos, setProductos] = useState<Producto[]>([])
@@ -200,8 +198,6 @@ const NuevaVenta = () => {
     };
 
     // --- FUNCIÓN 2: IMPRIMIR (MÉTODO NATIVO) ---
-    // Simplemente llamamos a la ventana del navegador.
-    // El truco está en los estilos CSS de abajo (@media print)
     const handlePrint = () => {
         window.print();
     };
@@ -431,40 +427,42 @@ const NuevaVenta = () => {
                 <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
             </div>
 
-            {/* VISTA PREVIA DEL TICKET TÉRMICO (Visible abajo) */}
-            {/* Este es el que se imprimirá gracias al CSS de abajo */}
-            <div className="mt-8 p-4 bg-gray-100 rounded border border-gray-300 no-print">
-                <p className="mb-2 text-sm font-bold text-gray-500 text-center uppercase">--- Vista Previa Ticket ---</p>
-                <div className="flex justify-center">
-                    <div className="bg-white border p-2" style={{ width: '58mm', minHeight: '100px' }}>
-                        <p className="text-center text-xs text-gray-400">El ticket se ve aquí</p>
-                    </div>
-                </div>
-            </div>
-
             {/* ================================================================================= */}
             {/* TICKET REAL DE IMPRESIÓN (ID: ticket-imprimible)                                  */}
+            {/* Aquí están los ajustes de MÁRGENES y ESPACIOS BLANCOS para corte.                 */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
-                <div style={{ width: '58mm', padding: '5px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '12px' }}>
-                    <div className="text-center mb-2 border-b border-dashed border-black pb-2">
+                {/* Ajuste de PADDING: 5px lados, 40px abajo para corte seguro */}
+                <div style={{ width: '58mm', padding: '5px 5px 40px 5px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '12px' }}>
+
+                    {/* Encabezado */}
+                    <div className="text-center mb-4 border-b border-dashed border-black pb-2">
                         <h2 className="text-xl font-bold uppercase">AliMar</h2>
-                        <p className="text-[10px] mt-1">{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})} hs</p>
+                        <p className="text-[10px] mt-1">{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</p>
                     </div>
-                    <div className="mb-2">
+
+                    {/* Items */}
+                    <div className="mb-4">
                         {cartItems.map((item, idx) => (
-                            <div key={idx} className="flex justify-between mb-1 border-b border-gray-200 pb-1 leading-tight">
+                            <div key={idx} className="flex justify-between mb-2 border-b border-gray-200 pb-1 leading-tight">
                                 <div className="w-2/3 pr-1"><span className="font-bold">{item.cantidad}x </span><span>{item.es_custom ? item.descripcion : item.producto_nombre}</span></div>
                                 <div className="font-bold text-right">{formatPrice(item.subtotal)}</div>
                             </div>
                         ))}
                     </div>
+
+                    {/* Totales */}
                     <div className="border-t border-dashed border-black pt-2 mt-2">
                         <div className="flex justify-between text-xs mb-1"><span>Pago:</span><span className="uppercase font-bold">{metodoPago}</span></div>
                         {metodoPago === 'mercadopago' && (<div className="my-2 text-center border border-black p-1 rounded"><p className="text-[10px] uppercase">Alias:</p><p className="font-bold text-lg">alimar25</p></div>)}
-                        <div className="flex justify-between text-xl font-bold mt-2"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
+                        <div className="flex justify-between text-xl font-bold mt-4"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
                     </div>
-                    <div className="mt-4 text-center text-[10px]"><p> GRACIAS POR TU COMPRA - ALIMAR </p></div>
+
+                    {/* Footer y Espacio de Corte */}
+                    <div className="mt-6 text-center text-[10px]">
+                        <p>*** GRACIAS ***</p>
+                        <p className="mt-4">- - - - - - - - - - -</p> {/* Línea de corte visual */}
+                    </div>
                 </div>
             </div>
 
