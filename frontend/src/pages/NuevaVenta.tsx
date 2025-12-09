@@ -650,7 +650,7 @@ const NuevaVenta = () => {
                     </div>
 
                     <div className="mt-4 text-center text-[10px]">
-                        <p>*** GRACIAS ***</p>
+                        <p>*** GRACIAS POR TU COMPRA***</p>
                     </div>
                 </div>
             </div>
