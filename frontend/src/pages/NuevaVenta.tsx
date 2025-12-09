@@ -535,7 +535,7 @@ const NuevaVenta = () => {
                                         Copiar Detalle
                                     </button>
                                     <button
-                                        onClick={handlePrint}
+                                        onClick={() => handlePrint()}
                                         className="flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-2 rounded-lg transition duration-150 text-xs sm:text-sm"
                                     >
                                         <Printer className="h-4 w-4" />
@@ -623,16 +623,17 @@ const NuevaVenta = () => {
             {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm)                                        */}
             {/* OJO: Usamos height:0 y overflow:hidden en lugar de display:none para que imprima  */}
             {/* ================================================================================= */}
-            <div style={{ overflow: 'hidden', height: 0 }}>
+            <div style={{ display: 'none' }}>
                 <div
                     ref={printRef}
                     style={{
                         padding: '5px',
-                        width: '58mm', // Ancho exacto para tu Prosoft/Hasar
+                        width: '58mm', // Ancho exacto papel térmico
                         fontFamily: 'monospace',
                         color: 'black',
                         fontSize: '12px',
-                        backgroundColor: 'white'
+                        backgroundColor: 'white', // Fondo blanco imperativo
+                        margin: '0 auto' // Centrado por si acaso
                     }}
                 >
                     <div className="text-center mb-2 border-b border-dashed border-black pb-2">
@@ -676,7 +677,7 @@ const NuevaVenta = () => {
                     </div>
 
                     <div className="mt-4 text-center text-[10px]">
-                        <p>*** GRACIAS POR TU COMPRA - ALIMAR ***</p>
+                        <p>*** GRACIAS POR TU COMPRA ***</p>
                     </div>
                 </div>
             </div>
