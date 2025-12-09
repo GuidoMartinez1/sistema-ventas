@@ -402,7 +402,7 @@ const NuevaVenta = () => {
                 </div>
             </div>
 
-            {/* TICKET WHATSAPP (Oculto) */}
+            {/* TICKET WHATSAPP (Oculto) - ESTE NO SE TOCA, SIGUE SIENDO LINDO */}
             <div ref={ticketRef} style={{position: 'fixed', top: '-9999px', left: '-9999px', width: '450px', backgroundColor: 'white', padding: '24px', color: 'black'}}>
                 <div className="text-center border-b border-gray-300 pb-4 mb-4">
                     <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
@@ -428,40 +428,48 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET REAL DE IMPRESIÓN (Optimizado para Térmica 58mm)                           */}
+            {/* TICKET REAL DE IMPRESIÓN (REFACTORIZADO PARA TÉRMICA)                             */}
+            {/* Estilos agresivos de alto contraste y negrita para evitar el "blur"               */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
                 <div style={{
                     width: '58mm',
-                    padding: '5px 5px 40px 5px', // Margen abajo para el corte
+                    padding: '5px 0 40px 0', // Padding 0 a los costados para usar todo el ancho
                     backgroundColor: 'white',
                     color: 'black',
-                    // FUENTE RETRO: Courier New se ve nítida en térmicas porque es cuadrada
-                    fontFamily: "'Courier New', Courier, monospace",
-                    fontSize: '12px',
-                    fontWeight: 'bold', // Negrita ayuda a definir los bordes en térmicas
-                    lineHeight: '1.2'
+                    fontFamily: "'Courier New', Courier, monospace", // FUENTE MONOSPACE OBLIGATORIA
+                    fontSize: '14px', // TAMAÑO AUMENTADO
+                    fontWeight: 'bold', // NEGRITA SIEMPRE
+                    lineHeight: '1.2',
+                    textAlign: 'left'
                 }}>
 
                     {/* Encabezado */}
-                    <div className="text-center mb-2 border-b-2 border-dashed border-black pb-2">
-                        {/* Título más grande y limpio */}
-                        <h2 style={{ fontSize: '20px', marginBottom: '5px' }}>ALIMAR</h2>
-                        <p className="text-[10px]">
+                    <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '2px dashed black', paddingBottom: '5px' }}>
+                        <h2 style={{ fontSize: '24px', margin: '0 0 5px 0', fontWeight: '900' }}>ALIMAR</h2>
+                        <p style={{ fontSize: '12px', margin: 0 }}>
                             {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
 
                     {/* Items */}
-                    <div className="mb-2">
+                    <div>
                         {cartItems.map((item, idx) => (
-                            <div key={idx} className="flex justify-between mb-2 border-b border-black pb-1 leading-tight">
-                                <div className="w-2/3 pr-1">
-                                    {/* Cantidad y Nombre bien separados */}
-                                    <span style={{ fontSize: '14px' }}>{item.cantidad}x </span>
-                                    <span className="uppercase">{item.es_custom ? item.descripcion : item.producto_nombre}</span>
+                            <div key={idx} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '5px',
+                                borderBottom: '1px solid black',
+                                paddingBottom: '2px'
+                            }}>
+                                <div style={{ width: '65%' }}>
+                                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{item.cantidad}x </span>
+                                    <span style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                        {/* Cortar nombres muy largos */}
+                                        {(item.es_custom ? item.descripcion : item.producto_nombre).substring(0, 22)}
+                                    </span>
                                 </div>
-                                <div className="text-right" style={{ fontSize: '14px' }}>
+                                <div style={{ fontWeight: '900', fontSize: '14px' }}>
                                     {formatPrice(item.subtotal)}
                                 </div>
                             </div>
@@ -469,41 +477,43 @@ const NuevaVenta = () => {
                     </div>
 
                     {/* Totales */}
-                    <div className="border-t-2 border-dashed border-black pt-2 mt-2">
-                        <div className="flex justify-between text-xs mb-1">
+                    <div style={{ marginTop: '10px', borderTop: '2px dashed black', paddingTop: '5px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
                             <span>PAGO:</span>
-                            <span className="uppercase">{metodoPago}</span>
+                            <span style={{ textTransform: 'uppercase' }}>{metodoPago}</span>
                         </div>
 
                         {metodoPago === 'mercadopago' && (
-                            <div className="my-2 text-center border-2 border-black p-1 rounded">
-                                <p className="text-[10px] uppercase">ALIAS:</p>
-                                <p style={{ fontSize: '14px' }}>alimar25</p>
+                            <div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}>
+                                <p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p>
+                                <p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p>
                             </div>
                         )}
 
-                        <div className="flex justify-between mt-3" style={{ fontSize: '18px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}>
                             <span>TOTAL:</span>
                             <span>{formatPrice(total)}</span>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-6 text-center text-[10px]">
+                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>
                         <p>*** GRACIAS ***</p>
-                        <p className="mt-4">- - - - - - - - - - -</p>
+                        <p style={{ marginTop: '15px' }}>.</p> {/* Punto final para corte */}
                     </div>
                 </div>
             </div>
 
-            {/* CSS MÁGICO PARA IMPRIMIR SOLO EL TICKET */}
+            {/* CSS REFACTORIZADO: MODO RETRO AGRESIVO */}
             <style>{`
                 #ticket-imprimible { display: none; }
 
                 @media print {
+                    /* Ocultar todo lo demás */
                     body * { visibility: hidden; }
                     .no-print, .no-print * { display: none !important; }
                     
+                    /* Mostrar solo el ticket */
                     #ticket-imprimible, #ticket-imprimible * {
                         visibility: visible;
                         display: block !important;
@@ -514,13 +524,22 @@ const NuevaVenta = () => {
                         left: 0;
                         top: 0;
                         width: 58mm;
+                        margin: 0;
+                        padding: 0;
                     }
 
-                    /* Forzar contraste máximo para la impresora */
+                    /* PROPIEDADES CLAVE PARA NITIDEZ EN TÉRMICAS */
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                        text-rendering: optimizeLegibility;
+                        color-adjust: exact !important;
+                        
+                        /* Esto elimina el suavizado (blur) de las letras */
+                        -webkit-font-smoothing: none !important;
+                        -moz-osx-font-smoothing: grayscale;
+                        
+                        /* Priorizar velocidad = menos procesamiento de imagen = más nítido */
+                        text-rendering: optimizeSpeed; 
                     }
 
                     @page { margin: 0; size: auto; }
