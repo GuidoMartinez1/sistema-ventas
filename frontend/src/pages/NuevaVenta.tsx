@@ -449,7 +449,7 @@ const NuevaVenta = () => {
                 <div style={{ width: '58mm', padding: '5px', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '12px' }}>
                     <div className="text-center mb-2 border-b border-dashed border-black pb-2">
                         <h2 className="text-xl font-bold uppercase">AliMar</h2>
-                        <p className="text-[10px] mt-1">{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</p>
+                        <p className="text-[10px] mt-1">{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})} hs</p>
                     </div>
                     <div className="mb-2">
                         {cartItems.map((item, idx) => (
@@ -464,7 +464,7 @@ const NuevaVenta = () => {
                         {metodoPago === 'mercadopago' && (<div className="my-2 text-center border border-black p-1 rounded"><p className="text-[10px] uppercase">Alias:</p><p className="font-bold text-lg">alimar25</p></div>)}
                         <div className="flex justify-between text-xl font-bold mt-2"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
                     </div>
-                    <div className="mt-4 text-center text-[10px]"><p>*** GRACIAS ***</p></div>
+                    <div className="mt-4 text-center text-[10px]"><p>*** GRACIAS POR TU COMPRA - ALIMAR ***</p></div>
                 </div>
             </div>
 
