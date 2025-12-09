@@ -23,11 +23,11 @@ const NuevaVenta = () => {
     const location = useLocation()
     const montoRef = useRef<HTMLInputElement>(null)
 
-    // REFS:
+    // --- REFS ---
     const ticketRef = useRef<HTMLDivElement>(null) // Para la foto de WhatsApp
-    const printRef = useRef<HTMLDivElement>(null)  // Para la impresora térmica
+    const printRef = useRef<HTMLDivElement>(null)  // Para la impresora térmica 58mm
 
-    // STATES
+    // --- STATES ---
     const [productos, setProductos] = useState<Producto[]>([])
     const [clientes, setClientes] = useState<Cliente[]>([])
     const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
@@ -41,7 +41,7 @@ const NuevaVenta = () => {
     const [nombreClienteInput, setNombreClienteInput] = useState('')
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
 
-    // NUEVO STATE PARA EL MENSAJE DE ESTADO DE IMPRESIÓN
+    // Estado para feedback visual de la impresión
     const [printStatus, setPrintStatus] = useState('')
 
     useEffect(() => {
@@ -65,6 +65,7 @@ const NuevaVenta = () => {
         }
     }, [location.state])
 
+    // --- LÓGICA DEL CARRITO ---
     const addProducto = (producto: Producto) => {
         if (!producto?.id) {
             toast.error('Producto inválido')
@@ -182,7 +183,7 @@ const NuevaVenta = () => {
         [cartItems]
     )
 
-    // --- FUNCIÓN 1: FOTO PARA WHATSAPP ---
+    // --- FUNCIÓN 1: FOTO PARA WHATSAPP (html2canvas) ---
     const copiarTicket = async () => {
         if (!ticketRef.current) return;
 
@@ -218,19 +219,16 @@ const NuevaVenta = () => {
         });
     };
 
-    // --- FUNCIÓN 2: IMPRIMIR (Con Status Visible) ---
+    // --- FUNCIÓN 2: IMPRIMIR TICKET TÉRMICO (react-to-print) ---
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
-        documentTitle: `Ticket_${new Date().toLocaleDateString()}`,
-        // Se ejecuta al hacer clic (antes de abrir ventana)
+        documentTitle: `Ticket_AliMar_${new Date().getTime()}`,
         onBeforeGetContent: () => {
             setPrintStatus('⏳ Preparando...')
         },
-        // Se ejecuta después de imprimir (o cancelar)
         onAfterPrint: () => {
             setPrintStatus('✅ Enviado a impresora')
             toast.success('Proceso finalizado')
-            // Borramos el mensaje a los 3 segundos
             setTimeout(() => setPrintStatus(''), 3000)
         },
         onPrintError: () => {
@@ -292,7 +290,8 @@ const NuevaVenta = () => {
 
             {/* Grid principal con 2 columnas (lg:grid-cols-3) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* Columna izquierda: Cliente + Productos (lg:col-span-2) */}
+
+                {/* --- COLUMNA IZQUIERDA: BÚSQUEDA Y PRODUCTOS --- */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Cliente + deuda */}
                     <div className={`${cardClass} w-full`}>
@@ -415,7 +414,7 @@ const NuevaVenta = () => {
                     </div>
                 </div>
 
-                {/* Columna derecha: carrito */}
+                {/* --- COLUMNA DERECHA: CARRITO --- */}
                 <div className="lg:col-span-1">
                     <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
                         <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
@@ -544,7 +543,7 @@ const NuevaVenta = () => {
                                     </button>
                                 </div>
 
-                                {/* 🆕 STATUS DE IMPRESIÓN */}
+                                {/* STATUS DE IMPRESIÓN */}
                                 {printStatus && (
                                     <p className={`text-center text-xs font-bold ${printStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
                                         {printStatus}
@@ -561,7 +560,7 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET 1: VERSIÓN WHATSAPP (450px)                                                */}
+            {/* TICKET 1: VERSIÓN WHATSAPP (450px) - OCULTO FUERA DE PANTALLA                     */}
             {/* ================================================================================= */}
             <div
                 ref={ticketRef}
@@ -622,16 +621,18 @@ const NuevaVenta = () => {
 
             {/* ================================================================================= */}
             {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm)                                        */}
+            {/* OJO: Usamos height:0 y overflow:hidden en lugar de display:none para que imprima  */}
             {/* ================================================================================= */}
-            <div style={{ display: 'none' }}>
+            <div style={{ overflow: 'hidden', height: 0 }}>
                 <div
                     ref={printRef}
                     style={{
-                        padding: '10px',
-                        width: '100%',
+                        padding: '5px',
+                        width: '58mm', // Ancho exacto para tu Prosoft/Hasar
                         fontFamily: 'monospace',
                         color: 'black',
-                        fontSize: '12px'
+                        fontSize: '12px',
+                        backgroundColor: 'white'
                     }}
                 >
                     <div className="text-center mb-2 border-b border-dashed border-black pb-2">
@@ -644,7 +645,7 @@ const NuevaVenta = () => {
                     <div className="mb-2">
                         {cartItems.map((item, idx) => (
                             <div key={idx} className="flex justify-between mb-1 border-b border-gray-200 pb-1">
-                                <div className="w-2/3">
+                                <div className="w-2/3 leading-tight">
                                     <span className="font-bold">{item.cantidad}x </span>
                                     <span>{item.es_custom ? item.descripcion : item.producto_nombre}</span>
                                 </div>
@@ -680,6 +681,7 @@ const NuevaVenta = () => {
                 </div>
             </div>
 
+            {/* ESTILOS GLOBALES PARA IMPRESIÓN */}
             <style>{`
                 @media print {
                     @page {
@@ -687,7 +689,7 @@ const NuevaVenta = () => {
                         size: auto;
                     }
                     body {
-                        margin: 0.5cm;
+                        margin: 0;
                     }
                 }
             `}</style>
