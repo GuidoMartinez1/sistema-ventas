@@ -1,12 +1,12 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Plus, Minus, Trash2, DollarSign, Camera, Printer } from 'lucide-react' // Agregado Printer
+import { Plus, Minus, Trash2, DollarSign, Camera, Printer } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
-import { useReactToPrint } from 'react-to-print' // Nueva librería
+import { useReactToPrint } from 'react-to-print'
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -24,9 +24,10 @@ const NuevaVenta = () => {
     const montoRef = useRef<HTMLInputElement>(null)
 
     // REFS:
-    const ticketRef = useRef<HTMLDivElement>(null) // Para la foto de WhatsApp (450px)
-    const printRef = useRef<HTMLDivElement>(null)  // Para la impresora térmica (58mm)
+    const ticketRef = useRef<HTMLDivElement>(null) // Para la foto de WhatsApp
+    const printRef = useRef<HTMLDivElement>(null)  // Para la impresora térmica
 
+    // STATES
     const [productos, setProductos] = useState<Producto[]>([])
     const [clientes, setClientes] = useState<Cliente[]>([])
     const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
@@ -39,6 +40,9 @@ const NuevaVenta = () => {
     const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
     const [nombreClienteInput, setNombreClienteInput] = useState('')
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
+
+    // NUEVO STATE PARA EL MENSAJE DE ESTADO DE IMPRESIÓN
+    const [printStatus, setPrintStatus] = useState('')
 
     useEffect(() => {
         const load = async () => {
@@ -178,7 +182,7 @@ const NuevaVenta = () => {
         [cartItems]
     )
 
-    // --- FUNCIÓN 1: FOTO PARA WHATSAPP (html2canvas) ---
+    // --- FUNCIÓN 1: FOTO PARA WHATSAPP ---
     const copiarTicket = async () => {
         if (!ticketRef.current) return;
 
@@ -214,11 +218,25 @@ const NuevaVenta = () => {
         });
     };
 
-    // --- FUNCIÓN 2: IMPRIMIR (react-to-print) ---
+    // --- FUNCIÓN 2: IMPRIMIR (Con Status Visible) ---
     const handlePrint = useReactToPrint({
         content: () => printRef.current,
         documentTitle: `Ticket_${new Date().toLocaleDateString()}`,
-        onAfterPrint: () => toast.success('Enviado a impresora'),
+        // Se ejecuta al hacer clic (antes de abrir ventana)
+        onBeforeGetContent: () => {
+            setPrintStatus('⏳ Preparando...')
+        },
+        // Se ejecuta después de imprimir (o cancelar)
+        onAfterPrint: () => {
+            setPrintStatus('✅ Enviado a impresora')
+            toast.success('Proceso finalizado')
+            // Borramos el mensaje a los 3 segundos
+            setTimeout(() => setPrintStatus(''), 3000)
+        },
+        onPrintError: () => {
+            setPrintStatus('❌ Error al imprimir')
+            toast.error('Error al imprimir')
+        }
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -526,6 +544,13 @@ const NuevaVenta = () => {
                                     </button>
                                 </div>
 
+                                {/* 🆕 STATUS DE IMPRESIÓN */}
+                                {printStatus && (
+                                    <p className={`text-center text-xs font-bold ${printStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                                        {printStatus}
+                                    </p>
+                                )}
+
                                 <button onClick={handleSubmit} className="w-full btn-primary">
                                     Registrar Venta
                                 </button>
@@ -536,7 +561,7 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET 1: VERSIÓN WHATSAPP (450px) - ESTE ES EL QUE TE GUSTÓ                          */}
+            {/* TICKET 1: VERSIÓN WHATSAPP (450px)                                                */}
             {/* ================================================================================= */}
             <div
                 ref={ticketRef}
@@ -596,14 +621,14 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm) - INVISIBLE HASTA IMPRIMIR             */}
+            {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm)                                        */}
             {/* ================================================================================= */}
             <div style={{ display: 'none' }}>
                 <div
                     ref={printRef}
                     style={{
                         padding: '10px',
-                        width: '100%', // Se ajustará al papel
+                        width: '100%',
                         fontFamily: 'monospace',
                         color: 'black',
                         fontSize: '12px'
@@ -650,12 +675,11 @@ const NuevaVenta = () => {
                     </div>
 
                     <div className="mt-4 text-center text-[10px]">
-                        <p>*** GRACIAS POR TU COMPRA***</p>
+                        <p>*** GRACIAS ***</p>
                     </div>
                 </div>
             </div>
 
-            {/* ESTILOS PARA IMPRESIÓN SOLAMENTE */}
             <style>{`
                 @media print {
                     @page {
