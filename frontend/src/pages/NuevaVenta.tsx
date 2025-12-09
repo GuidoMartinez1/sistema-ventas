@@ -578,7 +578,7 @@ const NuevaVenta = () => {
                 <div className="text-center border-b border-gray-300 pb-4 mb-4">
                     <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        {new Date().toLocaleDateString('es-AR')} - {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}hs
+                        {new Date().toLocaleDateString('es-AR')} - {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                     </p>
                 </div>
                 {/* Items */}
@@ -615,7 +615,7 @@ const NuevaVenta = () => {
                     </div>
                 </div>
                 <div className="mt-8 text-center text-xs text-gray-400">
-                    <p>Gracias por tu compra</p>
+                    <p>GRACIAS POR TU COMPRA - ALIMAR - ALIMAR</p>
                 </div>
             </div>
 
@@ -638,7 +638,7 @@ const NuevaVenta = () => {
                     <div className="text-center mb-2 border-b border-dashed border-black pb-2">
                         <h2 className="text-xl font-bold">ALIMAR</h2>
                         <p className="text-[10px] mt-1">
-                            {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}
+                            {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
 
@@ -676,7 +676,7 @@ const NuevaVenta = () => {
                     </div>
 
                     <div className="mt-4 text-center text-[10px]">
-                        <p>*** GRACIAS ***</p>
+                        <p>*** GRACIAS POR TU COMPRA - ALIMAR ***</p>
                     </div>
                 </div>
             </div>
