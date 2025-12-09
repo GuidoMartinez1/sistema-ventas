@@ -464,7 +464,7 @@ const NuevaVenta = () => {
                         {metodoPago === 'mercadopago' && (<div className="my-2 text-center border border-black p-1 rounded"><p className="text-[10px] uppercase">Alias:</p><p className="font-bold text-lg">alimar25</p></div>)}
                         <div className="flex justify-between text-xl font-bold mt-2"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
                     </div>
-                    <div className="mt-4 text-center text-[10px]"><p>*** GRACIAS POR TU COMPRA - ALIMAR ***</p></div>
+                    <div className="mt-4 text-center text-[10px]"><p> GRACIAS POR TU COMPRA - ALIMAR </p></div>
                 </div>
             </div>
 
