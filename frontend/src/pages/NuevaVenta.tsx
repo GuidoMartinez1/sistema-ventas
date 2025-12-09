@@ -1,10 +1,11 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Plus, Minus, Trash2, DollarSign } from 'lucide-react'
+import { Plus, Minus, Trash2, DollarSign, Camera } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
+import html2canvas from 'html2canvas'
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -20,6 +21,7 @@ const NuevaVenta = () => {
     const navigate = useNavigate()
     const location = useLocation()
     const montoRef = useRef<HTMLInputElement>(null)
+    const ticketRef = useRef<HTMLDivElement>(null) // Referencia para la captura
     const [productos, setProductos] = useState<Producto[]>([])
     const [clientes, setClientes] = useState<Cliente[]>([])
     const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
@@ -109,6 +111,7 @@ const NuevaVenta = () => {
         setImporteDirecto('')
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const addNuevoItem = () => {
         const desc = (nuevoItem.descripcion || '').trim()
         const cant = Number(nuevoItem.cantidad || 0)
@@ -170,6 +173,42 @@ const NuevaVenta = () => {
         () => cartItems.reduce((acc, it) => acc + Number(it.subtotal || 0), 0),
         [cartItems]
     )
+
+    // Función para copiar el ticket al portapapeles
+    const copiarTicket = async () => {
+        if (!ticketRef.current) return;
+
+        const promesa = new Promise((resolve, reject) => {
+            html2canvas(ticketRef.current!, {
+                scale: 2, // Mejora calidad para WhatsApp
+                backgroundColor: '#ffffff',
+                useCORS: true
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    if (!blob) {
+                        reject('Error al generar imagen');
+                        return;
+                    }
+                    try {
+                        // eslint-disable-next-line no-undef
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        navigator.clipboard.write([item]).then(() => {
+                            resolve('¡Ticket copiado!');
+                        });
+                    } catch (err) {
+                        console.error(err)
+                        reject('Navegador no soporta copiado directo');
+                    }
+                });
+            }).catch(err => reject(err));
+        });
+
+        toast.promise(promesa, {
+            loading: 'Generando captura...',
+            success: '¡Imagen copiada! Pegala en WhatsApp (Ctrl+V)',
+            error: (err) => `Error: ${err}`
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -360,7 +399,8 @@ const NuevaVenta = () => {
 
                 {/* Columna derecha: carrito */}
                 <div className="lg:col-span-1">
-                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}> {/* Se aplica sticky solo en lg+ */}
+                    {/* AQUI SE AGREGA LA REFERENCIA ticketRef PARA LA CAPTURA */}
+                    <div ref={ticketRef} className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
                         <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
                         {/* Importe directo */}
@@ -469,12 +509,22 @@ const NuevaVenta = () => {
 
                         {/* Total & Submit */}
                         {cartItems.length > 0 && (
-                            <div className="border-t pt-4">
+                            <div className="border-t pt-4 space-y-3">
                                 <div className="flex justify-between items-center text-lg font-bold">
                                     <span>Total:</span>
                                     <span>{formatPrice(Number(total).toFixed(2))}</span>
                                 </div>
-                                <button onClick={handleSubmit} className="w-full btn-primary mt-4">
+
+                                {/* BOTÓN NUEVO: COPIAR DETALLE */}
+                                <button
+                                    onClick={copiarTicket}
+                                    className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition duration-150"
+                                >
+                                    <Camera className="h-4 w-4" />
+                                    Copiar detalle para WhatsApp
+                                </button>
+
+                                <button onClick={handleSubmit} className="w-full btn-primary">
                                     Registrar Venta
                                 </button>
                             </div>
