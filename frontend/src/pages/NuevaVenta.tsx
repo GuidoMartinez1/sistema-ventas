@@ -399,8 +399,8 @@ const NuevaVenta = () => {
 
                 {/* Columna derecha: carrito */}
                 <div className="lg:col-span-1">
-                    {/* AQUI SE AGREGA LA REFERENCIA ticketRef PARA LA CAPTURA */}
-                    <div ref={ticketRef} className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
+                    {/* NOTA: Aquí hemos quitado el ref={ticketRef} porque este no es el div que queremos fotografiar */}
+                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
                         <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
                         {/* Importe directo */}
@@ -532,6 +532,69 @@ const NuevaVenta = () => {
                     </div>
                 </div>
             </div>
+
+            {/* ================================================================================= */}
+            {/* TICKET INVISIBLE: Este bloque está oculto de la vista pero accesible para la cámara */}
+            {/* ================================================================================= */}
+            <div
+                ref={ticketRef}
+                style={{
+                    position: 'fixed',
+                    top: '-9999px',
+                    left: '-9999px',
+                    width: '450px', // Ancho óptimo para lectura en celular
+                    backgroundColor: 'white',
+                    padding: '24px',
+                    color: 'black'
+                }}
+            >
+                {/* Encabezado del Ticket */}
+                <div className="text-center border-b border-gray-300 pb-4 mb-4">
+                    <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {new Date().toLocaleDateString('es-AR')} - {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}hs
+                    </p>
+                </div>
+
+                {/* Lista de Items Limpia */}
+                <div className="space-y-3 min-h-[100px]">
+                    {cartItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-start text-base border-b border-gray-100 pb-2">
+                            <div className="flex-1 pr-4">
+                                {/* Cantidad x Producto */}
+                                <span className="font-bold mr-2">{item.cantidad}x</span>
+                                <span className="capitalize">
+                                    {item.es_custom ? item.descripcion : item.producto_nombre}
+                                </span>
+                            </div>
+                            {/* Subtotal del item */}
+                            <div className="font-semibold text-gray-800">
+                                {formatPrice(item.subtotal)}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Totales y Pago */}
+                <div className="mt-6 pt-4 border-t-2 border-gray-800">
+                    <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
+                        <span>Método de pago:</span>
+                        <span className="font-medium uppercase">{metodoPago}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-3xl font-bold mt-2">
+                        <span>TOTAL:</span>
+                        <span>{formatPrice(total)}</span>
+                    </div>
+                </div>
+
+                {/* Footer opcional */}
+                <div className="mt-8 text-center text-xs text-gray-400">
+                    <p>Gracias por tu compra</p>
+                </div>
+            </div>
+            {/* ================================================================================= */}
+
         </div>
     )
 }
