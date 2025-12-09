@@ -1,11 +1,12 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Plus, Minus, Trash2, DollarSign, Camera } from 'lucide-react'
+import { Plus, Minus, Trash2, DollarSign, Camera, Printer } from 'lucide-react' // Agregado Printer
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
+import { useReactToPrint } from 'react-to-print' // Nueva librería
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -21,7 +22,11 @@ const NuevaVenta = () => {
     const navigate = useNavigate()
     const location = useLocation()
     const montoRef = useRef<HTMLInputElement>(null)
-    const ticketRef = useRef<HTMLDivElement>(null) // Referencia para la captura
+
+    // REFS:
+    const ticketRef = useRef<HTMLDivElement>(null) // Para la foto de WhatsApp (450px)
+    const printRef = useRef<HTMLDivElement>(null)  // Para la impresora térmica (58mm)
+
     const [productos, setProductos] = useState<Producto[]>([])
     const [clientes, setClientes] = useState<Cliente[]>([])
     const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
@@ -50,7 +55,6 @@ const NuevaVenta = () => {
         load()
     }, [])
 
-    // Si vengo desde el botón flotante, enfoco el campo "Importe directo"
     useEffect(() => {
         if (location.state?.focusMonto && montoRef.current) {
             montoRef.current.focus()
@@ -90,7 +94,7 @@ const NuevaVenta = () => {
                 subtotal: precio,
                 producto_nombre: producto.nombre
             }
-            return [nuevo, ...prev] // arriba
+            return [nuevo, ...prev]
         })
     }
 
@@ -107,7 +111,7 @@ const NuevaVenta = () => {
             descripcion: 'Importe directo',
             es_custom: true
         }
-        setCartItems(prev => [item, ...prev]) // arriba
+        setCartItems(prev => [item, ...prev])
         setImporteDirecto('')
     }
 
@@ -131,7 +135,7 @@ const NuevaVenta = () => {
             descripcion: desc,
             es_custom: true
         }
-        setCartItems(prev => [item, ...prev]) // arriba
+        setCartItems(prev => [item, ...prev])
         setNuevoItem({ descripcion: '', cantidad: 1, precio: 0 })
     }
 
@@ -174,13 +178,13 @@ const NuevaVenta = () => {
         [cartItems]
     )
 
-    // Función para copiar el ticket al portapapeles
+    // --- FUNCIÓN 1: FOTO PARA WHATSAPP (html2canvas) ---
     const copiarTicket = async () => {
         if (!ticketRef.current) return;
 
         const promesa = new Promise((resolve, reject) => {
             html2canvas(ticketRef.current!, {
-                scale: 2, // Mejora calidad para WhatsApp
+                scale: 2,
                 backgroundColor: '#ffffff',
                 useCORS: true
             }).then(canvas => {
@@ -209,6 +213,13 @@ const NuevaVenta = () => {
             error: (err) => `Error: ${err}`
         });
     };
+
+    // --- FUNCIÓN 2: IMPRIMIR (react-to-print) ---
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+        documentTitle: `Ticket_${new Date().toLocaleDateString()}`,
+        onAfterPrint: () => toast.success('Enviado a impresora'),
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -267,7 +278,6 @@ const NuevaVenta = () => {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Cliente + deuda */}
                     <div className={`${cardClass} w-full`}>
-                        {/* RESPONSIVE: Apilar en móvil, en línea en md */}
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-2/3 relative">
                                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Cliente (opcional)</label>
@@ -294,8 +304,6 @@ const NuevaVenta = () => {
                                         onFocus={() => setMostrarSugerencias(true)}
                                         onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}
                                     />
-
-                                    {/* Lista de sugerencias */}
                                     {mostrarSugerencias && nombreClienteInput && (
                                         <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto">
                                             {clientes
@@ -319,8 +327,6 @@ const NuevaVenta = () => {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Toggle de Deuda */}
                             <div className="flex items-center">
                                 <input
                                     id="toggle-deuda"
@@ -345,7 +351,6 @@ const NuevaVenta = () => {
                                 onChange={e => setBusqueda(e.target.value)}
                                 className={`${inputFieldClass} w-full md:w-1/2`}/>
                         </div>
-                        {/* RESPONSIVE: Grid de productos 1 columna en móvil, 2 en md */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {productos
                                 .filter(p =>
@@ -358,8 +363,6 @@ const NuevaVenta = () => {
                                             <h3 className="font-medium text-gray-900">{p.nombre}</h3>
                                             <span className="text-sm font-medium text-gray-900">{formatPrice(Number(p.precio || 0).toFixed(2))}</span>
                                         </div>
-
-                                        {/* 🆕 NUEVA SECCIÓN DE DATOS DE COSTO Y GANANCIA */}
                                         <div className="flex justify-between text-xs text-gray-500 mb-2">
                                             {p.precio_costo && (
                                                 <p>
@@ -376,9 +379,6 @@ const NuevaVenta = () => {
                                                 </p>
                                             )}
                                         </div>
-                                        {/* ----------------------------------------------------- */}
-
-                                        {/* Se omite p.precio_kg y p.descripcion para mantener el foco en la venta */}
                                         {p.precio_kg ? (
                                             <p className="text-xs text-gray-500 mb-1">
                                                 Precio x Kg: <span className="font-medium text-gray-800">{formatPrice(Number(p.precio_kg).toFixed(2))}</span>
@@ -399,7 +399,6 @@ const NuevaVenta = () => {
 
                 {/* Columna derecha: carrito */}
                 <div className="lg:col-span-1">
-                    {/* NOTA: Aquí hemos quitado el ref={ticketRef} porque este no es el div que queremos fotografiar */}
                     <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
                         <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
@@ -432,14 +431,13 @@ const NuevaVenta = () => {
                                 {cartItems.map((it, idx) => (
                                     <div key={idx} className="border rounded p-3 bg-gray-50">
                                         <div className="flex justify-between items-start mb-2">
-                                            <div className="font-medium text-gray-900 text-sm"> {/* Fuente más pequeña */}
+                                            <div className="font-medium text-gray-900 text-sm">
                                                 {it.es_custom ? (it.descripcion || 'Ítem') : (it.producto_nombre || 'Producto')}
                                             </div>
                                             <button onClick={() => removeItem(idx)} className="text-red-600 hover:text-red-800">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
-                                        {/* RESPONSIVE: Grid de 3 columnas para móvil */}
                                         <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border">
                                             <div className="text-center">
                                                 <span className="text-xs text-gray-600 block">Cant</span>
@@ -461,27 +459,22 @@ const NuevaVenta = () => {
                                             </div>
                                             <div className="text-center">
                                                 <span className="text-xs text-gray-600 block">Precio/u</span>
-                                                {/* 💡 REFACTORIZACIÓN AQUÍ: Cambiamos type="number" a type="text" y ajustamos el manejo de valores */}
                                                 <input
-                                                    type="text" // Cambiado a text para eliminar las flechas
-                                                    // inputMode="numeric" // Opcional: para forzar teclado numérico en móvil
-                                                    // pattern="[0-9]*" // Opcional: para permitir solo números
-                                                    value={it.precio_unitario || ''} // Aseguramos que sea string, si es null/undefined, es string vacío
+                                                    type="text"
+                                                    value={it.precio_unitario || ''}
                                                     onChange={(e) => {
-                                                        // Aseguramos que el valor sea numérico para la lógica de updatePrecio
-                                                        const rawValue = e.target.value.replace(/[^0-9.]/g, '') // Limpia caracteres no numéricos
+                                                        const rawValue = e.target.value.replace(/[^0-9.]/g, '')
                                                         updatePrecio(idx, Number(rawValue || 0))
                                                     }}
                                                     className="w-full text-center border rounded px-1 py-0.5 text-xs mt-1"
-                                                    // 💡 AÑADIMOS CLASE PARA OCULTAR FLECHAS EN CASO DE QUE SEA number o para consistencia
-                                                    style={{ MozAppearance: 'textfield' }} // Para Firefox, aunque con type="text" no es necesario.
+                                                    style={{ MozAppearance: 'textfield' }}
                                                 />
                                             </div>
                                             <div className="text-center">
                                                 <span className="text-xs text-gray-600 block">Subtotal</span>
                                                 <span className="font-bold text-sm text-green-600">
-                          {formatPrice(Number(it.subtotal).toFixed(2))}
-                        </span>
+                                                    {formatPrice(Number(it.subtotal).toFixed(2))}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -515,14 +508,23 @@ const NuevaVenta = () => {
                                     <span>{formatPrice(Number(total).toFixed(2))}</span>
                                 </div>
 
-                                {/* BOTÓN NUEVO: COPIAR DETALLE */}
-                                <button
-                                    onClick={copiarTicket}
-                                    className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition duration-150"
-                                >
-                                    <Camera className="h-4 w-4" />
-                                    Copiar detalle para WhatsApp
-                                </button>
+                                {/* BOTONERA: COPIAR + IMPRIMIR */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={copiarTicket}
+                                        className="flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-2 rounded-lg transition duration-150 text-xs sm:text-sm"
+                                    >
+                                        <Camera className="h-4 w-4" />
+                                        Copiar Detalle
+                                    </button>
+                                    <button
+                                        onClick={handlePrint}
+                                        className="flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-2 rounded-lg transition duration-150 text-xs sm:text-sm"
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        Imprimir
+                                    </button>
+                                </div>
 
                                 <button onClick={handleSubmit} className="w-full btn-primary">
                                     Registrar Venta
@@ -534,7 +536,7 @@ const NuevaVenta = () => {
             </div>
 
             {/* ================================================================================= */}
-            {/* TICKET INVISIBLE: Este bloque está oculto de la vista pero accesible para la cámara */}
+            {/* TICKET 1: VERSIÓN WHATSAPP (450px) - ESTE ES EL QUE TE GUSTÓ                          */}
             {/* ================================================================================= */}
             <div
                 ref={ticketRef}
@@ -542,67 +544,129 @@ const NuevaVenta = () => {
                     position: 'fixed',
                     top: '-9999px',
                     left: '-9999px',
-                    width: '450px', // Ancho óptimo para lectura en celular
+                    width: '450px',
                     backgroundColor: 'white',
                     padding: '24px',
                     color: 'black'
                 }}
             >
-                {/* Encabezado del Ticket */}
+                {/* Encabezado */}
                 <div className="text-center border-b border-gray-300 pb-4 mb-4">
                     <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
                     <p className="text-sm text-gray-500 mt-1">
                         {new Date().toLocaleDateString('es-AR')} - {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}hs
                     </p>
                 </div>
-
-                {/* Lista de Items Limpia */}
+                {/* Items */}
                 <div className="space-y-3 min-h-[100px]">
                     {cartItems.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-start text-base border-b border-gray-100 pb-2">
                             <div className="flex-1 pr-4">
-                                {/* Cantidad x Producto */}
                                 <span className="font-bold mr-2">{item.cantidad}x</span>
                                 <span className="capitalize">
                                     {item.es_custom ? item.descripcion : item.producto_nombre}
                                 </span>
                             </div>
-                            {/* Subtotal del item */}
                             <div className="font-semibold text-gray-800">
                                 {formatPrice(item.subtotal)}
                             </div>
                         </div>
                     ))}
                 </div>
-
-                {/* Totales y Pago */}
+                {/* Totales */}
                 <div className="mt-6 pt-4 border-t-2 border-gray-800">
                     <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
                         <span>Método de pago:</span>
                         <span className="font-medium uppercase">{metodoPago}</span>
                     </div>
-
-                    {/* ✅ AGREGAR ESTO: Si es MercadoPago, mostramos el Alias */}
                     {metodoPago === 'mercadopago' && (
                         <div className="mb-4 text-center bg-gray-100 p-2 rounded border border-gray-200">
                             <span className="text-xs text-gray-500 uppercase tracking-wide block">Alias para transferir:</span>
                             <span className="text-xl font-bold text-gray-900 block">alimar25</span>
                         </div>
                     )}
-                    {/* ----------------------------------------------------- */}
-
                     <div className="flex justify-between items-center text-3xl font-bold mt-2">
                         <span>TOTAL:</span>
                         <span>{formatPrice(total)}</span>
                     </div>
                 </div>
-
-                {/* Footer opcional */}
                 <div className="mt-8 text-center text-xs text-gray-400">
                     <p>Gracias por tu compra</p>
                 </div>
             </div>
+
             {/* ================================================================================= */}
+            {/* TICKET 2: VERSIÓN IMPRESORA TÉRMICA (58mm) - INVISIBLE HASTA IMPRIMIR             */}
+            {/* ================================================================================= */}
+            <div style={{ display: 'none' }}>
+                <div
+                    ref={printRef}
+                    style={{
+                        padding: '10px',
+                        width: '100%', // Se ajustará al papel
+                        fontFamily: 'monospace',
+                        color: 'black',
+                        fontSize: '12px'
+                    }}
+                >
+                    <div className="text-center mb-2 border-b border-dashed border-black pb-2">
+                        <h2 className="text-xl font-bold">ALIMAR</h2>
+                        <p className="text-[10px] mt-1">
+                            {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}
+                        </p>
+                    </div>
+
+                    <div className="mb-2">
+                        {cartItems.map((item, idx) => (
+                            <div key={idx} className="flex justify-between mb-1 border-b border-gray-200 pb-1">
+                                <div className="w-2/3">
+                                    <span className="font-bold">{item.cantidad}x </span>
+                                    <span>{item.es_custom ? item.descripcion : item.producto_nombre}</span>
+                                </div>
+                                <div className="font-bold text-right">
+                                    {formatPrice(item.subtotal)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="border-t border-dashed border-black pt-2 mt-2">
+                        <div className="flex justify-between text-xs mb-1">
+                            <span>Pago:</span>
+                            <span className="uppercase font-bold">{metodoPago}</span>
+                        </div>
+
+                        {metodoPago === 'mercadopago' && (
+                            <div className="my-2 text-center border border-black p-1 rounded">
+                                <p className="text-[10px] uppercase">Alias:</p>
+                                <p className="font-bold text-lg">alimar25</p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between text-xl font-bold mt-2">
+                            <span>TOTAL:</span>
+                            <span>{formatPrice(total)}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 text-center text-[10px]">
+                        <p>*** GRACIAS ***</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* ESTILOS PARA IMPRESIÓN SOLAMENTE */}
+            <style>{`
+                @media print {
+                    @page {
+                        margin: 0;
+                        size: auto;
+                    }
+                    body {
+                        margin: 0.5cm;
+                    }
+                }
+            `}</style>
 
         </div>
     )
