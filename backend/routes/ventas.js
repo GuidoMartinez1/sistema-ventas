@@ -39,7 +39,7 @@ router.get("/:id", async (req, res) => {
 
     // Detalles de la venta
     const detallesResult = await pool.query(`
-      SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre, dv.cantidad, dv.precio_unitario, dv.subtotal
+      SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre, dv.descripcion, dv.cantidad, dv.precio_unitario, dv.subtotal
       FROM detalles_venta dv
       LEFT JOIN productos p ON dv.producto_id = p.id
       WHERE dv.venta_id = $1
@@ -89,14 +89,15 @@ router.post("/", async (req, res) => {
     // Insertar detalles
     for (const producto of productos) {
       await client.query(`
-        INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal, descripcion)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `, [
         ventaId,
         producto.producto_id,
         producto.cantidad,
         producto.precio_unitario,
-        producto.subtotal
+        producto.subtotal,
+          producto.descripcion || null
       ]);
 
       // Si no es "Sin producto" (ID null o 0), actualizar stock

@@ -32,7 +32,11 @@ const NuevaVenta = () => {
     const [cartItems, setCartItems] = useState<DetalleVenta[]>([])
     const [loading, setLoading] = useState(true)
     const [busqueda, setBusqueda] = useState('')
+
+    // Estados para importe directo
     const [importeDirecto, setImporteDirecto] = useState<string>('')
+    const [descripcionDirecta, setDescripcionDirecta] = useState('') // NUEVO ESTADO
+
     const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
     const [esDeuda, setEsDeuda] = useState(false)
     const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
@@ -108,11 +112,12 @@ const NuevaVenta = () => {
             cantidad: 1,
             precio_unitario: monto,
             subtotal: monto,
-            descripcion: 'Importe directo',
+            descripcion: descripcionDirecta.trim() || 'Importe directo', // USAMOS LA DESCRIPCIÓN
             es_custom: true
         }
         setCartItems(prev => [item, ...prev])
         setImporteDirecto('')
+        setDescripcionDirecta('') // LIMPIAMOS LA DESCRIPCIÓN
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -327,9 +332,31 @@ const NuevaVenta = () => {
 
                         <div className="border rounded p-3">
                             <div className="flex items-center mb-2"><DollarSign className="h-4 w-4 mr-2" /><span className="font-medium">Importe directo</span></div>
-                            <div className="flex gap-2">
-                                <input ref={montoRef} type="number" step="0.01" value={importeDirecto} onChange={e => setImporteDirecto(e.target.value)} className={`${inputFieldClass} flex-1`} placeholder="Monto"/>
-                                <button onClick={addImporteDirecto} className="btn-primary flex-shrink-0">Agregar</button>
+
+                            {/* NUEVO DISEÑO CON DESCRIPCIÓN */}
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    type="text"
+                                    value={descripcionDirecta}
+                                    onChange={e => setDescripcionDirecta(e.target.value)}
+                                    className={inputFieldClass}
+                                    placeholder="Descripción (opcional)"
+                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        ref={montoRef}
+                                        type="number"
+                                        step="0.01"
+                                        value={importeDirecto}
+                                        onChange={e => setImporteDirecto(e.target.value)}
+                                        className={`${inputFieldClass} flex-1`}
+                                        placeholder="Monto"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') addImporteDirecto();
+                                        }}
+                                    />
+                                    <button onClick={addImporteDirecto} className="btn-primary flex-shrink-0">Agregar</button>
+                                </div>
                             </div>
                         </div>
 
