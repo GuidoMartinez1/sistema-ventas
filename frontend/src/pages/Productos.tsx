@@ -1,6 +1,7 @@
+// src/pages/Productos.tsx
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package, Download, ClipboardList } from 'lucide-react' // <--- 1. Agregado ClipboardList
-import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api' // <--- 2. Agregado futurosPedidosAPI
+import { Plus, Edit, Trash2, Package, Download, ClipboardList } from 'lucide-react'
+import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
@@ -27,42 +28,30 @@ const extraerKilos = (nombre: string): number | null => {
 
     if (match && match[1]) {
         let pesoNum = parseFloat(match[1]);
-
         if (isNaN(pesoNum)) return null;
-
         let unidad = match[3];
 
-        // Manejo de Gramos: Si es G, GR o GRS, convertir a Kilos.
+        // Manejo de Gramos
         if (unidad && (unidad === 'G' || unidad === 'GR' || unidad === 'GRS')) {
-            if (pesoNum > 1) { // Evita dividir 1G a 0.001kg si es un error de formato simple.
+            if (pesoNum > 1) {
                 pesoNum = pesoNum / 1000;
             }
         }
-
         return parseFloat(pesoNum.toFixed(2));
     }
-
     return null;
 };
 
-// Función de ayuda para formatear Kilos sin '.00'
 const formatKilos = (kilos: number | undefined | string) => {
     if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
-
     const kiloValue = Number(kilos);
-
-    // Verifica si es un número entero
     if (Number.isInteger(kiloValue)) {
         return kiloValue.toString();
     }
-
-    // Si no es entero, usa toFixed(2)
     return kiloValue.toFixed(2);
 };
 
-// 💡 Función de ayuda para limpiar y parsear el input de tipo texto
 const parseNumericInput = (value: string): string => {
-    // Permite números y un punto decimal
     return value.replace(/[^0-9.]/g, '');
 };
 
@@ -86,11 +75,10 @@ const Productos = () => {
         codigo: ''
     })
 
-    // --- 3. NUEVOS ESTADOS PARA FUTUROS PEDIDOS ---
+    // Estados para Futuros Pedidos
     const [showFutureModal, setShowFutureModal] = useState(false)
     const [futureProduct, setFutureProduct] = useState<Producto | null>(null)
     const [futureQuantity, setFutureQuantity] = useState('')
-    // ----------------------------------------------
 
     const [busqueda, setBusqueda] = useState('')
     const [stockFiltro, setStockFiltro] = useState('')
@@ -118,35 +106,55 @@ const Productos = () => {
         }
     }
 
-    // --- 4. NUEVAS FUNCIONES PARA FUTUROS PEDIDOS ---
+    // --- 1. ABRIR MODAL SIMPLE (Sin validación aquí) ---
     const openFutureModal = (producto: Producto) => {
         setFutureProduct(producto);
         setFutureQuantity('');
         setShowFutureModal(true);
     }
 
+    // --- 2. VALIDACIÓN AL INTENTAR AGREGAR ---
     const handleAddToFuture = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // REFACTORIZADO: Ya no validamos !futureQuantity, solo que exista el producto
         if (!futureProduct) return;
 
+        const toastId = toast.loading('Procesando...');
+
         try {
+            // A. Consultamos la lista actual para ver si ya existe
+            const { data: pedidosActuales } = await futurosPedidosAPI.getAll();
+
+            // B. Buscamos duplicados por ID de producto
+            const yaExiste = pedidosActuales.some((p: any) => p.producto_id === futureProduct.id);
+
+            if (yaExiste) {
+                toast.dismiss(toastId);
+                toast.error(`"${futureProduct.nombre}" ya está en la lista de pendientes.`);
+                // Cerramos el modal o lo dejamos abierto para que el usuario decida (acá cerramos para limpiar)
+                setShowFutureModal(false);
+                return;
+            }
+
+            // C. Si no existe, procedemos a crear
             await futurosPedidosAPI.create({
                 producto_id: futureProduct.id,
-                cantidad: futureQuantity // Puede ir vacío
+                cantidad: futureQuantity
             });
 
-            toast.success(`Agregado a Pedidos Futuros: ${futureProduct.nombre}`);
+            toast.dismiss(toastId);
+            toast.success(`Agregado a la lista: ${futureProduct.nombre}`);
+
+            // D. Limpieza
             setShowFutureModal(false);
             setFutureProduct(null);
             setFutureQuantity('');
+
         } catch (error) {
+            toast.dismiss(toastId);
             console.error(error);
             toast.error("Error al agregar a pedidos futuros");
         }
     }
-    // ------------------------------------------------
 
     const exportarProductosExcel = async () => {
         try {
@@ -168,7 +176,7 @@ const Productos = () => {
                 Precio_Costo: formatPrice(p.precio_costo),
                 Ganancia_Porcentaje: p.porcentaje_ganancia || 0,
                 Stock: p.stock,
-                Kilos: p.kilos || 0, // Incluimos KILOS en el export
+                Kilos: p.kilos || 0,
             }))
 
             const worksheet = XLSX.utils.json_to_sheet(exportData)
@@ -190,7 +198,7 @@ const Productos = () => {
         try {
             const productoData = {
                 ...formData,
-                kilos: kilosExtraidos, // Enviamos el valor dinámico
+                kilos: kilosExtraidos,
                 precio: parseFloat(formData.precio || '0') || 0,
                 precio_kg: parseFloat(formData.precio_kg || '0') || 0,
                 precio_costo: parseFloat(formData.precio_costo || '0') || 0,
@@ -305,7 +313,7 @@ const Productos = () => {
     }
 
     const handlePrecioCostoChange = (value: string) => {
-        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
+        const cleanValue = parseNumericInput(value);
         setFormData(prev => ({ ...prev, precio_costo: cleanValue }))
         if (cleanValue && formData.porcentaje_ganancia) {
             setTimeout(calcularPrecioAutomatico, 100)
@@ -313,7 +321,7 @@ const Productos = () => {
     }
 
     const handlePorcentajeChange = (value: string) => {
-        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
+        const cleanValue = parseNumericInput(value);
         setFormData(prev => ({ ...prev, porcentaje_ganancia: cleanValue }))
         if (cleanValue && formData.precio_costo) {
             setTimeout(calcularPrecioAutomatico, 100)
@@ -321,7 +329,7 @@ const Productos = () => {
     }
 
     const handlePrecioVentaChange = (value: string) => {
-        const cleanValue = parseNumericInput(value); // 💡 Usamos la función de limpieza
+        const cleanValue = parseNumericInput(value);
         setFormData(prev => {
             const precioCosto = parseFloat(prev.precio_costo) || 0
             const precioVenta = parseFloat(cleanValue) || 0
@@ -339,15 +347,12 @@ const Productos = () => {
         })
     }
 
-    // 💡 NUEVO HANDLER PARA PRECIO X KG
     const handlePrecioKgChange = (value: string) => {
         const cleanValue = parseNumericInput(value);
         setFormData(prev => ({ ...prev, precio_kg: cleanValue }));
     }
 
-    // 💡 NUEVO HANDLER PARA STOCK
     const handleStockChange = (value: string) => {
-        // Para stock (entero), limpiamos solo dígitos
         const cleanValue = value.replace(/[^0-9]/g, '');
         setFormData(prev => ({ ...prev, stock: cleanValue }));
     }
@@ -384,14 +389,12 @@ const Productos = () => {
     }
 
     return (
-        // Contenedor con límite de ancho para estética en pantallas grandes
         <div className="p-4 md:p-8 space-y-6 max-w-screen-xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Productos - AliMar</h1>
                     <p className="text-gray-600">Gestiona tu inventario de productos para mascotas</p>
                 </div>
-                {/* RESPONSIVE: Botones apilados en móvil, en línea en escritorio */}
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                     <button
                         onClick={exportarProductosExcel}
@@ -410,7 +413,7 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* FILTROS: Grid de 4 columnas en lg */}
+            {/* FILTROS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <input
                     type="text"
@@ -497,7 +500,6 @@ const Productos = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {productosFiltrados.map((producto) => (
                             <tr key={producto.id} className="hover:bg-gray-50">
-                                {/* ✅ Aumentado el min-w para estética */}
                                 <td className="px-2 py-4 min-w-[280px]">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-8 w-8">
@@ -577,7 +579,7 @@ const Productos = () => {
                                                 📦
                                             </button>
                                         )}
-                                        {/* 5. BOTÓN AGREGAR FUTUROS (DESKTOP) */}
+                                        {/* BOTÓN AGREGAR FUTUROS (DESKTOP) */}
                                         <button
                                             onClick={() => openFutureModal(producto)}
                                             className="text-blue-600 hover:text-blue-900 p-1"
@@ -616,7 +618,7 @@ const Productos = () => {
                                             📦
                                         </button>
                                     )}
-                                    {/* 6. BOTÓN AGREGAR FUTUROS (MÓVIL) */}
+                                    {/* BOTÓN AGREGAR FUTUROS (MÓVIL) */}
                                     <button onClick={() => openFutureModal(producto)} className="text-blue-600 hover:text-blue-900 p-1">
                                         <ClipboardList className="h-4 w-4" />
                                     </button>
@@ -704,11 +706,10 @@ const Productos = () => {
                                     <label className="block text-sm font-medium text-gray-700">
                                         Precio por Kilo
                                     </label>
-                                    {/* 💡 REFACTORIZADO */}
                                     <input
-                                        type="text" // Cambiado a text
+                                        type="text"
                                         value={formData.precio_kg}
-                                        onChange={(e) => handlePrecioKgChange(e.target.value)} // Usamos el handler que limpia
+                                        onChange={(e) => handlePrecioKgChange(e.target.value)}
                                         className={inputFieldClass}
                                         placeholder="0.00"
                                     />
@@ -718,11 +719,10 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Precio de Costo
                                         </label>
-                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="text" // Cambiado a text
+                                            type="text"
                                             value={formData.precio_costo}
-                                            onChange={(e) => handlePrecioCostoChange(e.target.value)} // Usamos el handler que limpia
+                                            onChange={(e) => handlePrecioCostoChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
@@ -732,11 +732,10 @@ const Productos = () => {
                                             Porcentaje de Ganancia
                                         </label>
                                         <div className="flex">
-                                            {/* 💡 REFACTORIZADO */}
                                             <input
-                                                type="text" // Cambiado a text
+                                                type="text"
                                                 value={formData.porcentaje_ganancia}
-                                                onChange={(e) => handlePorcentajeChange(e.target.value)} // Usamos el handler que limpia
+                                                onChange={(e) => handlePorcentajeChange(e.target.value)}
                                                 className={`${inputFieldClass} rounded-r-none`}
                                                 placeholder="30"
                                             />
@@ -755,12 +754,11 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Precio de Venta *
                                         </label>
-                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="text" // Cambiado a text
+                                            type="text"
                                             required
                                             value={formData.precio}
-                                            onChange={(e) => handlePrecioVentaChange(e.target.value)} // Usamos el handler que limpia
+                                            onChange={(e) => handlePrecioVentaChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
@@ -769,11 +767,10 @@ const Productos = () => {
                                         <label className="block text-sm font-medium text-gray-700">
                                             Stock
                                         </label>
-                                        {/* 💡 REFACTORIZADO */}
                                         <input
-                                            type="text" // Cambiado a text
+                                            type="text"
                                             value={formData.stock}
-                                            onChange={(e) => handleStockChange(e.target.value)} // Usamos el handler que limpia solo dígitos
+                                            onChange={(e) => handleStockChange(e.target.value)}
                                             className={inputFieldClass}
                                         />
                                     </div>
@@ -825,7 +822,7 @@ const Productos = () => {
                 </div>
             )}
 
-            {/* 7. NUEVO MODAL PARA AGREGAR A FUTUROS PEDIDOS */}
+            {/* MODAL PARA AGREGAR A FUTUROS PEDIDOS */}
             {showFutureModal && futureProduct && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                     <div className="relative top-40 mx-auto p-5 border w-11/12 max-w-sm shadow-lg rounded-md bg-white">
