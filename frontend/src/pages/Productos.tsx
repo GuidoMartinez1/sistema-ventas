@@ -198,7 +198,7 @@ const Productos = () => {
         const nombreCategoria = categoriaSeleccionada?.nombre?.toLowerCase().trim() || '';
 
         let kilosExtraidos = null;
-        if (nombreCategoria !== 'Pipetas y Comprimidos') {
+        if (nombreCategoria !== 'pipetas y comprimidos') {
             kilosExtraidos = extraerKilos(formData.nombre);
         }
 
