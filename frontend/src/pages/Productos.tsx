@@ -193,7 +193,14 @@ const Productos = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        const kilosExtraidos = extraerKilos(formData.nombre);
+        const categoriaSeleccionada = categorias.find(c => c.id?.toString() === formData.categoria_id);
+
+        const nombreCategoria = categoriaSeleccionada?.nombre?.toLowerCase().trim() || '';
+
+        let kilosExtraidos = null;
+        if (nombreCategoria !== 'Pipetas y Comprimidos') {
+            kilosExtraidos = extraerKilos(formData.nombre);
+        }
 
         try {
             const productoData = {
