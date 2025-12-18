@@ -304,24 +304,57 @@ const NuevaVenta = () => {
                         <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
                             <input type="text" placeholder="Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} w-full md:w-1/2`}/>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {productos.filter(p => (p.nombre||'').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo||'').toLowerCase().includes(busqueda.toLowerCase())).map((p) => (
-                                <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-medium text-gray-900">{p.nombre}</h3>
-                                        <span className="text-sm font-medium text-gray-900">{formatPrice(Number(p.precio||0).toFixed(2))}</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500 mb-2">
-                                        {p.precio_costo && <p>Costo: {formatPrice(Number(p.precio_costo))}</p>}
-                                        {p.porcentaje_ganancia && <p>Ganancia: {p.porcentaje_ganancia}%</p>}
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Stock: {p.stock}</span>
-                                        <button onClick={() => addProducto(p)} className="btn-primary text-sm py-1 px-3"><Plus className="h-4 w-4" /></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           {productos
+                               .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
+                               .map((p) => (
+                                   <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative">
+
+                                       {/* Nombre y Precio Principal */}
+                                       <div className="flex justify-between items-start mb-1">
+                                           <h3 className="font-medium text-gray-900 leading-tight pr-2">{p.nombre}</h3>
+                                           <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+                                               {formatPrice(Number(p.precio || 0).toFixed(2))}
+                                           </span>
+                                       </div>
+
+                                       {/* --- NUEVO: PRECIO X KG --- */}
+                                       {/* Solo se muestra si existe y es mayor a 0 */}
+                                       {p.precio_kg && Number(p.precio_kg) > 0 && (
+                                           <div className="flex justify-end mb-2">
+                                               <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                                                   x Kg: {formatPrice(p.precio_kg)}
+                                               </span>
+                                           </div>
+                                       )}
+
+                                       {/* Datos internos (Costo / Ganancia) - Los dejé en gris más claro para que no distraigan */}
+                                       <div className="flex justify-between text-xs text-gray-400 mb-3">
+                                           <div>
+                                               {p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}
+                                           </div>
+                                           <div>
+                                               {p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}
+                                           </div>
+                                       </div>
+
+                                       {/* Stock y Botón Agregar */}
+                                       <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
+                                           <span className={`text-sm font-medium ${
+                                               (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600'
+                                           }`}>
+                                               Stock: {p.stock}
+                                           </span>
+                                           <button
+                                               onClick={() => addProducto(p)}
+                                               className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow"
+                                           >
+                                               <Plus className="h-4 w-4" />
+                                           </button>
+                                       </div>
+                                   </div>
+                           ))}
+                       </div>
                     </div>
                 </div>
 
