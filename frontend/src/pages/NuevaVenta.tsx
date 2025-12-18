@@ -35,7 +35,7 @@ const NuevaVenta = () => {
 
     // Estados para importe directo
     const [importeDirecto, setImporteDirecto] = useState<string>('')
-    const [descripcionDirecta, setDescripcionDirecta] = useState('') // NUEVO ESTADO
+    const [descripcionDirecta, setDescripcionDirecta] = useState('')
 
     const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
     const [esDeuda, setEsDeuda] = useState(false)
@@ -102,6 +102,28 @@ const NuevaVenta = () => {
         })
     }
 
+    // --- NUEVA FUNCIONALIDAD: AGREGAR PRECIO X KG ---
+    const addPrecioKgItem = (producto: Producto) => {
+        const precioKg = Number(producto.precio_kg);
+
+        if (!precioKg || precioKg <= 0) {
+            toast.error('Este producto no tiene precio por Kg configurado');
+            return;
+        }
+
+        const item: DetalleVenta = {
+            cantidad: 1, // Empieza con 1 Kg
+            precio_unitario: precioKg,
+            subtotal: precioKg,
+            // Usamos el nombre del producto + una aclaración para que se entienda en el ticket
+            descripcion: `${producto.nombre} (x Kg)`,
+            es_custom: true, // Importante: marca como "custom" para que actúe como importe directo
+        };
+
+        setCartItems(prev => [item, ...prev]);
+        toast.success(`Agregado 1 Kg de ${producto.nombre}`);
+    };
+
     const addImporteDirecto = () => {
         const monto = Number(importeDirecto)
         if (!monto || monto <= 0) {
@@ -112,12 +134,12 @@ const NuevaVenta = () => {
             cantidad: 1,
             precio_unitario: monto,
             subtotal: monto,
-            descripcion: descripcionDirecta.trim() || 'Importe directo', // USAMOS LA DESCRIPCIÓN
+            descripcion: descripcionDirecta.trim() || 'Importe directo',
             es_custom: true
         }
         setCartItems(prev => [item, ...prev])
         setImporteDirecto('')
-        setDescripcionDirecta('') // LIMPIAMOS LA DESCRIPCIÓN
+        setDescripcionDirecta('')
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -153,7 +175,8 @@ const NuevaVenta = () => {
             return
         }
 
-        if (producto && cant > (producto.stock || 0)) {
+        // Si es un producto de stock (tiene ID), validamos. Si es custom (precio x kg), no validamos stock.
+        if (item.producto_id && producto && cant > (producto.stock || 0)) {
             toast.error(`Stock insuficiente. Disponible: ${producto.stock || 0}`)
             return
         }
@@ -304,57 +327,65 @@ const NuevaVenta = () => {
                         <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
                             <input type="text" placeholder="Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} w-full md:w-1/2`}/>
                         </div>
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                           {productos
-                               .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
-                               .map((p) => (
-                                   <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {productos
+                                .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
+                                .map((p) => (
+                                    <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative">
 
-                                       {/* Nombre y Precio Principal */}
-                                       <div className="flex justify-between items-start mb-1">
-                                           <h3 className="font-medium text-gray-900 leading-tight pr-2">{p.nombre}</h3>
-                                           <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
-                                               {formatPrice(Number(p.precio || 0).toFixed(2))}
-                                           </span>
-                                       </div>
+                                        {/* Nombre y Precio Principal */}
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h3 className="font-medium text-gray-900 leading-tight pr-2">{p.nombre}</h3>
+                                            <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+                                                {formatPrice(Number(p.precio || 0).toFixed(2))}
+                                            </span>
+                                        </div>
 
-                                       {/* --- NUEVO: PRECIO X KG --- */}
-                                       {/* Solo se muestra si existe y es mayor a 0 */}
-                                       {p.precio_kg && Number(p.precio_kg) > 0 && (
-                                           <div className="flex justify-end mb-2">
-                                               <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                                                   x Kg: {formatPrice(p.precio_kg)}
-                                               </span>
-                                           </div>
-                                       )}
+                                        {/* --- NUEVO: PRECIO X KG CLICKABLE --- */}
+                                        {p.precio_kg && Number(p.precio_kg) > 0 && (
+                                            <div className="flex justify-end mb-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Evita que clicks accidentales disparen otros eventos
+                                                        addPrecioKgItem(p);
+                                                    }}
+                                                    className="group flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all cursor-pointer shadow-sm"
+                                                    title="Click para agregar 1 Kg al carrito"
+                                                >
+                                                    {/* Ícono opcional para indicar acción */}
+                                                    <span className="group-hover:block hidden text-[10px] mr-1">✚</span>
+                                                    x Kg: {formatPrice(p.precio_kg)}
+                                                </button>
+                                            </div>
+                                        )}
 
-                                       {/* Datos internos (Costo / Ganancia) - Los dejé en gris más claro para que no distraigan */}
-                                       <div className="flex justify-between text-xs text-gray-400 mb-3">
-                                           <div>
-                                               {p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}
-                                           </div>
-                                           <div>
-                                               {p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}
-                                           </div>
-                                       </div>
+                                        {/* Datos internos (Costo / Ganancia) */}
+                                        <div className="flex justify-between text-xs text-gray-400 mb-3">
+                                            <div>
+                                                {p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}
+                                            </div>
+                                            <div>
+                                                {p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}
+                                            </div>
+                                        </div>
 
-                                       {/* Stock y Botón Agregar */}
-                                       <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
-                                           <span className={`text-sm font-medium ${
-                                               (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600'
-                                           }`}>
-                                               Stock: {p.stock}
-                                           </span>
-                                           <button
-                                               onClick={() => addProducto(p)}
-                                               className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow"
-                                           >
-                                               <Plus className="h-4 w-4" />
-                                           </button>
-                                       </div>
-                                   </div>
-                           ))}
-                       </div>
+                                        {/* Stock y Botón Agregar */}
+                                        <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
+                                            <span className={`text-sm font-medium ${
+                                                (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600'
+                                            }`}>
+                                                Stock: {p.stock}
+                                            </span>
+                                            <button
+                                                onClick={() => addProducto(p)}
+                                                className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -489,17 +520,16 @@ const NuevaVenta = () => {
 
             {/* ================================================================================= */}
             {/* TICKET REAL DE IMPRESIÓN (REFACTORIZADO PARA TÉRMICA)                             */}
-            {/* Estilos agresivos de alto contraste y negrita para evitar el "blur"               */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
                 <div style={{
                     width: '58mm',
-                    padding: '5px 0 40px 0', // Padding 0 a los costados para usar todo el ancho
+                    padding: '5px 0 40px 0',
                     backgroundColor: 'white',
                     color: 'black',
-                    fontFamily: "'Courier New', Courier, monospace", // FUENTE MONOSPACE OBLIGATORIA
-                    fontSize: '14px', // TAMAÑO AUMENTADO
-                    fontWeight: 'bold', // NEGRITA SIEMPRE
+                    fontFamily: "'Courier New', Courier, monospace",
+                    fontSize: '14px',
+                    fontWeight: 'bold',
                     lineHeight: '1.2',
                     textAlign: 'left'
                 }}>
@@ -564,16 +594,14 @@ const NuevaVenta = () => {
                 </div>
             </div>
 
-            {/* CSS REFACTORIZADO: MODO RETRO AGRESIVO */}
+            {/* CSS REFACTORIZADO */}
             <style>{`
                 #ticket-imprimible { display: none; }
 
                 @media print {
-                    /* Ocultar todo lo demás */
                     body * { visibility: hidden; }
                     .no-print, .no-print * { display: none !important; }
-                    
-                    /* Mostrar solo el ticket */
+
                     #ticket-imprimible, #ticket-imprimible * {
                         visibility: visible;
                         display: block !important;
@@ -588,17 +616,12 @@ const NuevaVenta = () => {
                         padding: 0;
                     }
 
-                    /* PROPIEDADES CLAVE PARA NITIDEZ EN TÉRMICAS */
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                         color-adjust: exact !important;
-                        
-                        /* Esto elimina el suavizado (blur) de las letras */
                         -webkit-font-smoothing: none !important;
                         -moz-osx-font-smoothing: grayscale;
-                        
-                        /* Priorizar velocidad = menos procesamiento de imagen = más nítido */
                         text-rendering: optimizeSpeed; 
                     }
 
