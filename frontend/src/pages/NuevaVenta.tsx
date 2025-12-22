@@ -518,113 +518,105 @@ const NuevaVenta = () => {
                 <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
             </div>
 
-            {/* ================================================================================= */}
-            {/* TICKET REAL DE IMPRESIÓN (REFACTORIZADO PARA TÉRMICA)                             */}
+{/* ================================================================================= */}
+            {/* TICKET REAL DE IMPRESIÓN (REPLICA EXACTA DE LA FOTO)                              */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
                 <div style={{
                     width: '58mm',
-                    padding: '5px 0 40px 0',
+                    padding: '10px 0',
                     backgroundColor: 'white',
                     color: 'black',
-                    fontFamily: "'Courier New', Courier, monospace",
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    lineHeight: '1.2',
-                    textAlign: 'left'
+                    // Usamos tipografía de sistema (Arial/Helvetica) para que se vea igual a la foto
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    fontSize: '12px',
+                    lineHeight: '1.3',
+                    textAlign: 'left',
+                    textTransform: 'uppercase' // Todo en mayúsculas como en el ticket
                 }}>
 
                     {/* Encabezado */}
-                    <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '2px dashed black', paddingBottom: '5px' }}>
-                        <h2 style={{ fontSize: '24px', margin: '0 0 5px 0', fontWeight: '900' }}>ALIMAR</h2>
-                        <p style={{ fontSize: '12px', margin: 0 }}>
+                    <div style={{ marginBottom: '15px' }}>
+                        <h2 style={{ fontSize: '16px', margin: '0 0 2px 0', fontWeight: '400' }}>.ALIMAR</h2>
+                        <p style={{ margin: 0 }}>
                             {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
 
-                    {/* Items */}
-                    <div>
+                    {/* Items: Estilo vertical (Cantidad -> Nombre -> Precio) */}
+                    <div style={{ marginBottom: '15px' }}>
                         {cartItems.map((item, idx) => (
-                            <div key={idx} style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                marginBottom: '5px',
-                                borderBottom: '1px solid black',
-                                paddingBottom: '2px'
-                            }}>
-                                <div style={{ width: '65%' }}>
-                                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{item.cantidad}x </span>
-                                    <span style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                        {/* Cortar nombres muy largos */}
-                                        {(item.es_custom ? item.descripcion : item.producto_nombre).substring(0, 22)}
-                                    </span>
+                            <div key={idx} style={{ marginBottom: '10px' }}>
+                                {/* Línea 1: Cantidad */}
+                                <div style={{ fontWeight: 'normal' }}>
+                                    {item.cantidad}x
                                 </div>
-                                <div style={{ fontWeight: '900', fontSize: '14px' }}>
+                                {/* Línea 2: Descripción completa */}
+                                <div style={{ fontWeight: 'normal' }}>
+                                    {item.es_custom ? item.descripcion : item.producto_nombre}
+                                </div>
+                                {/* Línea 3: Precio (Total del item) */}
+                                <div>
                                     {formatPrice(item.subtotal)}
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Totales */}
-                    <div style={{ marginTop: '10px', borderTop: '2px dashed black', paddingTop: '5px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
-                            <span>PAGO:</span>
-                            <span style={{ textTransform: 'uppercase' }}>{metodoPago}</span>
+                    {/* Totales y Pago */}
+                    <div>
+                        <div style={{ marginBottom: '5px' }}>
+                            <div>PAGO:</div>
+                            <div>{metodoPago}</div>
                         </div>
 
                         {metodoPago === 'mercadopago' && (
-                            <div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}>
-                                <p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p>
-                                <p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p>
+                            <div style={{ marginBottom: '5px' }}>
+                                <div>ALIAS:</div>
+                                <div style={{ fontWeight: 'bold' }}>alimar25</div>
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}>
-                            <span>TOTAL:</span>
-                            <span>{formatPrice(total)}</span>
+                        <div style={{ marginTop: '10px' }}>
+                            <div>TOTAL:</div>
+                            <div style={{ fontSize: '16px' }}>{formatPrice(total)}</div>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                    <div style={{ marginTop: '20px', textAlign: 'left' }}>
                         <p>*** GRACIAS ***</p>
-                        <p style={{ marginTop: '15px' }}>.</p> {/* Punto final para corte */}
                     </div>
                 </div>
             </div>
 
-            {/* CSS REFACTORIZADO */}
+            {/* CSS OPTIMIZADO PARA IMPRESIÓN */}
             <style>{`
                 #ticket-imprimible { display: none; }
 
                 @media print {
-                    body * { visibility: hidden; }
+                    /* Ocultar todo lo que no sea el ticket */
+                    body * { visibility: hidden; height: 0; overflow: hidden; }
                     .no-print, .no-print * { display: none !important; }
 
+                    /* Mostrar solo el ticket */
                     #ticket-imprimible, #ticket-imprimible * {
                         visibility: visible;
                         display: block !important;
+                        height: auto;
+                        overflow: visible;
                     }
 
                     #ticket-imprimible {
                         position: absolute;
                         left: 0;
                         top: 0;
-                        width: 58mm;
+                        width: 58mm; /* Ancho estándar de térmica */
                         margin: 0;
                         padding: 0;
                     }
 
-                    * {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        color-adjust: exact !important;
-                        -webkit-font-smoothing: none !important;
-                        -moz-osx-font-smoothing: grayscale;
-                        text-rendering: optimizeSpeed; 
-                    }
-
+                    /* Forzar colores negros puros y quitar márgenes de página */
                     @page { margin: 0; size: auto; }
                 }
             `}</style>
