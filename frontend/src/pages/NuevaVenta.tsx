@@ -518,74 +518,77 @@ const NuevaVenta = () => {
                 <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
             </div>
 
-{/* ================================================================================= */}
-            {/* TICKET REAL DE IMPRESIÓN (REPLICA EXACTA DE LA FOTO)                              */}
+            {/* TICKET REAL DE IMPRESIÓN (REPLICA EXACTA DE LA FOTO 3 - BALANZA)                  */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
                 <div style={{
                     width: '58mm',
-                    padding: '10px 0',
+                    padding: '10px 5px', // Un poco de margen lateral
                     backgroundColor: 'white',
                     color: 'black',
-                    // Usamos tipografía de sistema (Arial/Helvetica) para que se vea igual a la foto
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    // Usamos tipografía monoespaciada como en el ticket de la balanza
+                    fontFamily: "'Courier New', Courier, monospace",
                     fontSize: '12px',
-                    lineHeight: '1.3',
+                    lineHeight: '1.2',
                     textAlign: 'left',
-                    textTransform: 'uppercase' // Todo en mayúsculas como en el ticket
+                    textTransform: 'uppercase'
                 }}>
 
-                    {/* Encabezado */}
-                    <div style={{ marginBottom: '15px' }}>
-                        <h2 style={{ fontSize: '16px', margin: '0 0 2px 0', fontWeight: '400' }}>.ALIMAR</h2>
-                        <p style={{ margin: 0 }}>
-                            {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
-                        </p>
+                    {/* Encabezado Centrado */}
+                    <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                        <p style={{ margin: 0 }}>X</p>
+                        <p style={{ margin: 0 }}>NO VALIDO COMO FACTURA</p>
+                        <h2 style={{ fontSize: '16px', margin: '5px 0', fontWeight: 'bold' }}>ALIMAR</h2>
                     </div>
 
-                    {/* Items: Estilo vertical (Cantidad -> Nombre -> Precio) */}
+                    {/* Fecha y Hora en la misma línea */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>Fecha: {new Date().toLocaleDateString('es-AR', {year: '2-digit', month: '2-digit', day: '2-digit'})}</span>
+                        <span>Hora: {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>
+                    </div>
+
+                    {/* Encabezados de Columnas */}
+                    <div style={{ marginBottom: '5px' }}>
+                        <div style={{ marginBottom: '2px' }}>Descripcion</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'right' }}>
+                            <span style={{ textAlign: 'left' }}>Precio</span>
+                            <span style={{ textAlign: 'center' }}>Cantidad</span>
+                            <span>Importe</span>
+                        </div>
+                    </div>
+
+                    {/* Lista de Ítems */}
                     <div style={{ marginBottom: '15px' }}>
                         {cartItems.map((item, idx) => (
-                            <div key={idx} style={{ marginBottom: '10px' }}>
-                                {/* Línea 1: Cantidad */}
-                                <div style={{ fontWeight: 'normal' }}>
-                                    {item.cantidad}x
-                                </div>
-                                {/* Línea 2: Descripción completa */}
-                                <div style={{ fontWeight: 'normal' }}>
+                            <div key={idx} style={{ marginBottom: '8px' }}>
+                                {/* Línea 1: Nombre del producto */}
+                                <div style={{ marginBottom: '2px' }}>
                                     {item.es_custom ? item.descripcion : item.producto_nombre}
                                 </div>
-                                {/* Línea 3: Precio (Total del item) */}
-                                <div>
-                                    {formatPrice(item.subtotal)}
+                                {/* Línea 2: Precio U., Cantidad, Subtotal (Alineados) */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'right' }}>
+                                    <span style={{ textAlign: 'left' }}>
+                                        {Number(item.precio_unitario).toFixed(0)}
+                                    </span>
+                                    <span style={{ textAlign: 'center' }}>
+                                        {item.cantidad} Un $
+                                    </span>
+                                    <span>
+                                        {Number(item.subtotal).toFixed(2).replace('.', ',')}
+                                    </span>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Totales y Pago */}
+                    {/* Pie del Ticket */}
                     <div>
-                        <div style={{ marginBottom: '5px' }}>
-                            <div>PAGO:</div>
-                            <div>{metodoPago}</div>
+                        <p style={{ margin: '0 0 10px 0' }}>Art:002</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', marginBottom: '15px' }}>
+                            <span>TOTAL:$</span>
+                            <span>{Number(total).toFixed(2).replace('.', ',')}</span>
                         </div>
-
-                        {metodoPago === 'mercadopago' && (
-                            <div style={{ marginBottom: '5px' }}>
-                                <div>ALIAS:</div>
-                                <div style={{ fontWeight: 'bold' }}>alimar25</div>
-                            </div>
-                        )}
-
-                        <div style={{ marginTop: '10px' }}>
-                            <div>TOTAL:</div>
-                            <div style={{ fontSize: '16px' }}>{formatPrice(total)}</div>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div style={{ marginTop: '20px', textAlign: 'left' }}>
-                        <p>*** GRACIAS ***</p>
+                        <p style={{ textAlign: 'left', textTransform: 'none' }}> GRACIAS POR TU COMPRA - ALIMAR</p>
                     </div>
                 </div>
             </div>
