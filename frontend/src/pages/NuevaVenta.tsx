@@ -518,109 +518,125 @@ const NuevaVenta = () => {
                 <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
             </div>
 
-            {/* TICKET REAL DE IMPRESIÓN (REPLICA EXACTA DE LA FOTO 3 - BALANZA)                  */}
+{/* ================================================================================= */}
+            {/* TICKET FINAL - FORMATO TABLA (INDESTRUCTIBLE EN IMPRESIÓN)                        */}
             {/* ================================================================================= */}
             <div id="ticket-imprimible" className="printable-content">
                 <div style={{
-                    width: '58mm',
-                    padding: '10px 5px', // Un poco de margen lateral
+                    width: '100%', // Usamos 100% del contenedor padre (definido en CSS)
                     backgroundColor: 'white',
                     color: 'black',
-                    // Usamos tipografía monoespaciada como en el ticket de la balanza
-                    fontFamily: "'Courier New', Courier, monospace",
-                    fontSize: '12px',
+                    fontFamily: "'Courier New', Courier, monospace", // Fuente monoespaciada obligatoria
+                    fontSize: '11px', // 11px es el estándar ideal para 58mm
+                    fontWeight: 'bold', // Negrita para que se lea mejor en térmica
                     lineHeight: '1.2',
                     textAlign: 'left',
                     textTransform: 'uppercase'
                 }}>
 
-                    {/* Encabezado Centrado */}
-                    <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-                        <p style={{ margin: 0 }}>X</p>
-                        <p style={{ margin: 0 }}>NO VALIDO COMO FACTURA</p>
-                        <h2 style={{ fontSize: '16px', margin: '5px 0', fontWeight: 'bold' }}>ALIMAR</h2>
+                    {/* Encabezado */}
+                    <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '14px', marginBottom: '5px' }}>X</div>
+                        <div style={{ fontSize: '10px', marginBottom: '5px' }}>NO VALIDO COMO FACTURA</div>
+                        <h2 style={{ fontSize: '18px', margin: '5px 0' }}>ALIMAR</h2>
                     </div>
 
-                    {/* Fecha y Hora en la misma línea */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>Fecha: {new Date().toLocaleDateString('es-AR', {year: '2-digit', month: '2-digit', day: '2-digit'})}</span>
-                        <span>Hora: {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>
+                    {/* Datos Fecha */}
+                    <div style={{ marginBottom: '10px', fontSize: '10px' }}>
+                        <span>Fecha: {new Date().toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: '2-digit'})}</span>
+                        <span style={{ marginLeft: '10px' }}>Hora: {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>
                     </div>
 
-                    {/* Encabezados de Columnas */}
-                    <div style={{ marginBottom: '5px' }}>
-                        <div style={{ marginBottom: '2px' }}>Descripcion</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'right' }}>
-                            <span style={{ textAlign: 'left' }}>Precio</span>
-                            <span style={{ textAlign: 'center' }}>Cantidad</span>
-                            <span>Importe</span>
+                    {/* TABLA DE PRODUCTOS - ESTO SOLUCIONA LA ALINEACIÓN */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px dashed black' }}>
+                                <th style={{ textAlign: 'left', width: '35%', paddingBottom: '2px' }}>PRECIO</th>
+                                <th style={{ textAlign: 'center', width: '25%', paddingBottom: '2px' }}>CANT</th>
+                                <th style={{ textAlign: 'right', width: '40%', paddingBottom: '2px' }}>IMPORTE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {/* Espaciador */}
+                            <tr><td colSpan={3} style={{ height: '5px' }}></td></tr>
+
+                            {cartItems.map((item, idx) => (
+                                <>
+                                    {/* Fila 1: Descripción (Ocupa todo el ancho) */}
+                                    <tr>
+                                        <td colSpan={3} style={{ textAlign: 'left', paddingTop: '4px' }}>
+                                            {item.es_custom ? item.descripcion : item.producto_nombre}
+                                        </td>
+                                    </tr>
+                                    {/* Fila 2: Los números alineados perfectamente */}
+                                    <tr>
+                                        <td style={{ textAlign: 'left', verticalAlign: 'top' }}>
+                                            {Number(item.precio_unitario).toFixed(0)} $/Un
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'top' }}>
+                                            {item.cantidad} Un
+                                        </td>
+                                        <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
+                                            {Number(item.subtotal).toFixed(2).replace('.', ',')}
+                                        </td>
+                                    </tr>
+                                </>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* Totales */}
+                    <div style={{ marginTop: '15px', borderTop: '1px dashed black', paddingTop: '5px' }}>
+                        <div style={{ marginBottom: '5px', fontSize: '10px' }}>
+                            Art:002
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginTop: '5px' }}>
+                            <span>TOTAL:</span>
+                            <span>$ {Number(total).toFixed(2).replace('.', ',')}</span>
                         </div>
                     </div>
 
-                    {/* Lista de Ítems */}
-                    <div style={{ marginBottom: '15px' }}>
-                        {cartItems.map((item, idx) => (
-                            <div key={idx} style={{ marginBottom: '8px' }}>
-                                {/* Línea 1: Nombre del producto */}
-                                <div style={{ marginBottom: '2px' }}>
-                                    {item.es_custom ? item.descripcion : item.producto_nombre}
-                                </div>
-                                {/* Línea 2: Precio U., Cantidad, Subtotal (Alineados) */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', textAlign: 'right' }}>
-                                    <span style={{ textAlign: 'left' }}>
-                                        {Number(item.precio_unitario).toFixed(0)}
-                                    </span>
-                                    <span style={{ textAlign: 'center' }}>
-                                        {item.cantidad} Un $
-                                    </span>
-                                    <span>
-                                        {Number(item.subtotal).toFixed(2).replace('.', ',')}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Pie del Ticket */}
-                    <div>
-                        <p style={{ margin: '0 0 10px 0' }}>Art:002</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', marginBottom: '15px' }}>
-                            <span>TOTAL:$</span>
-                            <span>{Number(total).toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <p style={{ textAlign: 'left', textTransform: 'none' }}> GRACIAS POR TU COMPRA - ALIMAR</p>
+                    {/* Footer */}
+                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '10px' }}>
+                        <p>Gracias por su compra...</p>
                     </div>
                 </div>
             </div>
 
-            {/* CSS OPTIMIZADO PARA IMPRESIÓN */}
+            {/* CSS AJUSTADO PARA EVITAR DESBORDES */}
             <style>{`
                 #ticket-imprimible { display: none; }
 
                 @media print {
-                    /* Ocultar todo lo que no sea el ticket */
-                    body * { visibility: hidden; height: 0; overflow: hidden; }
+                    /* Reset total del navegador */
+                    body * { visibility: hidden; height: 0; }
                     .no-print, .no-print * { display: none !important; }
 
-                    /* Mostrar solo el ticket */
-                    #ticket-imprimible, #ticket-imprimible * {
+                    /* Configuración de página: MÁRGENES A CERO */
+                    @page {
+                        size: auto;
+                        margin: 0mm; /* Crucial: elimina margen del navegador */
+                    }
+
+                    /* El contenedor del ticket */
+                    #ticket-imprimible {
                         visibility: visible;
                         display: block !important;
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        /* IMPORTANTE: Un poco menos de 58mm para que no se corte por el margen físico de la impresora */
+                        width: 48mm;
+                        margin-left: 1mm; /* Pequeño margen izq */
                         height: auto;
                         overflow: visible;
                     }
 
-                    #ticket-imprimible {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 58mm; /* Ancho estándar de térmica */
-                        margin: 0;
-                        padding: 0;
+                    /* Asegurar que el contenido interno sea visible */
+                    #ticket-imprimible * {
+                        visibility: visible;
+                        height: auto;
                     }
-
-                    /* Forzar colores negros puros y quitar márgenes de página */
-                    @page { margin: 0; size: auto; }
                 }
             `}</style>
         </div>
