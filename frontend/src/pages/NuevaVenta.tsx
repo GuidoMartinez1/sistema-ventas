@@ -1,15 +1,16 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Plus, Minus, Trash2, DollarSign, Camera, Printer, ChevronDown, ChevronRight, Package } from 'lucide-react' // Agregué iconos nuevos
+import { Plus, Minus, Trash2, DollarSign, Camera, Printer, ChevronDown, ChevronRight } from 'lucide-react' // Agregué flechas para el acordeón
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 
-// Clases de utilidad
+// Clases de utilidad (TUS CLASES ORIGINALES)
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
+
 
 const formatPrice = (value: number | string | undefined) => {
     if (value === null || value === undefined || value === '') return '$0';
@@ -20,6 +21,8 @@ const NuevaVenta = () => {
     const navigate = useNavigate()
     const location = useLocation()
     const montoRef = useRef<HTMLInputElement>(null)
+
+    // --- REFS ---
     const ticketRef = useRef<HTMLDivElement>(null)
 
     // --- STATES ---
@@ -30,7 +33,7 @@ const NuevaVenta = () => {
     const [loading, setLoading] = useState(true)
     const [busqueda, setBusqueda] = useState('')
 
-    // Estados para acordeón de categorías
+    // --- NUEVO STATE: CATEGORÍAS ABIERTAS ---
     const [categoriasAbiertas, setCategoriasAbiertas] = useState<Record<string, boolean>>({})
 
     // Estados para importe directo
@@ -64,13 +67,12 @@ const NuevaVenta = () => {
         }
     }, [location.state])
 
-    // --- LÓGICA DE AGRUPACIÓN ---
-    // Agrupamos los productos por categoría usando useMemo para no recalcular en cada render
+    // --- NUEVA LÓGICA: AGRUPACIÓN ---
     const productosAgrupados = useMemo(() => {
         const grupos: Record<string, Producto[]> = {};
         productos.forEach(p => {
-            // Asumimos que p tiene 'categoria'. Si no, usa 'Varios'
-            // @ts-ignore: Si TS se queja porque categoria no está en la interfaz Producto, esto lo soluciona temporalmente
+            // Asumimos que p.categoria existe, si no, va a 'General'
+            // @ts-ignore
             const cat = p.categoria || 'General';
             if (!grupos[cat]) grupos[cat] = [];
             grupos[cat].push(p);
@@ -79,13 +81,11 @@ const NuevaVenta = () => {
     }, [productos]);
 
     const toggleCategoria = (categoria: string) => {
-        setCategoriasAbiertas(prev => ({
-            ...prev,
-            [categoria]: !prev[categoria]
-        }));
+        setCategoriasAbiertas(prev => ({ ...prev, [categoria]: !prev[categoria] }));
     };
 
-    // --- LÓGICA DEL CARRITO ---
+
+    // --- LÓGICA DEL CARRITO (TU LÓGICA ORIGINAL) ---
     const addProducto = (producto: Producto) => {
         if (!producto?.id) {
             toast.error('Producto inválido')
@@ -125,10 +125,12 @@ const NuevaVenta = () => {
 
     const addPrecioKgItem = (producto: Producto) => {
         const precioKg = Number(producto.precio_kg);
+
         if (!precioKg || precioKg <= 0) {
             toast.error('Este producto no tiene precio por Kg configurado');
             return;
         }
+
         const item: DetalleVenta = {
             cantidad: 1,
             precio_unitario: precioKg,
@@ -136,6 +138,7 @@ const NuevaVenta = () => {
             descripcion: `${producto.nombre} (x Kg)`,
             es_custom: true,
         };
+
         setCartItems(prev => [item, ...prev]);
         toast.success(`Agregado 1 Kg de ${producto.nombre}`);
     };
@@ -160,7 +163,26 @@ const NuevaVenta = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const addNuevoItem = () => {
-        // ... (Tu lógica original sin cambios si la usas)
+        const desc = (nuevoItem.descripcion || '').trim()
+        const cant = Number(nuevoItem.cantidad || 0)
+        const precio = Number(nuevoItem.precio || 0)
+        if (!desc) {
+            toast.error('Ingrese una descripción')
+            return
+        }
+        if (cant <= 0 || precio < 0) {
+            toast.error('Cantidad o precio inválidos')
+            return
+        }
+        const item: DetalleVenta = {
+            cantidad: cant,
+            precio_unitario: precio,
+            subtotal: cant * precio,
+            descripcion: desc,
+            es_custom: true
+        }
+        setCartItems(prev => [item, ...prev])
+        setNuevoItem({ descripcion: '', cantidad: 1, precio: 0 })
     }
 
     const updateCantidad = (idx: number, cant: number) => {
@@ -171,10 +193,12 @@ const NuevaVenta = () => {
             removeItem(idx)
             return
         }
+
         if (item.producto_id && producto && cant > (producto.stock || 0)) {
             toast.error(`Stock insuficiente. Disponible: ${producto.stock || 0}`)
             return
         }
+
         setCartItems(prev =>
             prev.map((it, i) =>
                 i === idx ? { ...it, cantidad: cant, subtotal: cant * Number(it.precio_unitario || 0) } : it
@@ -256,51 +280,59 @@ const NuevaVenta = () => {
         }
     }
 
-    // --- SUBCOMPONENTE RENDER PRODUCTO (Para reutilizar) ---
+    // --- HELPER PARA RENDERIZAR LA TARJETA (TU DISEÑO ORIGINAL EXACTO) ---
+    // Esto lo saqué afuera para poder usarlo tanto en la búsqueda (lista plana) como en la lista agrupada
     const renderProductoCard = (p: Producto) => (
-        <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative flex flex-col justify-between h-full">
-            <div>
-                {/* Nombre y Precio Principal */}
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-medium text-gray-900 leading-tight pr-2 text-sm md:text-base">{p.nombre}</h3>
-                    <span className="text-base md:text-lg font-bold text-gray-900 whitespace-nowrap">
-                        {formatPrice(Number(p.precio || 0).toFixed(2))}
-                    </span>
-                </div>
+        <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative">
 
-                {/* Datos internos */}
-                <div className="flex justify-between text-xs text-gray-400 mb-2">
-                    {p.precio_costo && <span>Cost: {formatPrice(Number(p.precio_costo))}</span>}
+            {/* Nombre y Precio Principal */}
+            <div className="flex justify-between items-start mb-1">
+                <h3 className="font-medium text-gray-900 leading-tight pr-2">{p.nombre}</h3>
+                <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+                    {formatPrice(Number(p.precio || 0).toFixed(2))}
+                </span>
+            </div>
+
+            {/* Precio X KG */}
+            {p.precio_kg && Number(p.precio_kg) > 0 && (
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            addPrecioKgItem(p);
+                        }}
+                        className="group flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all cursor-pointer shadow-sm"
+                        title="Click para agregar 1 Kg al carrito"
+                    >
+                        <span className="group-hover:block hidden text-[10px] mr-1">✚</span>
+                        x Kg: {formatPrice(p.precio_kg)}
+                    </button>
+                </div>
+            )}
+
+            {/* Datos internos (Costo / Ganancia) */}
+            <div className="flex justify-between text-xs text-gray-400 mb-3">
+                <div>
+                    {p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}
+                </div>
+                <div>
+                    {p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}
                 </div>
             </div>
 
-            <div>
-                {/* Botón precio X KG */}
-                {p.precio_kg && Number(p.precio_kg) > 0 && (
-                    <div className="flex justify-end mb-2">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); addPrecioKgItem(p); }}
-                            className="w-full group flex items-center justify-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1.5 rounded border border-orange-100 hover:bg-orange-600 hover:text-white transition-all"
-                        >
-                            x Kg: {formatPrice(p.precio_kg)}
-                        </button>
-                    </div>
-                )}
-
-                {/* Stock y Botón Agregar */}
-                <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
-                    <span className={`text-xs font-medium ${
-                        (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-500'
-                    }`}>
-                        Stock: {p.stock}
-                    </span>
-                    <button
-                        onClick={() => addProducto(p)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1.5 shadow-sm transition-colors"
-                    >
-                        <Plus className="h-4 w-4" />
-                    </button>
-                </div>
+            {/* Stock y Botón Agregar */}
+            <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
+                <span className={`text-sm font-medium ${
+                    (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600'
+                }`}>
+                    Stock: {p.stock}
+                </span>
+                <button
+                    onClick={() => addProducto(p)}
+                    className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow"
+                >
+                    <Plus className="h-4 w-4" />
+                </button>
             </div>
         </div>
     );
@@ -315,23 +347,22 @@ const NuevaVenta = () => {
 
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
-            {/* ENCABEZADOS Y FORMULARIOS */}
+            {/* ENCABEZADOS Y FORMULARIOS (Se ocultarán al imprimir por CSS) */}
             <div className="no-print">
                 <h1 className="text-3xl font-bold text-gray-900">Nueva Venta</h1>
+                <p className="text-gray-600">Vendé productos o cobrá importes directos</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-                {/* COLUMNA IZQ: CLIENTE Y PRODUCTOS */}
+                {/* COLUMNA IZQ (Se ocultará al imprimir) */}
                 <div className="lg:col-span-2 space-y-6 no-print">
-
-                    {/* BUSCADOR Y CLIENTE COMBINADOS O SEPARADOS - Mantenemos separado por claridad */}
+                    {/* Cliente */}
                     <div className={cardClass}>
-                        <div className="flex flex-col gap-4">
-                            {/* Selector de Cliente */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex-1 relative">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Cliente</label>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-2/3 relative">
+                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Cliente</label>
+                                <div className="w-full relative">
                                     <input
                                         type="text"
                                         value={nombreClienteInput}
@@ -341,13 +372,13 @@ const NuevaVenta = () => {
                                             const coincidencia = clientes.find(c => c.nombre.toLowerCase().includes(texto.toLowerCase()))
                                             if (coincidencia) setSelectedCliente(coincidencia.id); else setSelectedCliente('');
                                         }}
-                                        placeholder="Consumidor Final"
+                                        placeholder="Buscar cliente..."
                                         className={inputFieldClass}
                                         onFocus={() => setMostrarSugerencias(true)}
-                                        onBlur={() => setTimeout(() => setMostrarSugerencias(false), 200)}
+                                        onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}
                                     />
                                     {mostrarSugerencias && nombreClienteInput && (
-                                        <ul className="absolute z-20 w-full bg-white border rounded shadow-lg max-h-40 overflow-y-auto mt-1">
+                                        <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto">
                                             {clientes.filter(c => c.nombre.toLowerCase().includes(nombreClienteInput.toLowerCase())).map(c => (
                                                 <li key={c.id} onMouseDown={() => { setSelectedCliente(c.id); setNombreClienteInput(c.nombre); }} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
                                                     {c.nombre}
@@ -356,102 +387,82 @@ const NuevaVenta = () => {
                                         </ul>
                                     )}
                                 </div>
-                                <div className="flex items-end pb-2">
-                                    <label className="flex items-center cursor-pointer">
-                                        <input type="checkbox" checked={esDeuda} onChange={() => setEsDeuda(!esDeuda)} className="h-5 w-5 text-purple-600 rounded focus:ring-purple-500 border-gray-300"/>
-                                        <span className="ml-2 text-sm font-medium text-gray-700">Cuenta Corriente</span>
-                                    </label>
-                                </div>
                             </div>
-
-                            <hr className="border-gray-100"/>
-
-                            {/* Buscador de Productos */}
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1 block">Buscar Producto</label>
-                                <input
-                                    type="text"
-                                    placeholder="Nombre o código..."
-                                    value={busqueda}
-                                    onChange={e => setBusqueda(e.target.value)}
-                                    className={`${inputFieldClass} bg-gray-50`}
-                                />
+                            <div className="flex items-center">
+                                <input id="toggle-deuda" type="checkbox" checked={esDeuda} onChange={() => setEsDeuda(!esDeuda)} className="h-4 w-4"/>
+                                <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700 whitespace-nowrap">Pendiente / Deuda</label>
                             </div>
                         </div>
                     </div>
 
-                    {/* LISTADO DE PRODUCTOS (Refactorizado) */}
-                    <div className="space-y-4">
+                    {/* Productos */}
+                    <div className={cardClass}>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+                            <input type="text" placeholder="Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} w-full md:w-1/2`}/>
+                        </div>
+
+                        {/* --- LÓGICA DE VISUALIZACIÓN --- */}
                         {busqueda.length > 0 ? (
-                            // --- VISTA BÚSQUEDA (Plana, sin categorías) ---
-                            <div className="bg-white rounded-xl shadow p-4">
-                                <h2 className="text-sm font-bold text-gray-500 mb-3 uppercase">Resultados de búsqueda</h2>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {productos
-                                        .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
-                                        .map(p => renderProductoCard(p))
-                                    }
-                                    {productos.filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase())).length === 0 && (
-                                        <p className="col-span-full text-center text-gray-400 py-4">No se encontraron productos</p>
-                                    )}
-                                </div>
+                            // MODO BÚSQUEDA: LISTA PLANA (Tu visualización original)
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {productos
+                                    .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
+                                    .map((p) => renderProductoCard(p))
+                                }
+                                {productos.filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase())).length === 0 && (
+                                    <p className="col-span-full text-center text-gray-500 mt-4">No se encontraron productos.</p>
+                                )}
                             </div>
                         ) : (
-                            // --- VISTA AGRUPADA (Por Categoría) ---
-                            Object.entries(productosAgrupados).map(([categoria, items]) => (
-                                <div key={categoria} className="bg-white rounded-xl shadow overflow-hidden">
-                                    {/* Cabecera de Categoría (Clickable) */}
-                                    <button
-                                        onClick={() => toggleCategoria(categoria)}
-                                        className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Package className="h-5 w-5 text-purple-500" />
-                                            <h2 className="font-bold text-gray-800 text-lg capitalize">{categoria}</h2>
-                                            <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                {items.length}
+                            // MODO NORMAL: AGRUPADO POR CATEGORÍAS
+                            <div className="space-y-4">
+                                {Object.entries(productosAgrupados).map(([categoria, items]) => (
+                                    <div key={categoria} className="border border-gray-200 rounded-lg overflow-hidden">
+                                        {/* Cabecera del Acordeón - Estilo simple para no romper tu estética */}
+                                        <button
+                                            onClick={() => toggleCategoria(categoria)}
+                                            className="w-full flex justify-between items-center p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                                        >
+                                            <span className="font-bold text-gray-700 uppercase text-sm">
+                                                {categoria} ({items.length})
                                             </span>
-                                        </div>
-                                        {categoriasAbiertas[categoria] ? <ChevronDown className="h-5 w-5 text-gray-400" /> : <ChevronRight className="h-5 w-5 text-gray-400" />}
-                                    </button>
+                                            {categoriasAbiertas[categoria] ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+                                        </button>
 
-                                    {/* Grid de Productos (Visible solo si está abierta) */}
-                                    {categoriasAbiertas[categoria] && (
-                                        <div className="p-4 bg-gray-50/50">
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                                {items.map(p => renderProductoCard(p))}
+                                        {/* Contenido del Acordeón */}
+                                        {categoriasAbiertas[categoria] && (
+                                            <div className="p-4 bg-white border-t border-gray-100">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {items.map(p => renderProductoCard(p))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                        {/* Mensaje si no hay productos en absoluto */}
-                        {!busqueda && productos.length === 0 && (
-                            <div className="text-center py-10 bg-white rounded-xl shadow">
-                                <p className="text-gray-500">No hay productos cargados en el sistema.</p>
+                                        )}
+                                    </div>
+                                ))}
+                                {Object.keys(productosAgrupados).length === 0 && (
+                                    <p className="text-center text-gray-500 mt-4">No hay productos cargados.</p>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: CARRITO (Sin cambios lógicos, solo visual) */}
+                {/* COLUMNA DERECHA: CARRITO (INTACTA) */}
                 <div className="lg:col-span-1 no-print">
-                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6 border-t-4 border-purple-500`}>
-                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <DollarSign className="h-5 w-5 text-purple-600"/>
-                            Carrito Actual
-                        </h2>
+                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
+                        <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
-                        {/* Importe Directo */}
-                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div className="border rounded p-3">
+                            <div className="flex items-center mb-2"><DollarSign className="h-4 w-4 mr-2" /><span className="font-medium">Importe directo</span></div>
+
+                            {/* NUEVO DISEÑO CON DESCRIPCIÓN */}
                             <div className="flex flex-col gap-2">
                                 <input
                                     type="text"
                                     value={descripcionDirecta}
                                     onChange={e => setDescripcionDirecta(e.target.value)}
-                                    className="w-full border border-gray-300 p-1.5 rounded text-sm focus:outline-none focus:border-purple-500"
-                                    placeholder="Desc. Varios (opcional)"
+                                    className={inputFieldClass}
+                                    placeholder="Descripción (opcional)"
                                 />
                                 <div className="flex gap-2">
                                     <input
@@ -460,106 +471,87 @@ const NuevaVenta = () => {
                                         step="0.01"
                                         value={importeDirecto}
                                         onChange={e => setImporteDirecto(e.target.value)}
-                                        className="w-full border border-gray-300 p-1.5 rounded text-sm font-mono"
-                                        placeholder="$0.00"
-                                        onKeyDown={(e) => { if (e.key === 'Enter') addImporteDirecto(); }}
+                                        className={`${inputFieldClass} flex-1`}
+                                        placeholder="Monto"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') addImporteDirecto();
+                                        }}
                                     />
-                                    <button onClick={addImporteDirecto} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-bold uppercase tracking-wider">
-                                        ADD
-                                    </button>
+                                    <button onClick={addImporteDirecto} className="btn-primary flex-shrink-0">Agregar</button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Lista Items */}
-                        <div className="max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                            {cartItems.length === 0 ? (
-                                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <p className="text-gray-400 text-sm">El carrito está vacío</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {cartItems.map((it, idx) => (
-                                        <div key={idx} className="border border-gray-200 rounded-lg p-2 bg-white shadow-sm">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="font-semibold text-gray-800 text-sm leading-tight max-w-[85%]">
-                                                    {it.es_custom ? (it.descripcion||'Ítem') : (it.producto_nombre||'Producto')}
+                        {cartItems.length === 0 ? (
+                            <p className="text-gray-500 text-center py-6">Vacío</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {cartItems.map((it, idx) => (
+                                    <div key={idx} className="border rounded p-3 bg-gray-50">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="font-medium text-gray-900 text-sm">{it.es_custom ? (it.descripcion||'Ítem') : (it.producto_nombre||'Producto')}</div>
+                                            <button onClick={() => removeItem(idx)} className="text-red-600"><Trash2 className="h-4 w-4" /></button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded border">
+                                            <div className="text-center">
+                                                <span className="text-xs text-gray-600 block">Cant</span>
+                                                <div className="flex items-center justify-center space-x-1 mt-1">
+                                                    <button onClick={() => updateCantidad(idx, it.cantidad - 1)} className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center"><Minus className="h-3 w-3" /></button>
+                                                    <span className="w-6 text-center text-sm font-medium">{it.cantidad}</span>
+                                                    <button onClick={() => updateCantidad(idx, it.cantidad + 1)} className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center"><Plus className="h-3 w-3" /></button>
                                                 </div>
-                                                <button onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-600 transition-colors">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
                                             </div>
-
-                                            <div className="flex items-center justify-between gap-2 mt-2">
-                                                {/* Controles Cantidad */}
-                                                <div className="flex items-center bg-gray-100 rounded-full px-1">
-                                                    <button onClick={() => updateCantidad(idx, it.cantidad - 1)} className="p-1 hover:text-purple-600"><Minus className="h-3 w-3" /></button>
-                                                    <span className="w-6 text-center text-sm font-bold text-gray-700">{it.cantidad}</span>
-                                                    <button onClick={() => updateCantidad(idx, it.cantidad + 1)} className="p-1 hover:text-purple-600"><Plus className="h-3 w-3" /></button>
-                                                </div>
-
-                                                {/* Precio Unitario Editable */}
-                                                <div className="flex-1 max-w-[80px]">
-                                                     <input
-                                                        type="number"
-                                                        value={it.precio_unitario}
-                                                        onChange={(e) => updatePrecio(idx, Number(e.target.value))}
-                                                        className="w-full text-right text-xs border-b border-gray-300 focus:border-purple-500 outline-none py-1"
-                                                     />
-                                                </div>
-
-                                                {/* Subtotal */}
-                                                <div className="font-bold text-sm text-gray-900 min-w-[60px] text-right">
-                                                    {formatPrice(Number(it.subtotal).toFixed(2))}
-                                                </div>
+                                            <div className="text-center">
+                                                <span className="text-xs text-gray-600 block">Precio/u</span>
+                                                <input type="text" value={it.precio_unitario || ''} onChange={(e) => updatePrecio(idx, Number(e.target.value.replace(/[^0-9.]/g, '') || 0))} className="w-full text-center border rounded px-1 py-0.5 text-xs mt-1"/>
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="text-xs text-gray-600 block">Subtotal</span>
+                                                <span className="font-bold text-sm text-green-600">{formatPrice(Number(it.subtotal).toFixed(2))}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                        {/* Footer Carrito */}
                         {cartItems.length > 0 && (
-                            <div className="border-t pt-4 space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Método de pago</label>
-                                    <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className="w-full mt-1 border border-gray-300 rounded p-2 text-sm bg-white">
-                                        <option value="efectivo">Efectivo</option>
-                                        <option value="tarjeta">Tarjeta</option>
-                                        <option value="mercadopago">MercadoPago</option>
-                                    </select>
+                            <div className="border-t pt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
+                                <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className={inputFieldClass}>
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                    <option value="mercadopago">MercadoPago</option>
+                                </select>
+                            </div>
+                        )}
+
+                        {cartItems.length > 0 && (
+                            <div className="border-t pt-4 space-y-3">
+                                <div className="flex justify-between items-center text-lg font-bold">
+                                    <span>Total:</span>
+                                    <span>{formatPrice(Number(total).toFixed(2))}</span>
                                 </div>
 
-                                <div className="bg-gray-900 text-white p-4 rounded-lg flex justify-between items-center shadow-lg">
-                                    <span className="text-gray-300 font-medium">Total</span>
-                                    <span className="text-2xl font-bold">{formatPrice(Number(total).toFixed(2))}</span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={copiarTicket} className="flex flex-col items-center justify-center gap-1 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-purple-600 font-medium py-2 rounded-lg transition duration-150 text-xs">
-                                        <Camera className="h-5 w-5" />
-                                        <span>FOTO</span>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={copiarTicket} className="flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-2 rounded-lg transition duration-150 text-xs sm:text-sm">
+                                        <Camera className="h-4 w-4" />
+                                        Copiar
                                     </button>
-                                    <button onClick={handlePrint} className="flex flex-col items-center justify-center gap-1 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-purple-600 font-medium py-2 rounded-lg transition duration-150 text-xs">
-                                        <Printer className="h-5 w-5" />
-                                        <span>IMPRIMIR</span>
+                                    <button onClick={handlePrint} className="flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2 px-2 rounded-lg transition duration-150 text-xs sm:text-sm">
+                                        <Printer className="h-4 w-4" />
+                                        Imprimir
                                     </button>
                                 </div>
 
-                                <button
-                                    onClick={handleSubmit}
-                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95"
-                                >
-                                    CONFIRMAR VENTA
-                                </button>
+                                <button onClick={handleSubmit} className="w-full btn-primary">Registrar Venta</button>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* TICKET WHATSAPP (Original) */}
+            {/* TICKET WHATSAPP (Oculto) - INTACTO */}
             <div ref={ticketRef} style={{position: 'fixed', top: '-9999px', left: '-9999px', width: '450px', backgroundColor: 'white', padding: '24px', color: 'black'}}>
                 <div className="text-center border-b border-gray-300 pb-4 mb-4">
                     <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
@@ -584,45 +576,102 @@ const NuevaVenta = () => {
                 <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
             </div>
 
-            {/* TICKET IMPRIMIBLE (Original) */}
+            {/* TICKET DE IMPRESIÓN (INTACTO) */}
             <div id="ticket-imprimible" className="printable-content">
-                <div style={{ width: '58mm', padding: '5px 0 40px 0', backgroundColor: 'white', color: 'black', fontFamily: "'Courier New', Courier, monospace", fontSize: '14px', fontWeight: 'bold', lineHeight: '1.2', textAlign: 'left' }}>
+                <div style={{
+                    width: '58mm',
+                    padding: '5px 0 40px 0',
+                    backgroundColor: 'white',
+                    color: 'black',
+                    fontFamily: "'Courier New', Courier, monospace",
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    lineHeight: '1.2',
+                    textAlign: 'left'
+                }}>
                     <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '2px dashed black', paddingBottom: '5px' }}>
                         <h2 style={{ fontSize: '24px', margin: '0 0 5px 0', fontWeight: '900' }}>ALIMAR</h2>
                         <p style={{ fontSize: '12px', margin: 0 }}>
                             {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
+
                     <div>
                         {cartItems.map((item, idx) => (
-                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', borderBottom: '1px solid black', paddingBottom: '2px' }}>
+                            <div key={idx} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '5px',
+                                borderBottom: '1px solid black',
+                                paddingBottom: '2px'
+                            }}>
                                 <div style={{ width: '65%' }}>
                                     <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{item.cantidad}x </span>
                                     <span style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold' }}>
                                         {(item.es_custom ? item.descripcion : item.producto_nombre).substring(0, 22)}
                                     </span>
                                 </div>
-                                <div style={{ fontWeight: '900', fontSize: '14px' }}>{formatPrice(item.subtotal)}</div>
+                                <div style={{ fontWeight: '900', fontSize: '14px' }}>
+                                    {formatPrice(item.subtotal)}
+                                </div>
                             </div>
                         ))}
                     </div>
+
                     <div style={{ marginTop: '10px', borderTop: '2px dashed black', paddingTop: '5px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}><span>PAGO:</span><span style={{ textTransform: 'uppercase' }}>{metodoPago}</span></div>
-                        {metodoPago === 'mercadopago' && (<div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}><p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p><p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p></div>)}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
+                            <span>PAGO:</span>
+                            <span style={{ textTransform: 'uppercase' }}>{metodoPago}</span>
+                        </div>
+                        {metodoPago === 'mercadopago' && (
+                            <div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}>
+                                <p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p>
+                                <p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p>
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}>
+                            <span>TOTAL:</span>
+                            <span>{formatPrice(total)}</span>
+                        </div>
                     </div>
-                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}><p>*** GRACIAS ***</p><p style={{ marginTop: '15px' }}>.</p></div>
+
+                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                        <p>*** GRACIAS ***</p>
+                        <p style={{ marginTop: '15px' }}>.</p>
+                    </div>
                 </div>
             </div>
 
             <style>{`
                 #ticket-imprimible { display: none; }
+
                 @media print {
                     body * { visibility: hidden; }
                     .no-print, .no-print * { display: none !important; }
-                    #ticket-imprimible, #ticket-imprimible * { visibility: visible; display: block !important; }
-                    #ticket-imprimible { position: absolute; left: 0; top: 0; width: 58mm; margin: 0; padding: 0; }
-                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+                    #ticket-imprimible, #ticket-imprimible * {
+                        visibility: visible;
+                        display: block !important;
+                    }
+
+                    #ticket-imprimible {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 58mm;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        color-adjust: exact !important;
+                        -webkit-font-smoothing: none !important;
+                        -moz-osx-font-smoothing: grayscale;
+                        text-rendering: optimizeSpeed;
+                    }
+
                     @page { margin: 0; size: auto; }
                 }
             `}</style>
