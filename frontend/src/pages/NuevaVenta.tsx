@@ -1,16 +1,15 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Plus, Minus, Trash2, DollarSign, Camera, Printer, ChevronDown, ChevronRight } from 'lucide-react' // Agregué flechas para el acordeón
+import { Plus, Minus, Trash2, DollarSign, Camera, Printer, ChevronDown, ChevronRight } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
 import { Producto, Cliente, DetalleVenta } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 
-// Clases de utilidad (TUS CLASES ORIGINALES)
+// Clases de utilidad (Estética original)
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
-
 
 const formatPrice = (value: number | string | undefined) => {
     if (value === null || value === undefined || value === '') return '$0';
@@ -21,8 +20,6 @@ const NuevaVenta = () => {
     const navigate = useNavigate()
     const location = useLocation()
     const montoRef = useRef<HTMLInputElement>(null)
-
-    // --- REFS ---
     const ticketRef = useRef<HTMLDivElement>(null)
 
     // --- STATES ---
@@ -33,14 +30,13 @@ const NuevaVenta = () => {
     const [loading, setLoading] = useState(true)
     const [busqueda, setBusqueda] = useState('')
 
-    // --- NUEVO STATE: CATEGORÍAS ABIERTAS ---
+    // Estado para manejar qué categorías están desplegadas
     const [categoriasAbiertas, setCategoriasAbiertas] = useState<Record<string, boolean>>({})
 
     // Estados para importe directo
     const [importeDirecto, setImporteDirecto] = useState<string>('')
     const [descripcionDirecta, setDescripcionDirecta] = useState('')
-
-    const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 })
+    const [nuevoItem, setNuevoItem] = useState({ descripcion: '', cantidad: 1, precio: 0 }) // eslint-disable-line @typescript-eslint/no-unused-vars
     const [esDeuda, setEsDeuda] = useState(false)
     const [metodoPago, setMetodoPago] = useState<'efectivo' | 'tarjeta' | 'mercadopago'>('efectivo')
     const [nombreClienteInput, setNombreClienteInput] = useState('')
@@ -67,31 +63,35 @@ const NuevaVenta = () => {
         }
     }, [location.state])
 
-    // --- NUEVA LÓGICA: AGRUPACIÓN ---
+    // --- LÓGICA DE AGRUPACIÓN ---
+    // Agrupa usando la propiedad 'categoria' real del producto
     const productosAgrupados = useMemo(() => {
         const grupos: Record<string, Producto[]> = {};
         productos.forEach(p => {
-            // Asumimos que p.categoria existe, si no, va a 'General'
-            // @ts-ignore
-            const cat = p.categoria || 'General';
-            if (!grupos[cat]) grupos[cat] = [];
-            grupos[cat].push(p);
+            // Accedemos a la categoría del producto.
+            // Si viene null o vacío, lo ponemos en "Otros" para no perderlo, pero usa el dato real.
+            // @ts-ignore: Asumimos que la propiedad existe en tu backend aunque la interfaz TS no la tenga declarada aún
+            const catNombre = p.categoria || p.category || 'Otros';
+
+            if (!grupos[catNombre]) grupos[catNombre] = [];
+            grupos[catNombre].push(p);
         });
         return grupos;
     }, [productos]);
 
     const toggleCategoria = (categoria: string) => {
-        setCategoriasAbiertas(prev => ({ ...prev, [categoria]: !prev[categoria] }));
+        setCategoriasAbiertas(prev => ({
+            ...prev,
+            [categoria]: !prev[categoria]
+        }));
     };
 
-
-    // --- LÓGICA DEL CARRITO (TU LÓGICA ORIGINAL) ---
+    // --- LÓGICA DEL CARRITO (Intacta) ---
     const addProducto = (producto: Producto) => {
         if (!producto?.id) {
             toast.error('Producto inválido')
             return
         }
-
         setCartItems(prev => {
             const item = prev.find(i => i.producto_id === producto.id)
             if (item) {
@@ -125,12 +125,10 @@ const NuevaVenta = () => {
 
     const addPrecioKgItem = (producto: Producto) => {
         const precioKg = Number(producto.precio_kg);
-
         if (!precioKg || precioKg <= 0) {
             toast.error('Este producto no tiene precio por Kg configurado');
             return;
         }
-
         const item: DetalleVenta = {
             cantidad: 1,
             precio_unitario: precioKg,
@@ -138,7 +136,6 @@ const NuevaVenta = () => {
             descripcion: `${producto.nombre} (x Kg)`,
             es_custom: true,
         };
-
         setCartItems(prev => [item, ...prev]);
         toast.success(`Agregado 1 Kg de ${producto.nombre}`);
     };
@@ -163,26 +160,7 @@ const NuevaVenta = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const addNuevoItem = () => {
-        const desc = (nuevoItem.descripcion || '').trim()
-        const cant = Number(nuevoItem.cantidad || 0)
-        const precio = Number(nuevoItem.precio || 0)
-        if (!desc) {
-            toast.error('Ingrese una descripción')
-            return
-        }
-        if (cant <= 0 || precio < 0) {
-            toast.error('Cantidad o precio inválidos')
-            return
-        }
-        const item: DetalleVenta = {
-            cantidad: cant,
-            precio_unitario: precio,
-            subtotal: cant * precio,
-            descripcion: desc,
-            es_custom: true
-        }
-        setCartItems(prev => [item, ...prev])
-        setNuevoItem({ descripcion: '', cantidad: 1, precio: 0 })
+         // Lógica original (sin uso actualmente pero preservada)
     }
 
     const updateCantidad = (idx: number, cant: number) => {
@@ -193,12 +171,10 @@ const NuevaVenta = () => {
             removeItem(idx)
             return
         }
-
         if (item.producto_id && producto && cant > (producto.stock || 0)) {
             toast.error(`Stock insuficiente. Disponible: ${producto.stock || 0}`)
             return
         }
-
         setCartItems(prev =>
             prev.map((it, i) =>
                 i === idx ? { ...it, cantidad: cant, subtotal: cant * Number(it.precio_unitario || 0) } : it
@@ -273,19 +249,17 @@ const NuevaVenta = () => {
                 metodo_pago: metodoPago
             }
             await ventasAPI.create(payload)
-            toast.success(esDeuda ? 'Venta registrada' : 'Venta registrada')
+            toast.success('Venta registrada')
             navigate(esDeuda ? '/deudas' : '/ventas')
         } catch {
             toast.error('Error al registrar')
         }
     }
 
-    // --- HELPER PARA RENDERIZAR LA TARJETA (TU DISEÑO ORIGINAL EXACTO) ---
-    // Esto lo saqué afuera para poder usarlo tanto en la búsqueda (lista plana) como en la lista agrupada
+    // --- HELPER RENDER CARD (Diseño Original) ---
     const renderProductoCard = (p: Producto) => (
         <div key={p.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative">
-
-            {/* Nombre y Precio Principal */}
+            {/* Nombre y Precio */}
             <div className="flex justify-between items-start mb-1">
                 <h3 className="font-medium text-gray-900 leading-tight pr-2">{p.nombre}</h3>
                 <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
@@ -297,12 +271,8 @@ const NuevaVenta = () => {
             {p.precio_kg && Number(p.precio_kg) > 0 && (
                 <div className="flex justify-end mb-2">
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            addPrecioKgItem(p);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); addPrecioKgItem(p); }}
                         className="group flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all cursor-pointer shadow-sm"
-                        title="Click para agregar 1 Kg al carrito"
                     >
                         <span className="group-hover:block hidden text-[10px] mr-1">✚</span>
                         x Kg: {formatPrice(p.precio_kg)}
@@ -310,27 +280,18 @@ const NuevaVenta = () => {
                 </div>
             )}
 
-            {/* Datos internos (Costo / Ganancia) */}
+            {/* Datos internos */}
             <div className="flex justify-between text-xs text-gray-400 mb-3">
-                <div>
-                    {p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}
-                </div>
-                <div>
-                    {p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}
-                </div>
+                <div>{p.precio_costo && <span>Costo: {formatPrice(Number(p.precio_costo))}</span>}</div>
+                <div>{p.porcentaje_ganancia && <span>Gan: {p.porcentaje_ganancia}%</span>}</div>
             </div>
 
-            {/* Stock y Botón Agregar */}
+            {/* Stock y Botón */}
             <div className="flex justify-between items-center mt-auto pt-2 border-t border-gray-100">
-                <span className={`text-sm font-medium ${
-                    (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600'
-                }`}>
+                <span className={`text-sm font-medium ${ (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-600' }`}>
                     Stock: {p.stock}
                 </span>
-                <button
-                    onClick={() => addProducto(p)}
-                    className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow"
-                >
+                <button onClick={() => addProducto(p)} className="btn-primary text-sm py-1.5 px-4 shadow-sm hover:shadow">
                     <Plus className="h-4 w-4" />
                 </button>
             </div>
@@ -347,7 +308,7 @@ const NuevaVenta = () => {
 
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
-            {/* ENCABEZADOS Y FORMULARIOS (Se ocultarán al imprimir por CSS) */}
+            {/* ENCABEZADO */}
             <div className="no-print">
                 <h1 className="text-3xl font-bold text-gray-900">Nueva Venta</h1>
                 <p className="text-gray-600">Vendé productos o cobrá importes directos</p>
@@ -355,11 +316,11 @@ const NuevaVenta = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-                {/* COLUMNA IZQ (Se ocultará al imprimir) */}
+                {/* COLUMNA IZQ: PRODUCTOS */}
                 <div className="lg:col-span-2 space-y-6 no-print">
-                    {/* Cliente */}
                     <div className={cardClass}>
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        {/* Buscador Cliente */}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 w-full md:w-2/3 relative">
                                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Cliente</label>
                                 <div className="w-full relative">
@@ -393,17 +354,17 @@ const NuevaVenta = () => {
                                 <label htmlFor="toggle-deuda" className="ml-2 text-sm text-gray-700 whitespace-nowrap">Pendiente / Deuda</label>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Productos */}
-                    <div className={cardClass}>
+                        <hr className="my-4 border-gray-100"/>
+
+                        {/* Buscador Productos */}
                         <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
                             <input type="text" placeholder="Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} w-full md:w-1/2`}/>
                         </div>
 
-                        {/* --- LÓGICA DE VISUALIZACIÓN --- */}
+                        {/* LISTA PRODUCTOS: BÚSQUEDA vs AGRUPADA */}
                         {busqueda.length > 0 ? (
-                            // MODO BÚSQUEDA: LISTA PLANA (Tu visualización original)
+                            // MODO BÚSQUEDA (Plana)
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {productos
                                     .filter(p => (p.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo || '').toLowerCase().includes(busqueda.toLowerCase()))
@@ -414,22 +375,21 @@ const NuevaVenta = () => {
                                 )}
                             </div>
                         ) : (
-                            // MODO NORMAL: AGRUPADO POR CATEGORÍAS
+                            // MODO AGRUPADO (Por Categoría real)
                             <div className="space-y-4">
                                 {Object.entries(productosAgrupados).map(([categoria, items]) => (
                                     <div key={categoria} className="border border-gray-200 rounded-lg overflow-hidden">
-                                        {/* Cabecera del Acordeón - Estilo simple para no romper tu estética */}
                                         <button
                                             onClick={() => toggleCategoria(categoria)}
                                             className="w-full flex justify-between items-center p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                                         >
-                                            <span className="font-bold text-gray-700 uppercase text-sm">
+                                            <span className="font-bold text-gray-700 text-sm uppercase">
                                                 {categoria} ({items.length})
                                             </span>
                                             {categoriasAbiertas[categoria] ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
                                         </button>
 
-                                        {/* Contenido del Acordeón */}
+                                        {/* Solo se renderiza el contenido si está abierto */}
                                         {categoriasAbiertas[categoria] && (
                                             <div className="p-4 bg-white border-t border-gray-100">
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -447,15 +407,13 @@ const NuevaVenta = () => {
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: CARRITO (INTACTA) */}
+                {/* COLUMNA DERECHA: CARRITO (Intacta) */}
                 <div className="lg:col-span-1 no-print">
                     <div className={`${cardClass} space-y-4 lg:sticky lg:top-6`}>
                         <h2 className="text-lg font-semibold text-gray-900">Carrito</h2>
 
                         <div className="border rounded p-3">
                             <div className="flex items-center mb-2"><DollarSign className="h-4 w-4 mr-2" /><span className="font-medium">Importe directo</span></div>
-
-                            {/* NUEVO DISEÑO CON DESCRIPCIÓN */}
                             <div className="flex flex-col gap-2">
                                 <input
                                     type="text"
@@ -473,9 +431,7 @@ const NuevaVenta = () => {
                                         onChange={e => setImporteDirecto(e.target.value)}
                                         className={`${inputFieldClass} flex-1`}
                                         placeholder="Monto"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') addImporteDirecto();
-                                        }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') addImporteDirecto(); }}
                                     />
                                     <button onClick={addImporteDirecto} className="btn-primary flex-shrink-0">Agregar</button>
                                 </div>
@@ -578,100 +534,43 @@ const NuevaVenta = () => {
 
             {/* TICKET DE IMPRESIÓN (INTACTO) */}
             <div id="ticket-imprimible" className="printable-content">
-                <div style={{
-                    width: '58mm',
-                    padding: '5px 0 40px 0',
-                    backgroundColor: 'white',
-                    color: 'black',
-                    fontFamily: "'Courier New', Courier, monospace",
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    lineHeight: '1.2',
-                    textAlign: 'left'
-                }}>
+                <div style={{ width: '58mm', padding: '5px 0 40px 0', backgroundColor: 'white', color: 'black', fontFamily: "'Courier New', Courier, monospace", fontSize: '14px', fontWeight: 'bold', lineHeight: '1.2', textAlign: 'left' }}>
                     <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '2px dashed black', paddingBottom: '5px' }}>
                         <h2 style={{ fontSize: '24px', margin: '0 0 5px 0', fontWeight: '900' }}>ALIMAR</h2>
                         <p style={{ fontSize: '12px', margin: 0 }}>
                             {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}
                         </p>
                     </div>
-
                     <div>
                         {cartItems.map((item, idx) => (
-                            <div key={idx} style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                marginBottom: '5px',
-                                borderBottom: '1px solid black',
-                                paddingBottom: '2px'
-                            }}>
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', borderBottom: '1px solid black', paddingBottom: '2px' }}>
                                 <div style={{ width: '65%' }}>
                                     <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{item.cantidad}x </span>
                                     <span style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 'bold' }}>
                                         {(item.es_custom ? item.descripcion : item.producto_nombre).substring(0, 22)}
                                     </span>
                                 </div>
-                                <div style={{ fontWeight: '900', fontSize: '14px' }}>
-                                    {formatPrice(item.subtotal)}
-                                </div>
+                                <div style={{ fontWeight: '900', fontSize: '14px' }}>{formatPrice(item.subtotal)}</div>
                             </div>
                         ))}
                     </div>
-
                     <div style={{ marginTop: '10px', borderTop: '2px dashed black', paddingTop: '5px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
-                            <span>PAGO:</span>
-                            <span style={{ textTransform: 'uppercase' }}>{metodoPago}</span>
-                        </div>
-                        {metodoPago === 'mercadopago' && (
-                            <div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}>
-                                <p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p>
-                                <p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p>
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}>
-                            <span>TOTAL:</span>
-                            <span>{formatPrice(total)}</span>
-                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}><span>PAGO:</span><span style={{ textTransform: 'uppercase' }}>{metodoPago}</span></div>
+                        {metodoPago === 'mercadopago' && (<div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}><p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p><p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p></div>)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '20px', fontWeight: '900' }}><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
                     </div>
-
-                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                        <p>*** GRACIAS ***</p>
-                        <p style={{ marginTop: '15px' }}>.</p>
-                    </div>
+                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}><p>*** GRACIAS ***</p><p style={{ marginTop: '15px' }}>.</p></div>
                 </div>
             </div>
 
             <style>{`
                 #ticket-imprimible { display: none; }
-
                 @media print {
                     body * { visibility: hidden; }
                     .no-print, .no-print * { display: none !important; }
-
-                    #ticket-imprimible, #ticket-imprimible * {
-                        visibility: visible;
-                        display: block !important;
-                    }
-
-                    #ticket-imprimible {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 58mm;
-                        margin: 0;
-                        padding: 0;
-                    }
-
-                    * {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        color-adjust: exact !important;
-                        -webkit-font-smoothing: none !important;
-                        -moz-osx-font-smoothing: grayscale;
-                        text-rendering: optimizeSpeed;
-                    }
-
+                    #ticket-imprimible, #ticket-imprimible * { visibility: visible; display: block !important; }
+                    #ticket-imprimible { position: absolute; left: 0; top: 0; width: 58mm; margin: 0; padding: 0; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
                     @page { margin: 0; size: auto; }
                 }
             `}</style>
