@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import {
     Plus, Minus, Trash2, DollarSign, Camera, Printer,
-    ChevronDown, ChevronRight, Package, Bone, Cat, Dog,
+    ChevronDown, ChevronUp, Package, Bone, Cat, Dog,
     Syringe, Cookie, Wheat, Bath, ShoppingBag
 } from 'lucide-react'
 import { productosAPI, clientesAPI, ventasAPI, categoriasAPI } from '../services/api'
@@ -11,29 +11,31 @@ import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 
-// Clases de utilidad
+// --- CLASES ORIGINALES (Estética Naranja) ---
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
-const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
+// Ajustado a focus:ring-orange-500 para coincidir con Productos.tsx
+const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
 
 const formatPrice = (value: number | string | undefined) => {
     if (value === null || value === undefined || value === '') return '$0';
     return '$' + Number(value).toLocaleString("es-AR");
 };
 
-// --- HELPER PARA ICONOS DE CATEGORÍA ---
+// --- HELPER ICONOS (Colores neutros para respetar tu estética) ---
 const getCategoryIcon = (nombre: string) => {
     const n = nombre.toLowerCase();
-    if (n.includes('gato') && n.includes('alimento')) return <Cat className="h-5 w-5 text-orange-500" />;
-    if (n.includes('perro') && n.includes('alimento')) return <Dog className="h-5 w-5 text-blue-500" />;
-    if (n.includes('accesorios')) return <ShoppingBag className="h-5 w-5 text-pink-500" />;
-    if (n.includes('pipetas') || n.includes('farmacia')) return <Syringe className="h-5 w-5 text-green-500" />;
-    if (n.includes('golosinas') || n.includes('premios')) return <Cookie className="h-5 w-5 text-purple-500" />;
-    if (n.includes('cereales')) return <Wheat className="h-5 w-5 text-yellow-500" />;
-    if (n.includes('sanitarios') || n.includes('piedras')) return <Bath className="h-5 w-5 text-teal-500" />;
-    if (n.includes('varios')) return <Package className="h-5 w-5 text-gray-500" />;
+    const iconClass = "h-5 w-5 text-gray-500"; // Color neutro original
 
-    // Default
-    return <Package className="h-5 w-5 text-indigo-500" />;
+    if (n.includes('gato') && n.includes('alimento')) return <Cat className={iconClass} />;
+    if (n.includes('perro') && n.includes('alimento')) return <Dog className={iconClass} />;
+    if (n.includes('accesorios')) return <ShoppingBag className={iconClass} />;
+    if (n.includes('pipetas') || n.includes('farmacia')) return <Syringe className={iconClass} />;
+    if (n.includes('golosinas') || n.includes('premios')) return <Cookie className={iconClass} />;
+    if (n.includes('cereales')) return <Wheat className={iconClass} />;
+    if (n.includes('sanitarios') || n.includes('piedras')) return <Bath className={iconClass} />;
+    if (n.includes('varios')) return <Package className={iconClass} />;
+
+    return <Package className={iconClass} />;
 };
 
 const NuevaVenta = () => {
@@ -51,7 +53,7 @@ const NuevaVenta = () => {
     const [loading, setLoading] = useState(true)
     const [busqueda, setBusqueda] = useState('')
 
-    // Estado para acordeones
+    // Estado para manejar categorías abiertas (Acordeón individual)
     const [categoriasAbiertas, setCategoriasAbiertas] = useState<Record<string, boolean>>({})
 
     // Estados varios
@@ -88,11 +90,10 @@ const NuevaVenta = () => {
         }
     }, [location.state])
 
-    // --- AGRUPACIÓN Y ORDENAMIENTO ---
-    const productosAgrupadosOrdenados = useMemo(() => {
+    // --- AGRUPACIÓN Y ORDENAMIENTO (A-Z) ---
+    const productosAgrupados = useMemo(() => {
         const grupos: Record<string, Producto[]> = {};
 
-        // 1. Agrupar
         productos.forEach(p => {
             const catObj = categorias.find(c => c.id === p.categoria_id);
             const catNombre = catObj ? catObj.nombre : 'Sin Categoría';
@@ -100,17 +101,15 @@ const NuevaVenta = () => {
             grupos[catNombre].push(p);
         });
 
-        // 2. Retornar las claves ordenadas alfabéticamente
-        //    (En realidad retornamos un array de [nombre, productos] ya ordenado para facilitar el render)
+        // Retornar array ordenado alfabéticamente por nombre de categoría
         return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-
     }, [productos, categorias]);
 
     const toggleCategoria = (categoria: string) => {
         setCategoriasAbiertas(prev => ({ ...prev, [categoria]: !prev[categoria] }));
     };
 
-    // --- CARRITO LOGIC ---
+    // --- LOGICA CARRITO (INTACTA) ---
     const addProducto = (producto: Producto) => {
         if (!producto?.id) { toast.error('Producto inválido'); return; }
         setCartItems(prev => {
@@ -158,11 +157,10 @@ const NuevaVenta = () => {
     }
 
     const removeItem = (idx: number) => setCartItems(prev => prev.filter((_, i) => i !== idx))
-
     const total = useMemo(() => cartItems.reduce((acc, it) => acc + Number(it.subtotal || 0), 0), [cartItems])
 
     // --- FUNCIONES EXTRA ---
-    const copiarTicket = async () => { /* ... Lógica existente ... */ if (!ticketRef.current) return; html2canvas(ticketRef.current!, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => canvas.toBlob(blob => navigator.clipboard.write([new ClipboardItem({ 'image/png': blob! })]).then(() => toast.success('Copiado')))); };
+    const copiarTicket = async () => { if (!ticketRef.current) return; html2canvas(ticketRef.current!, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => canvas.toBlob(blob => navigator.clipboard.write([new ClipboardItem({ 'image/png': blob! })]).then(() => toast.success('Copiado')))); };
     const handlePrint = () => window.print();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -179,24 +177,24 @@ const NuevaVenta = () => {
         } catch { toast.error('Error al registrar'); }
     }
 
-    // --- RENDER CARD ---
+    // --- RENDER CARD (Diseño Original Naranja) ---
     const renderProductoCard = (p: Producto) => (
-        <div key={p.id} className="border border-gray-100 rounded-lg p-3 hover:shadow-md transition-shadow bg-white relative flex flex-col justify-between h-full">
+        <div key={p.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow bg-white flex flex-col justify-between h-full">
             <div>
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-gray-800 text-sm leading-tight pr-1">{p.nombre}</h3>
+                    <h3 className="font-medium text-gray-900 text-sm leading-tight pr-1">{p.nombre}</h3>
                     <span className="text-base font-bold text-gray-900 whitespace-nowrap">{formatPrice(Number(p.precio || 0))}</span>
                 </div>
             </div>
-            <div className="mt-2">
+            <div className="mt-2 pt-2 border-t border-gray-100">
                 {p.precio_kg && Number(p.precio_kg) > 0 && (
                     <button onClick={(e) => { e.stopPropagation(); addPrecioKgItem(p); }} className="w-full mb-2 text-xs font-bold text-orange-600 bg-orange-50 py-1 rounded border border-orange-100 hover:bg-orange-600 hover:text-white transition-colors">
                         x Kg: {formatPrice(p.precio_kg)}
                     </button>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-gray-50">
-                    <span className={`text-xs font-medium ${ (p.stock || 0) <= 2 ? 'text-red-500' : 'text-gray-400' }`}>Stock: {p.stock}</span>
-                    <button onClick={() => addProducto(p)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1 shadow-sm transition-transform active:scale-95">
+                <div className="flex justify-between items-center">
+                    <span className={`text-xs font-medium ${ (p.stock || 0) <= 2 ? 'text-red-600' : 'text-gray-500' }`}>Stock: {p.stock}</span>
+                    <button onClick={() => addProducto(p)} className="bg-orange-600 hover:bg-orange-700 text-white rounded-full p-1.5 shadow-sm">
                         <Plus className="h-4 w-4" />
                     </button>
                 </div>
@@ -204,7 +202,7 @@ const NuevaVenta = () => {
         </div>
     );
 
-    if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>
+    if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div></div>
 
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
@@ -215,7 +213,7 @@ const NuevaVenta = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-                {/* COLUMNA IZQ */}
+                {/* COLUMNA IZQ: PRODUCTOS */}
                 <div className="lg:col-span-2 space-y-6 no-print">
                     <div className={cardClass}>
                         {/* Buscador Cliente */}
@@ -225,73 +223,71 @@ const NuevaVenta = () => {
                                 <input type="text" value={nombreClienteInput} onChange={(e) => { setNombreClienteInput(e.target.value); const f = clientes.find(c => c.nombre.toLowerCase().includes(e.target.value.toLowerCase())); setSelectedCliente(f ? f.id : ''); }} placeholder="Buscar cliente..." className={inputFieldClass} onFocus={() => setMostrarSugerencias(true)} onBlur={() => setTimeout(() => setMostrarSugerencias(false), 200)}/>
                                 {mostrarSugerencias && nombreClienteInput && <ul className="absolute z-10 w-full bg-white border rounded shadow max-h-40 overflow-y-auto mt-1">{clientes.filter(c => c.nombre.toLowerCase().includes(nombreClienteInput.toLowerCase())).map(c => (<li key={c.id} onMouseDown={() => { setSelectedCliente(c.id); setNombreClienteInput(c.nombre); }} className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{c.nombre}</li>))}</ul>}
                             </div>
-                            <div className="flex items-end pb-2"><label className="flex items-center cursor-pointer"><input type="checkbox" checked={esDeuda} onChange={() => setEsDeuda(!esDeuda)} className="h-5 w-5 text-purple-600 rounded"/><span className="ml-2 text-sm font-medium text-gray-700">Cuenta Corriente</span></label></div>
-                        </div>
-                        <hr className="my-4 border-gray-100"/>
-                        <div className="flex gap-2 mb-4">
-                            <input type="text" placeholder="🔍 Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} bg-gray-50 text-base py-3`}/>
+                            <div className="flex items-end pb-2"><label className="flex items-center cursor-pointer"><input type="checkbox" checked={esDeuda} onChange={() => setEsDeuda(!esDeuda)} className="h-5 w-5 text-orange-600 rounded focus:ring-orange-500"/><span className="ml-2 text-sm font-medium text-gray-700">Cuenta Corriente</span></label></div>
                         </div>
 
-                        {/* LISTA DE PRODUCTOS */}
+                        <hr className="my-4 border-gray-100"/>
+
+                        {/* Buscador Productos */}
+                        <div className="mb-4">
+                            <input type="text" placeholder="🔍 Buscar producto por nombre o código..." value={busqueda} onChange={e => setBusqueda(e.target.value)} className={`${inputFieldClass} py-3 text-base`}/>
+                        </div>
+
+                        {/* --- ZONA DE PRODUCTOS --- */}
                         {busqueda.length > 0 ? (
-                            // MODO BÚSQUEDA
+                            // MODO BÚSQUEDA (Grilla plana)
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 {productos.filter(p => (p.nombre||'').toLowerCase().includes(busqueda.toLowerCase()) || (p.codigo||'').toLowerCase().includes(busqueda.toLowerCase())).map(renderProductoCard)}
-                                {productos.filter(p => (p.nombre||'').toLowerCase().includes(busqueda.toLowerCase())).length === 0 && <p className="col-span-full text-center text-gray-400">Sin resultados</p>}
+                                {productos.filter(p => (p.nombre||'').toLowerCase().includes(busqueda.toLowerCase())).length === 0 && <p className="col-span-full text-center text-gray-400 py-8">No se encontraron productos.</p>}
                             </div>
                         ) : (
-                            // MODO AGRUPADO (CAJITAS ORDENADAS)
-                            <div className="space-y-3">
-                                {productosAgrupadosOrdenados.map(([categoria, items]) => (
-                                    <div key={categoria} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
-                                        {/* CABECERA "CAJITA" */}
+                            // MODO AGRUPADO (GRID DE CATEGORÍAS - 2 o 3 POR LÍNEA)
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {productosAgrupados.map(([categoria, items]) => (
+                                    // "CAJITA" DE CATEGORÍA
+                                    <div key={categoria} className={`col-span-1 ${categoriasAbiertas[categoria] ? 'row-span-auto' : ''} bg-white border border-gray-200 rounded-xl transition-all duration-200`}>
+                                        {/* CABECERA (Clickable) */}
                                         <button
                                             onClick={() => toggleCategoria(categoria)}
-                                            className={`w-full flex justify-between items-center p-4 text-left transition-colors ${
-                                                categoriasAbiertas[categoria] ? 'bg-purple-50 border-b border-purple-100' : 'bg-white hover:bg-gray-50'
-                                            }`}
+                                            className={`w-full flex flex-col items-center justify-center p-4 text-center gap-2 hover:bg-gray-50 rounded-xl transition-colors ${categoriasAbiertas[categoria] ? 'bg-orange-50 ring-2 ring-orange-500 ring-opacity-50' : ''}`}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${categoriasAbiertas[categoria] ? 'bg-white shadow-sm' : 'bg-gray-100'}`}>
-                                                    {getCategoryIcon(categoria)}
-                                                </div>
-                                                <div>
-                                                    <h3 className={`font-bold text-base ${categoriasAbiertas[categoria] ? 'text-purple-800' : 'text-gray-700'}`}>
-                                                        {categoria}
-                                                    </h3>
-                                                    <span className="text-xs text-gray-400 font-medium">{items.length} productos</span>
-                                                </div>
+                                            <div className="bg-gray-100 p-2 rounded-full">
+                                                {getCategoryIcon(categoria)}
                                             </div>
-                                            <div className={`transform transition-transform duration-200 ${categoriasAbiertas[categoria] ? 'rotate-180' : ''}`}>
-                                                <ChevronDown className="h-5 w-5 text-gray-400" />
-                                            </div>
+                                            <span className="font-bold text-gray-700 text-sm leading-tight">{categoria}</span>
+                                            <span className="text-xs text-gray-400 font-medium">({items.length})</span>
+
+                                            {/* Indicador flecha pequeña */}
+                                            {categoriasAbiertas[categoria] ? <ChevronUp className="h-4 w-4 text-orange-500"/> : <ChevronDown className="h-4 w-4 text-gray-300"/>}
                                         </button>
 
-                                        {/* CONTENIDO DESPLEGABLE */}
+                                        {/* CONTENIDO DESPLEGABLE (Se muestra dentro de la grilla, expandiendo la celda) */}
                                         {categoriasAbiertas[categoria] && (
-                                            <div className="p-4 bg-gray-50/50 border-t border-gray-100 animate-fadeIn">
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            <div className="col-span-1 p-2 bg-gray-50 border-t border-gray-100 rounded-b-xl space-y-2">
+                                                {/* Lista compacta vertical dentro de la tarjeta para no romper el grid layout horizontalmente */}
+                                                <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                                                     {items.map(renderProductoCard)}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ))}
-                                {productosAgrupadosOrdenados.length === 0 && <p className="text-center text-gray-400 py-8">No hay productos cargados</p>}
+                                {productosAgrupados.length === 0 && <p className="col-span-full text-center text-gray-400 py-8">No hay productos con categoría cargados.</p>}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: CARRITO (Intacta) */}
+                {/* COLUMNA DERECHA: CARRITO (Estilos ajustados a naranja) */}
                 <div className="lg:col-span-1 no-print">
-                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6 border-t-4 border-purple-500`}>
-                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><DollarSign className="h-5 w-5 text-purple-600"/> Carrito</h2>
+                    <div className={`${cardClass} space-y-4 lg:sticky lg:top-6 border-t-4 border-orange-500`}>
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><DollarSign className="h-5 w-5 text-orange-600"/> Carrito</h2>
+
                         <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <div className="flex flex-col gap-2">
-                                <input type="text" value={descripcionDirecta} onChange={e => setDescripcionDirecta(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-xs focus:outline-none focus:border-purple-500" placeholder="Desc. Varios (opcional)"/>
+                                <input type="text" value={descripcionDirecta} onChange={e => setDescripcionDirecta(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-xs focus:outline-none focus:border-orange-500" placeholder="Desc. Varios (opcional)"/>
                                 <div className="flex gap-2">
-                                    <input ref={montoRef} type="number" step="0.01" value={importeDirecto} onChange={e => setImporteDirecto(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-sm font-mono" placeholder="$0.00" onKeyDown={(e) => { if (e.key === 'Enter') addImporteDirecto(); }}/>
+                                    <input ref={montoRef} type="number" step="0.01" value={importeDirecto} onChange={e => setImporteDirecto(e.target.value)} className="w-full border border-gray-300 p-1.5 rounded text-sm font-mono focus:border-orange-500 focus:ring-orange-500" placeholder="$0.00" onKeyDown={(e) => { if (e.key === 'Enter') addImporteDirecto(); }}/>
                                     <button onClick={addImporteDirecto} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-bold uppercase tracking-wider">ADD</button>
                                 </div>
                             </div>
@@ -305,12 +301,12 @@ const NuevaVenta = () => {
                                     <div className="pr-6"><p className="text-sm font-semibold text-gray-800 leading-tight">{it.es_custom ? it.descripcion : it.producto_nombre}</p></div>
                                     <div className="flex justify-between items-center mt-2">
                                         <div className="flex items-center bg-gray-100 rounded-full">
-                                            <button onClick={() => updateCantidad(idx, it.cantidad - 1)} className="p-1 hover:text-purple-600"><Minus className="h-3 w-3"/></button>
+                                            <button onClick={() => updateCantidad(idx, it.cantidad - 1)} className="p-1 hover:text-orange-600"><Minus className="h-3 w-3"/></button>
                                             <span className="w-6 text-center text-xs font-bold">{it.cantidad}</span>
-                                            <button onClick={() => updateCantidad(idx, it.cantidad + 1)} className="p-1 hover:text-purple-600"><Plus className="h-3 w-3"/></button>
+                                            <button onClick={() => updateCantidad(idx, it.cantidad + 1)} className="p-1 hover:text-orange-600"><Plus className="h-3 w-3"/></button>
                                         </div>
                                         <div className="flex gap-2 items-center">
-                                            <input type="number" value={it.precio_unitario} onChange={(e) => updatePrecio(idx, Number(e.target.value))} className="w-16 text-right text-xs border-b border-gray-300 outline-none"/>
+                                            <input type="number" value={it.precio_unitario} onChange={(e) => updatePrecio(idx, Number(e.target.value))} className="w-16 text-right text-xs border-b border-gray-300 outline-none focus:border-orange-500"/>
                                             <span className="font-bold text-sm text-gray-900 w-16 text-right">{formatPrice(it.subtotal)}</span>
                                         </div>
                                     </div>
@@ -320,18 +316,19 @@ const NuevaVenta = () => {
 
                         {cartItems.length > 0 && (
                             <div className="border-t pt-4 space-y-3">
-                                <div><label className="text-xs font-bold text-gray-500 uppercase">Pago</label><select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className="w-full mt-1 border border-gray-300 rounded p-1.5 text-sm bg-white"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="mercadopago">MercadoPago</option></select></div>
+                                <div><label className="text-xs font-bold text-gray-500 uppercase">Pago</label><select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className="w-full mt-1 border border-gray-300 rounded p-1.5 text-sm bg-white focus:ring-orange-500 focus:border-orange-500"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="mercadopago">MercadoPago</option></select></div>
                                 <div className="flex justify-between items-center text-xl font-bold text-gray-900"><span>Total</span><span>{formatPrice(total)}</span></div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button onClick={copiarTicket} className="flex items-center justify-center gap-1 border border-gray-300 bg-white hover:bg-gray-50 py-2 rounded text-xs font-medium text-gray-600"><Camera className="h-4 w-4"/> Foto</button>
                                     <button onClick={handlePrint} className="flex items-center justify-center gap-1 border border-gray-300 bg-white hover:bg-gray-50 py-2 rounded text-xs font-medium text-gray-600"><Printer className="h-4 w-4"/> Print</button>
                                 </div>
-                                <button onClick={handleSubmit} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow transition-colors">CONFIRMAR VENTA</button>
+                                <button onClick={handleSubmit} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg shadow transition-colors">CONFIRMAR VENTA</button>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
 
             {/* TICKET WHATSAPP (Oculto) - INTACTO */}
             <div ref={ticketRef} style={{position: 'fixed', top: '-9999px', left: '-9999px', width: '450px', backgroundColor: 'white', padding: '24px', color: 'black'}}>
