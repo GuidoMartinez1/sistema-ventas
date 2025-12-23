@@ -1,13 +1,13 @@
 // src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { Plus, Minus, Trash2, DollarSign, Camera, Printer, ChevronDown, ChevronRight } from 'lucide-react'
-import { productosAPI, clientesAPI, ventasAPI } from '../services/api'
-import { Producto, Cliente, DetalleVenta } from '../services/api'
+import { productosAPI, clientesAPI, ventasAPI, categoriasAPI } from '../services/api'
+import { Producto, Cliente, DetalleVenta, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
 import { useNavigate, useLocation } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 
-// Clases de utilidad (Estética original)
+// Clases de utilidad (Tu estética original)
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out text-sm";
 
@@ -25,6 +25,7 @@ const NuevaVenta = () => {
     // --- STATES ---
     const [productos, setProductos] = useState<Producto[]>([])
     const [clientes, setClientes] = useState<Cliente[]>([])
+    const [categorias, setCategorias] = useState<Categoria[]>([]) // Estado para las categorías
     const [selectedCliente, setSelectedCliente] = useState<number | ''>('')
     const [cartItems, setCartItems] = useState<DetalleVenta[]>([])
     const [loading, setLoading] = useState(true)
@@ -45,9 +46,15 @@ const NuevaVenta = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const [prodRes, cliRes] = await Promise.all([productosAPI.getAll(), clientesAPI.getAll()])
+                // Cargamos Productos, Clientes Y Categorías
+                const [prodRes, cliRes, catRes] = await Promise.all([
+                    productosAPI.getAll(),
+                    clientesAPI.getAll(),
+                    categoriasAPI.getAll()
+                ])
                 setProductos(Array.isArray(prodRes.data) ? prodRes.data : [])
                 setClientes(Array.isArray(cliRes.data) ? cliRes.data : [])
+                setCategorias(Array.isArray(catRes.data) ? catRes.data : [])
             } catch {
                 toast.error('Error al cargar datos')
             } finally {
@@ -63,21 +70,22 @@ const NuevaVenta = () => {
         }
     }, [location.state])
 
-    // --- LÓGICA DE AGRUPACIÓN ---
-    // Agrupa usando la propiedad 'categoria' real del producto
+    // --- LÓGICA DE AGRUPACIÓN CORREGIDA ---
+    // Agrupa usando 'categoria_id' del producto para buscar el nombre en el array 'categorias'
     const productosAgrupados = useMemo(() => {
         const grupos: Record<string, Producto[]> = {};
+
         productos.forEach(p => {
-            // Accedemos a la categoría del producto.
-            // Si viene null o vacío, lo ponemos en "Otros" para no perderlo, pero usa el dato real.
-            // @ts-ignore: Asumimos que la propiedad existe en tu backend aunque la interfaz TS no la tenga declarada aún
-            const catNombre = p.categoria || p.category || 'Otros';
+            // Buscamos la categoría en el array de categorías usando el ID
+            const catObj = categorias.find(c => c.id === p.categoria_id);
+            // Si existe, usamos su nombre. Si no (o es null), va a 'Sin Categoría'
+            const catNombre = catObj ? catObj.nombre : 'Sin Categoría';
 
             if (!grupos[catNombre]) grupos[catNombre] = [];
             grupos[catNombre].push(p);
         });
         return grupos;
-    }, [productos]);
+    }, [productos, categorias]); // Importante: recalcular si cambian productos o categorías
 
     const toggleCategoria = (categoria: string) => {
         setCategoriasAbiertas(prev => ({
@@ -160,7 +168,7 @@ const NuevaVenta = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const addNuevoItem = () => {
-         // Lógica original (sin uso actualmente pero preservada)
+         // Lógica preservada
     }
 
     const updateCantidad = (idx: number, cant: number) => {
