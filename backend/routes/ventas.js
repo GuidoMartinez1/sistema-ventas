@@ -137,7 +137,7 @@ router.put("/:id/pagar", async (req, res) => {
 
     const venta = ventaResult.rows[0];
 
-    if (venta.estado === "pagada" || venta.estado === "completada")) {
+    if (venta.estado === "pagada" || venta.estado === "completada") {
       return res.status(400).json({ error: "La venta ya está pagada" });
     }
 
