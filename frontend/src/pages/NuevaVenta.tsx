@@ -189,7 +189,10 @@ const NuevaVenta = () => {
             const payload = {
                 cliente_id: selectedCliente ? Number(selectedCliente) : undefined,
                 productos: cartItems.map(d => ({ producto_id: d.producto_id, cantidad: Number(d.cantidad), precio_unitario: Number(d.precio_unitario), subtotal: Number(d.subtotal), producto_nombre: d.producto_nombre, descripcion: d.descripcion, es_custom: d.es_custom === true })),
-                total: Number(total), estado: esDeuda ? 'adeuda' : 'completada', metodo_pago: metodoPago
+                total: Number(total),
+                 estado: esDeuda ? 'adeuda' : 'completada',
+                 // REFACTOR: Si es deuda, forzamos 'cuenta_corriente' o 'pendiente' para que no diga 'efectivo' falsamente en la DB
+                 metodo_pago: esDeuda ? 'cuenta_corriente' : metodoPago
             }
             await ventasAPI.create(payload)
             toast.success(esDeuda ? 'Venta registrada' : 'Venta registrada')
@@ -381,6 +384,11 @@ const NuevaVenta = () => {
 
                         {cartItems.length > 0 && (
                             <div className="border-t pt-4">
+                            {/* Ocultar selector si es deuda, o mostrar un texto fijo */}
+                                    {esDeuda ? (
+                                        <div className="text-sm text-orange-600 font-bold bg-orange-50 p-2 rounded border border-orange-200 text-center">
+                                            Se registrará en Cuenta Corriente
+                                        </div>) : (<>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
                                 <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className={inputFieldClass}>
                                     <option value="efectivo">Efectivo</option>

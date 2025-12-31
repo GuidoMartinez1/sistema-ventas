@@ -122,7 +122,7 @@ router.post("/", async (req, res) => {
 // Marcar deuda como pagada (total o parcial)
 router.put("/:id/pagar", async (req, res) => {
   const { id } = req.params;
-  const { monto } = req.body;
+  const { monto, metodo_pago } = req.body;
 
   if (!monto || monto <= 0) {
     return res.status(400).json({ error: "Debe ingresar un monto válido" });
@@ -137,7 +137,7 @@ router.put("/:id/pagar", async (req, res) => {
 
     const venta = ventaResult.rows[0];
 
-    if (venta.estado === "pagada") {
+    if (venta.estado === "pagada" || venta.estado === "completada")) {
       return res.status(400).json({ error: "La venta ya está pagada" });
     }
 
@@ -148,9 +148,16 @@ router.put("/:id/pagar", async (req, res) => {
     const nuevoTotal = venta.total - monto;
     const nuevoEstado = nuevoTotal === 0 ? "completada" : "pendiente";
 
+    const metodoPagoFinal = metodo_pago || venta.metodo_pago;
+
+
     const updateResult = await pool.query(`
-      UPDATE ventas SET total = $1, estado = $2 WHERE id = $3 RETURNING *
-    `, [nuevoTotal, nuevoEstado, id]);
+          UPDATE ventas
+          SET total = $1,
+              estado = $2,
+              metodo_pago = $3
+          WHERE id = $4 RETURNING *
+        `, [nuevoTotal, nuevoEstado, metodoPagoFinal, id]);
 
     res.json({
       message: nuevoEstado === "completada"

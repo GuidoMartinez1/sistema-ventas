@@ -120,43 +120,58 @@ const Deudas = () => {
 
 
   const handleConfirmarPago = async () => {
-    if (!deudaSeleccionada) return
+      if (!deudaSeleccionada) return
 
-    // Validación de monto parcial
-    if (tipoPago === 'parcial') {
-      const monto = parseFloat(montoParcial)
+      // 1. Buscamos la deuda completa para saber cuánto debe
       const deudaActual = deudas.find(d => d.id === deudaSeleccionada)
-      if (isNaN(monto) || monto <= 0) {
-        toast.error('Ingrese un monto parcial válido.')
-        return
+      if (!deudaActual) return
+
+      // 2. Determinamos el monto final a enviar al backend
+      let montoFinal = 0
+
+      if (tipoPago === 'total') {
+        // Si es total, usamos el total de la deuda
+        montoFinal = Number(deudaActual.total)
+      } else {
+        // Si es parcial, validamos el input
+        montoFinal = parseFloat(montoParcial)
+        if (isNaN(montoFinal) || montoFinal <= 0) {
+          toast.error('Ingrese un monto parcial válido.')
+          return
+        }
+        if (montoFinal > Number(deudaActual.total)) {
+          toast.error('El monto parcial no puede ser mayor al total adeudado.')
+          return
+        }
       }
-      if (deudaActual && monto > deudaActual.total) {
-        toast.error('El monto parcial no puede ser mayor al total adeudado.')
-        return
+
+      try {
+        setConfirmLoading(true)
+
+        // 3. Enviamos los datos limpios a la API
+        // Nota: Eliminamos 'tipoPago' de los argumentos porque al backend
+        // solo le importa el monto (sea total o parcial) y el método.
+        await deudasAPI.marcarComoPagada(
+            deudaSeleccionada,
+            montoFinal,
+            metodoPagoSeleccionado
+        )
+
+        toast.success(tipoPago === 'total'
+            ? 'Deuda pagada en su totalidad'
+            : 'Pago parcial registrado')
+
+        setDeudaSeleccionada(null)
+        // Limpiamos estados
+        setMontoParcial("")
+        setTipoPago('total')
+        fetchDeudas()
+      } catch (error) {
+        console.error(error)
+        toast.error('Error al registrar el pago')
+      } finally {
+        setConfirmLoading(false)
       }
-    }
-
-
-    try {
-      setConfirmLoading(true)
-      await deudasAPI.marcarComoPagada(
-          deudaSeleccionada,
-          metodoPagoSeleccionado,
-          tipoPago,
-          montoParcial
-      )
-
-      toast.success(tipoPago === 'total'
-          ? 'Deuda pagada en su totalidad'
-          : 'Pago parcial registrado')
-
-      setDeudaSeleccionada(null)
-      fetchDeudas()
-    } catch (error) {
-      toast.error('Error al registrar el pago')
-    } finally {
-      setConfirmLoading(false)
-    }
   }
 
   const toggleExpanded = (deudaId: number) => {
