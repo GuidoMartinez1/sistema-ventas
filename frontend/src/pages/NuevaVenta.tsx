@@ -382,7 +382,7 @@ const NuevaVenta = () => {
                             </div>
                         )}
 
-                        {{cartItems.length > 0 && (
+                        {cartItems.length > 0 && (
                              <div className="border-t pt-4">
                                  {/* Ocultar selector si es deuda, o mostrar un texto fijo */}
                                  {esDeuda ? (
