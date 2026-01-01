@@ -65,12 +65,19 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Crear nueva venta
+// Crear nueva venta (Con validación de NaN corregida)
 router.post("/", async (req, res) => {
-  const { cliente_id, productos, total, estado, metodo_pago, venta_origen_id } = req.body;
+  let { cliente_id, productos, total, estado, metodo_pago, venta_origen_id } = req.body;
 
   if (!productos || productos.length === 0) {
     return res.status(400).json({ error: "No hay productos en la venta" });
+  }
+
+  // --- SAFETY CHECK PARA EVITAR NaN ---
+  if (isNaN(total) || total === null) {
+      // Si el total viene roto, lo recalculamos sumando los productos
+      console.warn("Total recibido es inválido. Recalculando...");
+      total = productos.reduce((acc, item) => acc + (Number(item.subtotal) || 0), 0);
   }
 
   const client = await pool.connect();
@@ -82,7 +89,7 @@ router.post("/", async (req, res) => {
     const ventaResult = await client.query(`
       INSERT INTO ventas (cliente_id, total, estado, metodo_pago, venta_origen_id)
       VALUES ($1, $2, $3, $4, $5) RETURNING id
-    `, [cliente_id || null, total, estado || "completada", metodo_pago || "efectivo", venta_origen_id || null]);
+    `, [cliente_id || null, total, estado || "pagada", metodo_pago || "efectivo", venta_origen_id || null]);
 
     const ventaId = ventaResult.rows[0].id;
 
@@ -119,7 +126,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Marcar deuda como pagada (total o parcial)
+// Marcar deuda como pagada (total o parcial) - RUTA LEGACY SI LA USAS
 router.put("/:id/pagar", async (req, res) => {
   const { id } = req.params;
   const { monto, metodo_pago } = req.body;
@@ -145,8 +152,12 @@ router.put("/:id/pagar", async (req, res) => {
       return res.status(400).json({ error: "El monto ingresado supera la deuda" });
     }
 
-    const nuevoTotal = venta.total - monto;
-    const nuevoEstado = nuevoTotal === 0 ? "completada" : "pendiente";
+    let nuevoTotal = venta.total - monto;
+
+    // CORRECCIÓN MATEMÁTICA PARA FLOTANTES
+    if (nuevoTotal < 0.01) nuevoTotal = 0;
+
+    const nuevoEstado = nuevoTotal === 0 ? "pagada" : "adeuda";
 
     const metodoPagoFinal = metodo_pago || venta.metodo_pago;
 
@@ -160,7 +171,7 @@ router.put("/:id/pagar", async (req, res) => {
         `, [nuevoTotal, nuevoEstado, metodoPagoFinal, id]);
 
     res.json({
-      message: nuevoEstado === "completada"
+      message: nuevoEstado === "pagada"
           ? "Venta pagada completamente"
           : "Pago parcial registrado",
       venta: updateResult.rows[0]
@@ -178,7 +189,7 @@ router.put("/:id", async (req, res) => {
 
   try {
     const result = await pool.query(`
-      UPDATE ventas 
+      UPDATE ventas
       SET metodo_pago = COALESCE($1, metodo_pago),
           estado = COALESCE($2, estado),
           total = COALESCE($3, total)
