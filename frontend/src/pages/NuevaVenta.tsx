@@ -382,20 +382,24 @@ const NuevaVenta = () => {
                             </div>
                         )}
 
-                        {cartItems.length > 0 && (
-                            <div className="border-t pt-4">
-                            {/* Ocultar selector si es deuda, o mostrar un texto fijo */}
-                                    {esDeuda ? (
-                                        <div className="text-sm text-orange-600 font-bold bg-orange-50 p-2 rounded border border-orange-200 text-center">
-                                            Se registrará en Cuenta Corriente
-                                        </div>) : (<>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
-                                <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className={inputFieldClass}>
-                                    <option value="efectivo">Efectivo</option>
-                                    <option value="tarjeta">Tarjeta</option>
-                                    <option value="mercadopago">MercadoPago</option>
-                                </select>
-                            </div>
+                        {{cartItems.length > 0 && (
+                             <div className="border-t pt-4">
+                                 {/* Ocultar selector si es deuda, o mostrar un texto fijo */}
+                                 {esDeuda ? (
+                                     <div className="text-sm text-orange-600 font-bold bg-orange-50 p-2 rounded border border-orange-200 text-center">
+                                         Se registrará en Cuenta Corriente
+                                     </div>
+                                 ) : (
+                                     <>
+                                         <label className="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
+                                         <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value as any)} className={inputFieldClass}>
+                                             <option value="efectivo">Efectivo</option>
+                                             <option value="tarjeta">Tarjeta</option>
+                                             <option value="mercadopago">MercadoPago</option>
+                                         </select>
+                                     </>
+                                 )}
+                             </div>
                         )}
 
                         {cartItems.length > 0 && (
