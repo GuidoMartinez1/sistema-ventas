@@ -1,3 +1,4 @@
+// backend/routes/deudas.js
 import express from "express";
 import pool from "../db.js";
 
@@ -6,8 +7,7 @@ const router = express.Router();
 // Obtener todas las deudas con detalles y pagos parciales
 router.get("/", async (req, res) => {
     try {
-        // Obtenemos solo las ventas que siguen en estado 'adeuda'
-        // Si una venta se pagó (estado = 'pagada'), ya no sale aquí.
+        // Traemos ventas que aún tienen deuda (estado = 'adeuda') o que son originales de pagos parciales
         const ventasResult = await pool.query(`
         SELECT v.id, v.total, v.fecha, v.estado, v.cliente_id,
                c.nombre AS cliente_nombre, c.telefono, c.direccion
@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
         const deudas = [];
 
         for (const venta of ventasResult.rows) {
-            // Detalles
+            // Traemos los detalles de cada venta
             const detallesResult = await pool.query(`
         SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre,
                dv.cantidad, dv.precio_unitario, dv.subtotal
@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
         WHERE dv.venta_id = $1
       `, [venta.id]);
 
-            // Pagos parciales
+            // Traemos los pagos parciales asociados a esta venta
             const pagosParcialesResult = await pool.query(`
         SELECT id, total, estado, metodo_pago, fecha
         FROM ventas
@@ -53,11 +53,13 @@ router.get("/", async (req, res) => {
 });
 
 // Marcar deuda como pagada y actualizar método de pago
+// Marcar deuda como pagada y actualizar método de pago
 router.put("/:id/pagar", async (req, res) => {
     const { id } = req.params;
     let { metodo_pago, tipoPago, montoParcial } = req.body;
 
     try {
+        // Convertimos montoParcial a número
         montoParcial = Number(montoParcial);
 
         const ventaResult = await pool.query(
@@ -71,19 +73,19 @@ router.put("/:id/pagar", async (req, res) => {
 
         const venta = ventaResult.rows[0];
 
-        // --- CASO 1: PAGO TOTAL ---
         if (tipoPago === "total") {
+            // Pago total
             const result = await pool.query(
                 `UPDATE ventas
-                 SET estado = 'pagada', metodo_pago = $2, total = 0
-                 WHERE id = $1
-                 RETURNING *`,
+         SET estado = 'pagada', metodo_pago = $2
+         WHERE id = $1
+         RETURNING *`,
                 [id, metodo_pago]
             );
             return res.json({ message: "Deuda marcada como pagada", venta: result.rows[0] });
         }
 
-        // --- CASO 2: PAGO PARCIAL ---
+        // Pago parcial
         if (montoParcial > venta.total) {
             return res.status(400).json({ error: "El monto parcial no puede ser mayor a la deuda" });
         }
@@ -92,43 +94,34 @@ router.put("/:id/pagar", async (req, res) => {
         try {
             await client.query("BEGIN");
 
-            // 1. Crear el registro del pago (una "venta" hija)
+            // 1. Crear nueva venta solo con el monto pagado y referencia a la venta original
             const pagoResult = await client.query(
                 `INSERT INTO ventas (cliente_id, total, estado, metodo_pago, fecha, venta_origen_id)
-                 VALUES ($1, $2, 'pagada', $3, NOW(), $4)
-                 RETURNING *`,
+         VALUES ($1, $2, 'pagada', $3, NOW(), $4)
+         RETURNING *`,
                 [venta.cliente_id, montoParcial, metodo_pago, id]
             );
 
-            // 2. Calcular nuevo saldo de la deuda original
-            let nuevoTotal = Number(venta.total) - montoParcial;
+            // 2. Actualizar venta original con el nuevo total
+            const nuevoTotal = venta.total - montoParcial;
+            const nuevoEstado = nuevoTotal === 0 ? "completada" : "adeuda";
 
-            // Corrección de decimales y estado
-            // Si el saldo es casi 0, lo forzamos a 0 y estado pagada
-            let nuevoEstado = 'adeuda'; // Por defecto sigue debiendo
-
-            if (nuevoTotal < 0.1) {
-                nuevoTotal = 0;
-                nuevoEstado = 'pagada'; // ¡Aquí es donde desaparece de la lista!
-            }
-
-            // 3. Actualizar la venta original
             const deudaResult = await client.query(
                 `UPDATE ventas
-                 SET total = $2, estado = $3
-                 WHERE id = $1
-                 RETURNING *`,
+         SET total = $2, estado = $3
+         WHERE id = $1
+         RETURNING *`,
                 [id, nuevoTotal, nuevoEstado]
             );
 
             await client.query("COMMIT");
 
             res.json({
-                message: nuevoEstado === "pagada"
+                message: nuevoEstado === "completada"
                     ? "La deuda fue cancelada completamente"
                     : "Pago parcial registrado",
-                pago: pagoResult.rows[0],
-                deuda: deudaResult.rows[0]
+                pago: pagoResult.rows[0],   // nueva venta parcial
+                deuda: deudaResult.rows[0]  // venta original actualizada
             });
 
         } catch (err) {
@@ -144,5 +137,6 @@ router.put("/:id/pagar", async (req, res) => {
         res.status(500).json({ error: "Error al procesar pago" });
     }
 });
+
 
 export default router;
