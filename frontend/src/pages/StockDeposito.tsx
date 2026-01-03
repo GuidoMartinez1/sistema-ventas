@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-// Se elimina productosAPI de aquí, ya que no es necesaria para el traslado
 import { stockDepositoAPI, StockDeposito, LoteDeposito, Traslado } from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Warehouse, Calendar, ArrowRight, X, Loader2, Maximize2, FileText, LayoutList } from 'lucide-react';
@@ -10,39 +9,32 @@ type Vista = 'deposito' | 'reporte';
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out text-sm";
+
 const formatDate = (dateString: string | undefined, includeTime: boolean = false) => {
     if (!dateString) return 'N/A';
-    // Nota: Si el backend devuelve solo la fecha (DATE(mdt.fecha_traslado)), toLocaleDateString es suficiente
     return new Date(dateString).toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-        // Comentamos la hora si el backend devuelve solo la fecha del día
-        // hour: includeTime ? '2-digit' : undefined,
-        // minute: includeTime ? '2-digit' : undefined
     });
 };
 
-// FUNCIÓN PARA MOSTRAR KILOS (Sin .00 si es entero, con .00 si no)
 const formatKilos = (kilos: number | undefined | string) => {
     if (kilos == null || kilos === '' || Number(kilos) <= 0) return '-';
-
     const kiloValue = Number(kilos);
-
     if (Number.isInteger(kiloValue)) {
         return kiloValue.toString();
     }
     return kiloValue.toFixed(2);
 };
 
-// FUNCIÓN PARA FORMATEAR NÚMEROS GRANDES (ej: 1,234.50)
 const formatNumber = (value: number) => {
     if (value === null || value === undefined) return '0';
     return Number(value).toLocaleString("es-AR", { maximumFractionDigits: 2 });
 };
 
 // ====================================================================
-// 💡 NUEVO COMPONENTE: VISTA DE REPORTES AGRUPADOS
+// COMPONENTE: VISTA DE REPORTES AGRUPADOS (Lógica modificada)
 // ====================================================================
 interface ReportesTrasladoProps {
     reporteList: Traslado[];
@@ -51,37 +43,47 @@ interface ReportesTrasladoProps {
 
 const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadingReporte }) => {
 
-    // 💡 LÓGICA CLAVE: Agrupar los reportes por fecha
+    // Agrupar los reportes por fecha y filtrar unidades chicas/pipetas
     const groupedReports = useMemo(() => {
         const groups: { [fecha: string]: { items: Traslado[], totalKilosDia: number, totalUnidadesDia: number } } = {};
 
         reporteList.forEach(item => {
-            const dateKey = item.fecha_dia; // Usamos la fecha_dia devuelta por el backend
+            const dateKey = item.fecha_dia;
 
             if (!groups[dateKey]) {
                 groups[dateKey] = { items: [], totalKilosDia: 0, totalUnidadesDia: 0 };
             }
 
             groups[dateKey].items.push(item);
-            // El peso_total_movido ya viene calculado por el backend
+
+            // 1. Sumamos SIEMPRE el peso total (la camioneta lo lleva igual)
             groups[dateKey].totalKilosDia += Number(item.peso_total_movido) || 0;
 
-            groups[dateKey].totalUnidadesDia += Number(item.total_unidades_movidas) || 0;
+            // 2. LÓGICA DE EXCLUSIÓN PARA CONTADOR DE BULTOS
+            const nombre = (item.producto_nombre || '').toLowerCase();
+            const pesoUnitario = Number(item.kilos_por_unidad) || 0;
+
+            const esPipeta = nombre.includes('pipeta');
+            const esComprimido = nombre.includes('comprimido');
+            const esLiviano = pesoUnitario <= 3; // 3kg o menos
+
+            // Solo sumamos a "Unidades/Bultos" si es una bolsa grande
+            if (!esPipeta && !esComprimido && !esLiviano) {
+                groups[dateKey].totalUnidadesDia += Number(item.total_unidades_movidas) || 0;
+            }
         });
 
         return groups;
     }, [reporteList]);
 
-    // Convertir el objeto de grupos a un array ordenado por fecha (descendente)
+    // Ordenar descendente
     const orderedGroups = useMemo(() => {
         return Object.entries(groupedReports).sort(([dateA], [dateB]) => {
-            // Comparar fechas como strings ISO para el orden descendente
             if (dateA > dateB) return -1;
             if (dateA < dateB) return 1;
             return 0;
         });
     }, [groupedReports]);
-
 
     if (loadingReporte) {
         return (
@@ -115,47 +117,51 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
                 <tbody className="bg-white">
                 {orderedGroups.map(([dateKey, group], index) => (
                     <React.Fragment key={dateKey}>
-                        {/* 📌 FILA DE GRUPO: TOTALIZADOR POR FECHA */}
+                        {/* TOTALIZADOR POR FECHA */}
                         <tr className="bg-gray-100 border-t border-b border-gray-300">
-                            {/* Título: Ocupa 'Producto' y 'Kg/U' (2 columnas) */}
                             <td colSpan={2} className="px-3 py-3 text-left font-bold text-gray-700 text-sm">
                                 <Calendar className="h-4 w-4 mr-2 inline-block"/>
                                 TRASLADOS DEL DÍA: {formatDate(dateKey)}
                             </td>
 
-                            {/* Total Unidades: Alineado a la columna 'Unidades' */}
+                            {/* Total Unidades (Bolsas Grandes) */}
                             <td className="px-3 py-3 text-right font-bold text-base text-gray-700">
-                                {group.totalUnidadesDia} uds.
+                                {group.totalUnidadesDia} <span className="text-xs font-normal text-gray-500">(Bolsas)</span>
                             </td>
 
-                            {/* Total Kilos: Alineado a la columna 'Peso Movido' */}
+                            {/* Total Kilos */}
                             <td className="px-3 py-3 text-right font-bold text-base text-orange-600">
                                 {formatNumber(group.totalKilosDia)} kg
                             </td>
 
-                            {/* Celda vacía para completar la tabla (5ta columna) */}
                             <td className="px-3 py-3"></td>
                         </tr>
 
-                        {/* 📌 FILAS DE DETALLE DENTRO DEL GRUPO */}
-                        {group.items.map((traslado) => (
-                            <tr key={traslado.producto_id} className="hover:bg-white transition-colors">
-                                <td className="px-3 py-2 text-sm text-gray-900 font-medium">
-                                    {traslado.producto_nombre}
-                                </td>
-                                <td className="px-3 py-2 text-sm text-right text-gray-500">
-                                    {formatKilos(traslado.kilos_por_unidad)}
-                                </td>
-                                <td className="px-3 py-2 text-sm text-right text-gray-700">
-                                    {traslado.total_unidades_movidas} uds
-                                </td>
-                                <td className="px-3 py-2 text-sm text-right font-medium text-gray-700">
-                                    {formatKilos(traslado.peso_total_movido)} kg
-                                </td>
-                                <td className="px-3 py-2"></td>
-                            </tr>
-                        ))}
-                        {/* Espacio entre días */}
+                        {/* DETALLE */}
+                        {group.items.map((traslado, i) => {
+                             const nombre = (traslado.producto_nombre || '').toLowerCase();
+                             const peso = Number(traslado.kilos_por_unidad) || 0;
+                             const esExcluido = nombre.includes('pipeta') || nombre.includes('comprimido') || peso <= 3;
+
+                             return (
+                                <tr key={`${traslado.producto_id}-${i}`} className="hover:bg-white transition-colors">
+                                    <td className="px-3 py-2 text-sm text-gray-900 font-medium">
+                                        {traslado.producto_nombre}
+                                        {esExcluido && <span className="text-xs text-gray-400 italic ml-2">(No suma bulto)</span>}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-right text-gray-500">
+                                        {formatKilos(traslado.kilos_por_unidad)}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-right text-gray-700">
+                                        {traslado.total_unidades_movidas} uds
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-right font-medium text-gray-700">
+                                        {formatKilos(traslado.peso_total_movido)} kg
+                                    </td>
+                                    <td className="px-3 py-2"></td>
+                                </tr>
+                             )
+                        })}
                         {index < orderedGroups.length - 1 && (
                             <tr><td colSpan={5} className="h-3"></td></tr>
                         )}
@@ -168,11 +174,11 @@ const ReportesTraslado: React.FC<ReportesTrasladoProps> = ({ reporteList, loadin
 };
 
 // ====================================================================
-// COMPONENTE PRINCIPAL StockDeposito
+// COMPONENTE PRINCIPAL STOCK DEPOSITO
 // ====================================================================
 
 const StockDeposito = () => {
-    // 💡 NUEVO ESTADO DE PESTAÑA Y REPORTE
+    // ESTADOS DE PESTAÑA
     const [vistaActual, setVistaActual] = useState<Vista>('deposito');
     const [reporteList, setReporteList] = useState<Traslado[]>([]);
     const [loadingReporte, setLoadingReporte] = useState(false);
@@ -211,12 +217,11 @@ const StockDeposito = () => {
         }
     }, []);
 
-    // 💡 FUNCIÓN: Llama al endpoint getReporteTraslados
     const fetchReporte = useCallback(async () => {
         setLoadingReporte(true);
         try {
             const response = await stockDepositoAPI.getReporteTraslados();
-            setReporteList(response.data); // Asume que la respuesta tiene la estructura de Traslado[]
+            setReporteList(response.data);
         } catch (error) {
             console.error("Error fetching report:", error);
             toast.error('Error al cargar el reporte de traslados.');
@@ -230,10 +235,9 @@ const StockDeposito = () => {
         if (vistaActual === 'deposito') {
             fetchData();
         } else {
-            // Llama al reporte solo si la pestaña actual es 'reporte'
             fetchReporte();
         }
-    }, [fetchData, fetchReporte, vistaActual]); // Depende de la vistaActual
+    }, [fetchData, fetchReporte, vistaActual]);
 
     const filteredStock = useMemo(() => {
         return stockList.filter(item =>
@@ -242,7 +246,6 @@ const StockDeposito = () => {
         );
     }, [stockList, busqueda]);
 
-    // CÁLCULOS DE KILOS Y STOCK TOTALES
     const totalWeightInDeposito = useMemo(() => {
         return stockList.reduce((sum, item) => {
             const kilosPorUnidad = Number(item.kilos) || 0;
@@ -317,7 +320,6 @@ const StockDeposito = () => {
         }
     };
 
-    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleMassTransferAll = async () => {
         if (totalStockInDeposito <= 0) {
             return toast.error("El depósito ya está vacío. No hay stock para trasladar.");
@@ -338,9 +340,7 @@ const StockDeposito = () => {
                 const cantidadTotal = Number(item.stock_en_deposito);
                 if (cantidadTotal > 0) {
                     try {
-                        // 1. Reducir stock en depósito (El backend lo hace, y la vista calcula el stock de tienda)
                         await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
-
                         successCount++;
                     } catch (error) {
                         failCount++;
@@ -357,8 +357,6 @@ const StockDeposito = () => {
             } else {
                 toast.success("Depósito ya vacío.");
             }
-
-            // Recargar datos para que la vista calcule el nuevo stock_en_tienda
             await fetchData();
 
         } catch (error) {
@@ -368,7 +366,6 @@ const StockDeposito = () => {
         }
     };
 
-    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleMassTransferSelected = async () => {
         if (selectedItems.size === 0) {
             return toast.error("No hay productos seleccionados para trasladar.");
@@ -393,9 +390,7 @@ const StockDeposito = () => {
             for (const item of itemsToTransfer) {
                 const cantidadTotal = Number(item.stock_en_deposito);
                 try {
-                    // 1. Reducir stock en depósito (Esto es suficiente)
                     await stockDepositoAPI.transferir(item.producto_id, cantidadTotal);
-
                     successCount++;
                 } catch (error) {
                     failCount++;
@@ -409,8 +404,6 @@ const StockDeposito = () => {
             } else {
                 toast.error(`El traslado masivo falló para todos los productos seleccionados (${failCount} errores).`);
             }
-
-            // Recargar datos para que la vista calcule el nuevo stock_en_tienda
             await fetchData();
 
         } catch (error) {
@@ -420,7 +413,6 @@ const StockDeposito = () => {
         }
     };
 
-    // LÓGICA CORREGIDA: Solo llama a stockDepositoAPI.transferir y recarga datos.
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProduct) return;
@@ -463,22 +455,19 @@ const StockDeposito = () => {
 
         setIsTransferring(true);
         try {
-            // 1. Reduce stock in the deposit (Esto es suficiente)
             await stockDepositoAPI.transferir(selectedProduct.producto_id, cantidadAMover);
 
             const vacioDeDeposito = cantidadAMover === stockActual;
-
             if (vacioDeDeposito) {
                 toast.success(`Todo el stock (${cantidadAMover} unidades) de ${selectedProduct.producto_nombre} fue trasladado. Stock en depósito: 0.`);
             } else {
                 toast.success(`Traslado de ${cantidadAMover} unidades de ${selectedProduct.producto_nombre} a la tienda registrado.`);
             }
 
-            // Refetch data for the current view
             if (vistaActual === 'deposito') {
                 await fetchData();
             } else {
-                await fetchReporte(); // Refrescar el reporte si estábamos en esa pestaña
+                await fetchReporte();
             }
 
             setShowModal(false);
@@ -494,17 +483,13 @@ const StockDeposito = () => {
         .filter(item => Number(item.stock_en_deposito) > 0)
         .every(item => selectedItems.has(item.producto_id));
 
-    if (loading && vistaActual === 'deposito') { // Solo muestra loading si está en la pestaña principal
+    if (loading && vistaActual === 'deposito') {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
         );
     }
-
-    // ====================================================================
-    // RENDERIZADO PRINCIPAL
-    // ====================================================================
 
     return (
         <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto relative">
@@ -526,7 +511,7 @@ const StockDeposito = () => {
                 </div>
             )}
 
-            {/* ENCABEZADO Y BOTÓN MAESTRO GLOBAL */}
+            {/* ENCABEZADO */}
             <div className="flex flex-wrap justify-between items-start sm:items-center space-y-4 sm:space-y-0">
                 <div className="min-w-0">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
@@ -541,7 +526,6 @@ const StockDeposito = () => {
                     )}
                 </div>
 
-                {/* Botón Maestro Trasladar Todo GLOBAL (Solo visible en la pestaña Depósito) */}
                 {vistaActual === 'deposito' && (
                     <button
                         onClick={handleMassTransferAll}
@@ -557,7 +541,7 @@ const StockDeposito = () => {
                 )}
             </div>
 
-            {/* 💡 NAVEGACIÓN POR PESTAÑAS */}
+            {/* PESTAÑAS */}
             <div className="border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                     <button
@@ -607,7 +591,6 @@ const StockDeposito = () => {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                         <tr>
-                                            {/* Nueva columna para Checkbox de selección masiva */}
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 {totalFilteredItemsWithStock > 0 && (
                                                     <input
@@ -630,7 +613,6 @@ const StockDeposito = () => {
                                         <tbody className="bg-white divide-y divide-gray-200">
                                         {filteredStock.map((item) => (
                                             <tr key={item.producto_id}>
-                                                {/* Columna Checkbox */}
                                                 <td className="px-3 py-4 whitespace-nowrap text-sm text-center">
                                                     {Number(item.stock_en_deposito) > 0 && (
                                                         <input
@@ -648,7 +630,6 @@ const StockDeposito = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <span className="text-xs text-gray-700">{item.categoria_nombre}</span>
                                                 </td>
-                                                {/* CELDA CORREGIDA: Muestra Peso Total */}
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-700">
                                                     {formatKilos((Number(item.kilos) || 0) * (Number(item.stock_en_deposito) || 0))}
                                                 </td>
@@ -675,7 +656,6 @@ const StockDeposito = () => {
 
                                 {/* LISTA DE TARJETAS (Mobile) */}
                                 <div className="md:hidden space-y-3">
-                                    {/* Selector masivo para mobile, si hay stock visible */}
                                     {totalFilteredItemsWithStock > 0 && (
                                         <div className="flex items-center space-x-2 pb-2 border-b">
                                             <input
@@ -734,7 +714,7 @@ const StockDeposito = () => {
                     </>
                 )}
 
-                {/* 💡 CONTENIDO DE LA PESTAÑA DE REPORTES */}
+                {/* CONTENIDO DE LA PESTAÑA DE REPORTES */}
                 {vistaActual === 'reporte' && (
                     <ReportesTraslado
                         reporteList={reporteList}
@@ -767,14 +747,12 @@ const StockDeposito = () => {
                                 <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
                                     <p className="text-sm font-medium">Stock en Depósito: <span className="text-orange-600 font-bold">{selectedProduct.stock_en_deposito}</span></p>
                                     <p className="text-sm">Stock en Tienda: {selectedProduct.stock_en_tienda}</p>
-                                    {/* MOSTRAR PESO DEL PRODUCTO */}
                                     {Number(selectedProduct.kilos) > 0 && (
                                         <p className="text-xs text-gray-600">Peso por unidad: <span className="font-semibold">{formatKilos(selectedProduct.kilos)} kg</span></p>
                                     )}
                                 </div>
 
                                 <form onSubmit={handleTransfer} className="space-y-4">
-                                    {/* Selector de Modalidad */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                                         <label className="flex items-center text-sm font-medium text-gray-700">
                                             <input
@@ -800,7 +778,6 @@ const StockDeposito = () => {
                                         </label>
                                     </div>
 
-                                    {/* Input Dinámico */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
                                             {modoTransferencia === 'trasladar'
@@ -823,11 +800,8 @@ const StockDeposito = () => {
                                         />
                                     </div>
 
-                                    {/* Resumen del Traslado (Cálculo Inverso y Peso Estimado) */}
                                     {(Number(cantidadInput) > 0 || (modoTransferencia === 'quedar' && Number(selectedProduct.stock_en_deposito) > 0)) && (
                                         <div className="text-sm p-2 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
-
-                                            {/* Cálculo de unidades a mover */}
                                             {modoTransferencia === 'quedar' ? (
                                                 Number(cantidadInput) === 0 ? (
                                                     <p>Se trasladarán: <span className="font-bold">{selectedProduct.stock_en_deposito}</span> unidades. **Stock en depósito quedará en 0.**</p>
@@ -838,7 +812,6 @@ const StockDeposito = () => {
                                                 <p>Quedarán en depósito: <span className="font-bold">{Number(selectedProduct.stock_en_deposito) - Number(cantidadInput)}</span> unidades.</p>
                                             )}
 
-                                            {/* CÁLCULO DE PESO ESTIMADO DEL TRASLADO */}
                                             {Number(selectedProduct.kilos) > 0 && (
                                                 <p className="mt-1">
                                                     Peso estimado a mover: <span className="font-bold">
