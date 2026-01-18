@@ -608,10 +608,10 @@ const Productos = () => {
                         <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
                             <div className="flex justify-between items-start mb-3">
                                 <div className="min-w-0 flex-1 pr-2">
-                                    <h3 className="text-lg font-bold text-gray-900 truncate">
+                                    <h3 className="text-lg font-bold text-gray-900">
                                         {producto.nombre}
                                     </h3>
-                                    {producto.descripcion && <p className="text-xs text-gray-500 truncate mt-1">{producto.descripcion}</p>}
+                                    {producto.descripcion && <p className="text-xs text-gray-500  mt-1">{producto.descripcion}</p>}
                                 </div>
                                 <div className="flex space-x-2 flex-shrink-0 ml-auto">
                                     <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
