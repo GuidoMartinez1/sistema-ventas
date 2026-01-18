@@ -788,7 +788,6 @@ const Compras = () => {
                             </div>
                         </div>
                     </div>
-                </div>
             )}
         </div>
     )
