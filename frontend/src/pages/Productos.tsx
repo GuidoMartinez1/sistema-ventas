@@ -364,6 +364,28 @@ const Productos = () => {
         setFormData(prev => ({ ...prev, stock: cleanValue }));
     }
 
+    // =======================================================
+    // LÓGICA DE RECOMENDACIÓN DE PRECIO X KILO
+    // =======================================================
+    // Calculamos esto en cada render para mostrar la sugerencia en tiempo real
+    const calcularSugerenciaKg = () => {
+        const precioVenta = parseFloat(formData.precio) || 0;
+        const nombreProducto = formData.nombre || '';
+
+        // Usamos la función que ya tenías para sacar los kilos del nombre
+        const pesoDetectado = extraerKilos(nombreProducto);
+
+        if (precioVenta > 0 && pesoDetectado && pesoDetectado > 0) {
+            // Fórmula: (Precio Venta + 20%) / Cantidad Kilos
+            const precioConMargen = precioVenta * 1.20;
+            const precioPorKilo = precioConMargen / pesoDetectado;
+            return precioPorKilo;
+        }
+        return null;
+    };
+
+    const sugerenciaKg = calcularSugerenciaKg();
+    // =======================================================
 
     // 🛠️ Lógica de filtrado
     const productosFiltrados = productos
@@ -709,6 +731,7 @@ const Productos = () => {
                                         rows={3}
                                     />
                                 </div>
+                                {/* CAMBIO EN EL INPUT DE PRECIO POR KILO */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
                                         Precio por Kilo
@@ -720,6 +743,16 @@ const Productos = () => {
                                         className={inputFieldClass}
                                         placeholder="0.00"
                                     />
+                                    {/* MOSTRAR SUGERENCIA */}
+                                    {sugerenciaKg && (
+                                        <div
+                                            className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                                            onClick={() => setFormData({...formData, precio_kg: sugerenciaKg.toFixed(2)})}
+                                            title="Click para aplicar este precio"
+                                        >
+                                            💡 Sugerido (Venta + 20%): <strong>{formatPrice(sugerenciaKg)}</strong>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
