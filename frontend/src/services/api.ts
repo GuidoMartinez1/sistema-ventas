@@ -192,6 +192,16 @@ export interface Cotizacion {
     valor: number
 }
 
+export interface ActualizacionPrecio {
+    id: number;              // ID del registro en historial_costos
+    producto_id: number;
+    producto_nombre: string;
+    costo_anterior: number;
+    costo_nuevo: number;
+    precio_venta_actual: number;
+    fecha_detectado: string; // Vendrá de la fecha de la compra
+}
+
 // ----------------------
 // ENDPOINTS
 // ----------------------
@@ -301,6 +311,17 @@ export const stockDepositoAPI = {
         api.post("/stock-deposito/transferir", { producto_id, cantidad_a_mover }),
     // 💡 NUEVO ENDPOINT PARA EL REPORTE
     getReporteTraslados: () => api.get<Traslado[]>("/stock-deposito/reporte"),
+}
+
+export const actualizacionesAPI = {
+    // Obtener la lista de productos que aumentaron y aun no revisaste
+    getAll: () => api.get<ActualizacionPrecio[]>("/actualizaciones-precios"),
+
+    // Confirmar actualización: Cambia el precio de venta y borra la alerta
+    resolve: (id: number, nuevoPrecioVenta: number) => api.post(`/actualizaciones-precios/${id}/resolver`, { precio: nuevoPrecioVenta }),
+
+    // Descartar alerta: Borra la notificación sin cambiar el precio de venta
+    delete: (id: number) => api.delete(`/actualizaciones-precios/${id}`),
 }
 
 export default api

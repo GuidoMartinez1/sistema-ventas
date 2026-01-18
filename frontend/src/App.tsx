@@ -15,6 +15,7 @@ import Reportes from './pages/Reportes'
 import BolsasAbiertas from './pages/BolsasAbiertas'
 import Gastos from './pages/Gastos'
 import StockDeposito from './pages/StockDeposito'
+import ActualizacionesPendientes from './pages/ActualizacionesPendientes'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/bolsas-abiertas" element={<BolsasAbiertas />} />
             <Route path="/gastos" element={<Gastos />} />
             <Route path="/stock-deposito" element={<StockDeposito />} />
+            <Route path="/actualizaciones" element={<ActualizacionesPendientes />} />
           </Routes>
         </Layout>
         <Toaster position="top-right" />
