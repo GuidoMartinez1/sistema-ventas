@@ -26,7 +26,8 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Deudas', href: '/deudas', icon: DollarSign },
     { name: 'Reportes', href: '/reportes', icon: BarChart3 },
     { name: 'Bolsas Abiertas', href: '/bolsas-abiertas', icon: AlertTriangle },
-    { name: 'Stock en Depósito', href: '/stock-deposito', icon: Truck }, // Usamos Truck o Package/Warehouse
+    { name: 'Stock en Depósito', href: '/stock-deposito', icon: Truck },
+    { name: 'Actualizaciones', href: '/actualizaciones', icon: TrendingUp },
   ]
 
   return (
