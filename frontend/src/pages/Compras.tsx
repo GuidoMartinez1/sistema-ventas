@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download, Calculator } from 'lucide-react'
+import { Plus, Package, Calendar, Building, Eye, X, ClipboardList, Trash2, Edit, Download, Calculator, Search} from 'lucide-react'
 import { comprasAPI, futurosPedidosAPI, FuturoPedido, Producto, productosAPI } from '../services/api'
 import { Compra, CompraCompleta } from '../services/api'
 import toast from 'react-hot-toast'
@@ -17,6 +17,9 @@ const Compras = () => {
     const [compraSeleccionada, setCompraSeleccionada] = useState<CompraCompleta | null>(null)
     const [mostrarDetalles, setMostrarDetalles] = useState(false)
     const [cargandoDetalles, setCargandoDetalles] = useState(false)
+
+    //  ESTADO PARA EL BUSCADOR DE DETALLES
+    const [busquedaDetalles, setBusquedaDetalles] = useState('')
 
     // ================= FUTUROS PEDIDOS - PERSISTENTE =================
     const [mostrarFuturos, setMostrarFuturos] = useState(false)
@@ -246,6 +249,7 @@ const Compras = () => {
 
     const verDetalles = async (compraId: number) => {
         setCargandoDetalles(true)
+        setBusquedaDetalles('')
         try {
             const response = await comprasAPI.getById(compraId)
             setCompraSeleccionada(response.data)
@@ -724,7 +728,21 @@ const Compras = () => {
                             </div>
 
                             <div className="mb-4">
-                                <h4 className="text-md font-semibold text-gray-900 mb-3">Productos Comprados</h4>
+                                <h4 className="text-md font-semibold text-gray-900 mb-3">Productos Comprados</h4></div>
+
+                            {/* NUEVO BUSCADOR AQUÍ --- */}
+                            <div className="relative mb-3">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar producto en esta lista..."
+                                    value={busquedaDetalles}
+                                    onChange={(e) => setBusquedaDetalles(e.target.value)}
+                                    className={`${inputFieldClass} pl-10`}
+                                />
+                            </div>
 
                                 {/* Tabla de detalles con scroll horizontal forzado */}
                                 <div className="overflow-x-auto">
@@ -738,14 +756,25 @@ const Compras = () => {
                                         </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                        {compraSeleccionada.detalles.map((detalle, index) => (
+                                            {/* --- FILTRADO DE DATOS --- */}
+                                            {compraSeleccionada.detalles
+                                            .filter(d => d.producto_nombre?.toLowerCase().includes(busquedaDetalles.toLowerCase()))
+                                            .map((detalle, index) => (
                                             <tr key={index} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{detalle.producto_nombre}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{detalle.cantidad}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatPrice(detalle.precio_unitario)}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-red-600">{formatPrice(detalle.subtotal)}</td>
                                             </tr>
-                                        ))}
+                                            ))}
+                                            {/* Mensaje si no hay resultados */}
+                                            {compraSeleccionada.detalles.filter(d => d.producto_nombre?.toLowerCase().includes(busquedaDetalles.toLowerCase())).length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
+                                                    No se encontraron productos con ese nombre.
+                                                </td>
+                                            </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
