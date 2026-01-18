@@ -4,10 +4,8 @@ import pool from "../db.js";
 
 const router = express.Router();
 
-// 1. OBTENER PENDIENTES
 router.get("/", async (req, res) => {
   try {
-    // Unimos historial_costos con productos y compras para tener toda la info
     const result = await pool.query(`
       SELECT
         h.id,
@@ -16,10 +14,12 @@ router.get("/", async (req, res) => {
         h.precio_costo_anterior as costo_anterior,
         h.precio_costo_nuevo as costo_nuevo,
         p.precio as precio_venta_actual,
-        c.fecha as fecha_detectado
+        c.fecha as fecha_detectado,
+        pr.nombre as proveedor_nombre  -- <--- AGREGAMOS ESTO
       FROM historial_costos h
       JOIN productos p ON h.producto_id = p.id
       JOIN compras c ON h.compra_id = c.id
+      JOIN proveedores pr ON c.proveedor_id = pr.id -- <--- Y ESTE JOIN
       ORDER BY c.fecha DESC
     `);
     res.json(result.rows);

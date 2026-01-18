@@ -200,6 +200,7 @@ export interface ActualizacionPrecio {
     costo_nuevo: number;
     precio_venta_actual: number;
     fecha_detectado: string; // Vendrá de la fecha de la compra
+    proveedor_nombre?: string;
 }
 
 // ----------------------

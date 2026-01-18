@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, AlertCircle, Check, X, ArrowRight, DollarSign, Calculator } from 'lucide-react'
+import { TrendingUp, Check, X, ArrowRight, DollarSign, Calendar, Building } from 'lucide-react' // <--- Agregue iconos
 import { actualizacionesAPI, ActualizacionPrecio } from '../services/api'
 import toast from 'react-hot-toast'
 
 // Utilidades
 const formatPrice = (value: number) => '$' + Number(value).toLocaleString("es-AR");
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
 
 const ActualizacionesPendientes = () => {
     const [pendientes, setPendientes] = useState<ActualizacionPrecio[]>([])
@@ -21,16 +30,11 @@ const ActualizacionesPendientes = () => {
 
     const fetchData = async () => {
         try {
-            // Aquí llamarías a tu API real
             const response = await actualizacionesAPI.getAll()
             setPendientes(response.data)
         } catch (error) {
-            // toast.error('Error al cargar actualizaciones')
-            // DATOS MOCK PARA QUE VEAS COMO QUEDA VISUALMENTE
-            setPendientes([
-                { id: 1, producto_id: 101, producto_nombre: 'Royal Canin Adulto 3kg', costo_anterior: 15000, costo_nuevo: 18500, precio_venta_actual: 22000, fecha_detectado: '2026-01-14' },
-                { id: 2, producto_id: 204, producto_nombre: 'Pipeta Power Gatos', costo_anterior: 5000, costo_nuevo: 6200, precio_venta_actual: 8000, fecha_detectado: '2026-01-15' },
-            ])
+            console.error(error)
+            toast.error('Error al cargar datos')
         } finally {
             setLoading(false)
         }
@@ -39,14 +43,11 @@ const ActualizacionesPendientes = () => {
     const handleOpenResolver = (item: ActualizacionPrecio) => {
         setSelectedItem(item)
 
-        // Sugerencia: Calcular precio para mantener el mismo margen % que tenía antes
-        // Margen anterior = (Venta - CostoAnt) / CostoAnt
+        // Calcular precio sugerido manteniendo el margen anterior
         const margenAnterior = ((item.precio_venta_actual - item.costo_anterior) / item.costo_anterior);
-
-        // Nuevo precio sugerido = NuevoCosto * (1 + MargenAnterior)
         const sugerido = item.costo_nuevo * (1 + margenAnterior);
 
-        setNuevoPrecioVenta(Math.ceil(sugerido).toString()) // Redondeamos para arriba
+        setNuevoPrecioVenta(Math.ceil(sugerido).toString())
         calcularMargen(Math.ceil(sugerido), item.costo_nuevo)
     }
 
@@ -66,7 +67,6 @@ const ActualizacionesPendientes = () => {
     const handleConfirmar = async () => {
         if (!selectedItem) return;
         try {
-            // Aquí llamas a la API que actualiza el producto y borra el pendiente
             await actualizacionesAPI.resolve(selectedItem.id!, parseFloat(nuevoPrecioVenta))
             toast.success(`Precio de ${selectedItem.producto_nombre} actualizado!`)
             setPendientes(prev => prev.filter(p => p.id !== selectedItem.id))
@@ -116,16 +116,27 @@ const ActualizacionesPendientes = () => {
                         <div key={item.id} className="bg-white border-l-4 border-orange-500 shadow-md rounded-r-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fadeIn">
 
                             {/* INFO DEL PRODUCTO */}
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 min-w-0"> {/* min-w-0 ayuda con el truncate si fuera necesario */}
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                     <h3 className="text-lg font-bold text-gray-900">{item.producto_nombre}</h3>
-                                    <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded flex items-center">
+                                    <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded flex items-center whitespace-nowrap">
                                         <TrendingUp className="h-3 w-3 mr-1"/>
                                         +{porcentajeAumento}% Costo
                                     </span>
                                 </div>
-                                <div className="text-sm text-gray-500 flex items-center gap-2">
-                                    <span>Detectado: {item.fecha_detectado}</span>
+
+                                {/* NUEVA SECCIÓN: FECHA Y PROVEEDOR */}
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="h-4 w-4 text-gray-400" />
+                                        <span>{formatDate(item.fecha_detectado)}</span>
+                                    </div>
+                                    {item.proveedor_nombre && (
+                                        <div className="flex items-center gap-1">
+                                            <Building className="h-4 w-4 text-gray-400" />
+                                            <span className="font-medium text-gray-700">{item.proveedor_nombre}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -142,12 +153,11 @@ const ActualizacionesPendientes = () => {
                                 </div>
                             </div>
 
-                            {/* PRECIO VENTA ACTUAL (PROBLEMA) */}
+                            {/* PRECIO VENTA ACTUAL */}
                             <div className="text-right px-4">
                                 <p className="text-xs text-gray-500 uppercase font-bold">Venta Actual</p>
                                 <p className="text-gray-900 font-bold text-xl">{formatPrice(item.precio_venta_actual)}</p>
-                                {/* Calcular margen actual con el nuevo costo para asustar al usuario jajaja */}
-                                <p className="text-xs text-red-500 font-medium">
+                                <p className="text-xs text-red-500 font-medium whitespace-nowrap">
                                     Margen hoy: {(((item.precio_venta_actual - item.costo_nuevo)/item.costo_nuevo)*100).toFixed(1)}%
                                 </p>
                             </div>
@@ -172,7 +182,7 @@ const ActualizacionesPendientes = () => {
                 })}
             </div>
 
-            {/* MODAL DE RESOLUCIÓN */}
+            {/* MODAL (Sin cambios funcionales, solo se mantiene) */}
             {selectedItem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
@@ -187,7 +197,7 @@ const ActualizacionesPendientes = () => {
                             <div className="bg-blue-50 p-4 rounded-lg">
                                 <p className="text-sm text-blue-800 mb-1">El costo aumentó a <strong>{formatPrice(selectedItem.costo_nuevo)}</strong></p>
                                 <p className="text-xs text-blue-600">
-                                    Para mantener tu margen anterior, deberías venderlo a aprox:
+                                    Sugerido para mantener margen anterior:
                                     <strong> {formatPrice(selectedItem.costo_nuevo * (1 + ((selectedItem.precio_venta_actual - selectedItem.costo_anterior)/selectedItem.costo_anterior)))}</strong>
                                 </p>
                             </div>
