@@ -15,30 +15,40 @@ const formatPrice = (value: number | string | undefined) => {
     return '$' + Number(value).toLocaleString("es-AR");
 };
 
+// src/pages/Productos.tsx
+
 /**
- * Función que extrae el peso (KILOS o LITROS) del nombre del producto usando RegEx.
+ * Función que extrae el peso del nombre, a prueba de comas y puntos.
+ * Ejemplos que funcionan: "7.5 kg", "7,5kg", "10 LITROS", "500 GR"
  */
 const extraerKilos = (nombre: string): number | null => {
     if (!nombre) return null;
-    const nombreUpper = nombre.toUpperCase();
 
-    // Regex: Captura el número (entero o decimal) seguido de la unidad (KG, LT, KILOS, etc.)
-    const regex = /(\d+(\.\d+)?)\s*(KG|KGS|KILOS|LITROS|LT|L|G|GR|GRS)/;
-    const match = nombreUpper.match(regex);
+    // EXPLICACIÓN DEL REGEX:
+    // 1. (\d+(?:[.,]\d+)?) -> Busca un número. (?:[.,]\d+)? significa que "opcionalmente" puede tener punto O coma y más números.
+    // 2. \s* -> Puede haber espacios o no.
+    // 3. (KG|KGS|...) -> Busca la unidad.
+    // 4. 'i' -> No importa si está en mayúsculas o minúsculas.
+    const regex = /(\d+(?:[.,]\d+)?)\s*(KG|KGS|KILOS|LITROS|LT|L|G|GR|GRS)/i;
+
+    const match = nombre.match(regex);
 
     if (match && match[1]) {
-       // Reemplaza la coma por punto antes de convertir a número
-        const valorNormalizado = match[1].replace(',', '.');
-        let pesoNum = parseFloat(match[1]);
-        if (isNaN(pesoNum)) return null;
-        let unidad = match[3];
+        // TRUCO CLAVE: Reemplazamos cualquier coma por punto ANTES de convertir a número
+        const valorTexto = match[1].replace(',', '.');
+        let pesoNum = parseFloat(valorTexto);
 
-        // Manejo de Gramos
-        if (unidad && (unidad === 'G' || unidad === 'GR' || unidad === 'GRS')) {
-            if (pesoNum > 1) {
-                pesoNum = pesoNum / 1000;
-            }
+        // Validación de seguridad
+        if (isNaN(pesoNum) || pesoNum === 0) return null;
+
+        // match[2] es la unidad (porque el decimal ahora es un grupo de no-captura)
+        let unidad = match[2].toUpperCase();
+
+        // Si son gramos, convertimos a Kilos
+        if (['G', 'GR', 'GRS'].includes(unidad)) {
+            pesoNum = pesoNum / 1000;
         }
+
         return parseFloat(pesoNum.toFixed(2));
     }
     return null;
