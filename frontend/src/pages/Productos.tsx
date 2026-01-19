@@ -27,6 +27,8 @@ const extraerKilos = (nombre: string): number | null => {
     const match = nombreUpper.match(regex);
 
     if (match && match[1]) {
+       // Reemplaza la coma por punto antes de convertir a número
+        const valorNormalizado = match[1].replace(',', '.');
         let pesoNum = parseFloat(match[1]);
         if (isNaN(pesoNum)) return null;
         let unidad = match[3];
@@ -52,7 +54,9 @@ const formatKilos = (kilos: number | undefined | string) => {
 };
 
 const parseNumericInput = (value: string): string => {
-    return value.replace(/[^0-9.]/g, '');
+    // 1. Reemplaza cualquier coma por un punto
+    // 2. Elimina cualquier caracter que no sea número o punto
+    return value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
 };
 
 const Productos = () => {
