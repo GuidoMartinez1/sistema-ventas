@@ -44,13 +44,14 @@ router.post("/", async (req, res) => {
 
     // Insertar detalles y actualizar stock / precio_costo / ganancia
     for (const prod of productos) {
+      // 1. Insertar detalle de la compra
       await client.query(
-          `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal) 
+          `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
           [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
       );
 
-      // Ver precio actual
+      // 2. Ver precio actual para lógica de Historial de Costos
       const productoDB = await client.query(
           `SELECT precio, precio_costo FROM productos WHERE id = $1`,
           [prod.producto_id]
@@ -81,9 +82,9 @@ router.post("/", async (req, res) => {
           );
         }
 
-        // El stock SIEMPRE se actualiza, pero el precio_costo y porcentaje_ganancia solo si se cumplió la condición.
+        // 3. Actualizar Producto (Stock, Costo, Ganancia)
         await client.query(
-            `UPDATE productos 
+            `UPDATE productos
            SET stock = stock + $1,
                precio_costo = $2,
                porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
@@ -91,14 +92,49 @@ router.post("/", async (req, res) => {
            WHERE id = $4`,
             [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
         );
-        // 2. Insertar el nuevo lote en stock_deposito_detalle (Todo el stock nuevo entra al depósito)
+
+        // 4. Insertar el nuevo lote en stock_deposito_detalle (Todo el stock nuevo entra al depósito)
         await client.query(
             `INSERT INTO stock_deposito_detalle (producto_id, compra_id, cantidad_actual, fecha_ingreso)
              VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
-            [prod.producto_id, compraId, prod.cantidad] // prod.cantidad es la cantidad comprada
+            [prod.producto_id, compraId, prod.cantidad]
         );
-
       }
+
+      // =============================================================================
+      // 🧠 NUEVA LÓGICA: ACTUALIZAR O ELIMINAR DE FUTUROS PEDIDOS (Consumo Parcial)
+      // =============================================================================
+      const futuroPedido = await client.query(
+          `SELECT id, cantidad FROM futuros_pedidos WHERE producto_id = $1`,
+          [prod.producto_id]
+      );
+
+      if (futuroPedido.rows.length > 0) {
+        const pedido = futuroPedido.rows[0];
+
+        // Aseguramos que sean números para la resta
+        const cantidadPendiente = parseFloat(pedido.cantidad) || 0;
+        const cantidadComprada = parseFloat(prod.cantidad) || 0;
+
+        // Calculamos cuánto falta después de esta compra
+        const remanente = cantidadPendiente - cantidadComprada;
+
+        if (remanente <= 0) {
+          // CASO A: Compraste todo lo necesario (o más). Se elimina de la lista.
+          await client.query(
+              `DELETE FROM futuros_pedidos WHERE id = $1`,
+              [pedido.id]
+          );
+        } else {
+          // CASO B: Compraste menos de lo necesario. Se actualiza con lo que falta.
+          await client.query(
+              `UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`,
+              [remanente, pedido.id]
+          );
+        }
+      }
+      // =============================================================================
+
     }
 
     await client.query("COMMIT");
