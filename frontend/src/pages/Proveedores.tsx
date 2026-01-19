@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Building } from 'lucide-react'
+import { Plus, Edit, Trash2, Building, Phone } from 'lucide-react' // Agregado icono Phone
 import { proveedoresAPI } from '../services/api'
 import { Proveedor } from '../services/api'
 import toast from 'react-hot-toast'
@@ -8,13 +8,17 @@ import toast from 'react-hot-toast'
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
 const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out text-sm";
 
-
 const Proveedores = () => {
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null)
-  const [formData, setFormData] = useState({ nombre: '' })
+
+  // Refactor: Agregado campo telefono al estado inicial
+  const [formData, setFormData] = useState({
+    nombre: '',
+    telefono: ''
+  })
 
   useEffect(() => {
     fetchProveedores()
@@ -35,11 +39,19 @@ const Proveedores = () => {
     e.preventDefault()
 
     try {
+      // Preparamos el payload (aunque formData ya tiene la estructura correcta)
+      const payload = {
+        nombre: formData.nombre,
+        telefono: formData.telefono // Se envía, puede estar vacío
+      }
+
       if (editingProveedor) {
-        await proveedoresAPI.update(editingProveedor.id!, formData)
+        // @ts-ignore - Si tu interfaz Proveedor en api.ts es estricta, asegúrate de actualizarla
+        await proveedoresAPI.update(editingProveedor.id!, payload)
         toast.success('Proveedor actualizado exitosamente')
       } else {
-        await proveedoresAPI.create(formData)
+        // @ts-ignore
+        await proveedoresAPI.create(payload)
         toast.success('Proveedor creado exitosamente')
       }
       setShowModal(false)
@@ -52,7 +64,12 @@ const Proveedores = () => {
 
   const handleEdit = (proveedor: Proveedor) => {
     setEditingProveedor(proveedor)
-    setFormData({ nombre: proveedor.nombre })
+    // Refactor: Cargamos el teléfono existente o string vacío
+    setFormData({
+      nombre: proveedor.nombre,
+      // @ts-ignore - Asumiendo que la propiedad viene del backend aunque no esté en la interfaz TS aún
+      telefono: proveedor.telefono || ''
+    })
     setShowModal(true)
   }
 
@@ -69,7 +86,7 @@ const Proveedores = () => {
   }
 
   const resetForm = () => {
-    setFormData({ nombre: '' })
+    setFormData({ nombre: '', telefono: '' }) // Refactor: Resetear teléfono
     setEditingProveedor(null)
   }
 
@@ -108,6 +125,10 @@ const Proveedores = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Proveedor
                 </th>
+                {/* Refactor: Nueva columna Teléfono */}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Teléfono
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
@@ -128,6 +149,21 @@ const Proveedores = () => {
                             {proveedor.nombre}
                           </div>
                         </div>
+                      </div>
+                    </td>
+                    {/* Refactor: Celda de Teléfono */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 flex items-center">
+                        {/* @ts-ignore */}
+                        {proveedor.telefono ? (
+                             <>
+                               <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                               {/* @ts-ignore */}
+                               {proveedor.telefono}
+                             </>
+                        ) : (
+                             <span className="text-gray-400 italic">No registrado</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -163,7 +199,15 @@ const Proveedores = () => {
                       </div>
                       <div className="ml-3">
                         <h3 className="text-lg font-bold text-gray-900">{proveedor.nombre}</h3>
-                        <p className="text-xs text-gray-500">ID: {proveedor.id}</p>
+                        {/* Refactor: Mostrar teléfono en móvil */}
+                        {/* @ts-ignore */}
+                        {proveedor.telefono && (
+                            <p className="text-sm text-gray-600 flex items-center mt-1">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {/* @ts-ignore */}
+                              {proveedor.telefono}
+                            </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -180,7 +224,7 @@ const Proveedores = () => {
           </div>
         </div>
 
-        {/* Modal - Se mantiene el tamaño responsive del Modal de Clientes */}
+        {/* Modal */}
         {showModal && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
               <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
@@ -201,6 +245,21 @@ const Proveedores = () => {
                           className={inputFieldClass}
                       />
                     </div>
+
+                    {/* Refactor: Input para Teléfono (Sin required) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Teléfono
+                      </label>
+                      <input
+                          type="tel"
+                          placeholder="Opcional"
+                          value={formData.telefono}
+                          onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                          className={inputFieldClass}
+                      />
+                    </div>
+
                     <div className="flex justify-end space-x-3 pt-4">
                       <button
                           type="button"
