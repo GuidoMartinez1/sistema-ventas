@@ -76,9 +76,9 @@ router.put("/:id/pagar", async (req, res) => {
         if (tipoPago === "total") {
             // Pago total
             const result = await pool.query(
-                `UPDATE ventas 
+                `UPDATE ventas
          SET estado = 'pagada', metodo_pago = $2
-         WHERE id = $1 
+         WHERE id = $1
          RETURNING *`,
                 [id, metodo_pago]
             );
@@ -107,7 +107,7 @@ router.put("/:id/pagar", async (req, res) => {
             const nuevoEstado = nuevoTotal === 0 ? "completada" : "adeuda";
 
             const deudaResult = await client.query(
-                `UPDATE ventas 
+                `UPDATE ventas
          SET total = $2, estado = $3
          WHERE id = $1
          RETURNING *`,

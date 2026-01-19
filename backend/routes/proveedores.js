@@ -17,29 +17,11 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Obtener proveedor por ID
- */
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM proveedores WHERE id = $1', [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Proveedor no encontrado' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error obteniendo proveedor:', error);
-    res.status(500).json({ error: 'Error obteniendo proveedor' });
-  }
-});
-
-/**
  * Crear proveedor
  */
 router.post('/', async (req, res) => {
   try {
+    // Extraemos telefono del body
     const { nombre, email, telefono, direccion } = req.body;
 
     const query = `
@@ -48,7 +30,8 @@ router.post('/', async (req, res) => {
       RETURNING *;
     `;
 
-    const values = [nombre, email || '', telefono || '', direccion || ''];
+    // Si no viene telefono, guardamos null o string vacío según prefieras.
+    const values = [nombre, email || null, telefono || null, direccion || null];
 
     const newProvider = await pool.query(query, values);
     res.json(newProvider.rows[0]);
@@ -73,7 +56,7 @@ router.put('/:id', async (req, res) => {
       RETURNING *;
     `;
 
-    const values = [nombre, email || '', telefono || '', direccion || '', id];
+    const values = [nombre, email || null, telefono || null, direccion || null, id];
 
     const result = await pool.query(query, values);
 

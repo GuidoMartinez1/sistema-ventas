@@ -20,7 +20,11 @@ import ventasRoutes from './routes/ventas.js'
 import deudasRoutes from './routes/deudas.js';
 import statsRoutes from './routes/stats.js'
 import futurosPedidosRoutes from './routes/futurosPedidos.js'
-import setupRoutes from './routes/setup.js'
+import gastosRouter from './routes/gastos.js';
+import cotizacionesRouter from './routes/cotizaciones.js';
+import stockDepositoRoutes from './routes/stockDeposito.js';
+import actualizacionesRouter from "./routes/actualizaciones.js";
+
 
 const app = express()
 
@@ -87,7 +91,10 @@ const mount = (prefix) => {
   app.use(`${prefix}/api/stats`, statsRoutes)
   app.use(`${prefix}/stats`, statsRoutes)
   app.use(`${prefix}/futuros-pedidos`, futurosPedidosRoutes)
-  app.use(`${prefix}/setup`, setupRoutes)
+  app.use(`${prefix}/gastos`, gastosRouter);
+  app.use(`${prefix}/cotizaciones`, cotizacionesRouter);
+  app.use(`${prefix}/stock-deposito`, stockDepositoRoutes);
+  app.use(`${prefix}/actualizaciones-precios`, actualizacionesRouter);
 
 }
 

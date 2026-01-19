@@ -17,6 +17,13 @@ router.get('/', async (req, res) => {
       FROM compras
     `)
 
+    // Total de otros gastos
+    const totalOtrosGastosMonto = await pool.query(`
+      SELECT COALESCE(SUM(monto), 0) AS total
+      FROM gastos
+    `)
+// Calculamos el Gasto Total del Sistema (Compras + Gastos Operativos)
+    const totalGastosSistema = Number(totalComprasMonto.rows[0].total) + Number(totalOtrosGastosMonto.rows[0].total)
     // Total de deudas (ventas pendientes)
     const totalDeudasMonto = await pool.query(`
       SELECT COALESCE(SUM(total), 0) AS total
@@ -50,7 +57,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       total_ventas_monto: Number(totalVentasMonto.rows[0].total),
-      total_compras_monto: Number(totalComprasMonto.rows[0].total),
+      total_compras_monto: totalGastosSistema,
       total_deudas_monto: Number(totalDeudasMonto.rows[0].total),
       total_productos: Number(totalProductos.rows[0].total),
       total_clientes: Number(totalClientes.rows[0].total),
