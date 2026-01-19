@@ -12,7 +12,9 @@ const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring
 
 const formatPrice = (value: number | string | undefined) => {
     if (value === null || value === undefined || value === '') return '$0';
-    return '$' + Number(value).toLocaleString("es-AR");
+
+    // { maximumFractionDigits: 0 } hace que no muestre comas ni centavos
+    return '$' + Number(value).toLocaleString("es-AR", { maximumFractionDigits: 0 });
 };
 
 // src/pages/Productos.tsx

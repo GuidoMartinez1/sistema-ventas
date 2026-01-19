@@ -4,7 +4,12 @@ import { actualizacionesAPI, ActualizacionPrecio } from '../services/api'
 import toast from 'react-hot-toast'
 
 // Utilidades
-const formatPrice = (value: number) => '$' + Number(value).toLocaleString("es-AR");
+const formatPrice = (value: number | string | undefined) => {
+    if (value === null || value === undefined || value === '') return '$0';
+
+    // { maximumFractionDigits: 0 } hace que no muestre comas ni centavos
+    return '$' + Number(value).toLocaleString("es-AR", { maximumFractionDigits: 0 });
+};
 
 const formatDate = (dateString: string) => {
     if (!dateString) return '-';
