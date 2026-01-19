@@ -44,14 +44,14 @@ router.post("/", async (req, res) => {
 
     // Insertar detalles y actualizar stock / precio_costo / ganancia
     for (const prod of productos) {
-      // 1. Insertar detalle de la compra
+      // 1. Insertar detalle
       await client.query(
           `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
           [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
       );
 
-      // 2. Ver precio actual para lógica de Historial de Costos
+      // 2. Lógica de Precios y Stock
       const productoDB = await client.query(
           `SELECT precio, precio_costo FROM productos WHERE id = $1`,
           [prod.producto_id]
@@ -59,22 +59,16 @@ router.post("/", async (req, res) => {
 
       if (productoDB.rows.length > 0) {
         const { precio, precio_costo } = productoDB.rows[0];
-        let nuevoPrecioCosto = parseFloat(precio_costo); // Mantenemos el costo actual por defecto
+        let nuevoPrecioCosto = parseFloat(precio_costo);
         let nuevoPorcentajeGanancia = null;
 
-        // Convertimos a números para la comparación
         const costoActual = parseFloat(precio_costo);
         const costoNuevo = parseFloat(prod.precio_unitario);
 
-        // La condición para actualizar es: SOLO si el nuevo costo es SUPERIOR al actual.
         if (costoNuevo > costoActual) {
-          nuevoPrecioCosto = costoNuevo; // Establecemos el nuevo costo
+          nuevoPrecioCosto = costoNuevo;
+          nuevoPorcentajeGanancia = ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
 
-          // Recalculamos la ganancia con el nuevo precio de costo
-          nuevoPorcentajeGanancia =
-              ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
-
-          // INSERTAR EN HISTORIAL DE COSTOS (NUEVO)
           await client.query(
               `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo)
                VALUES ($1, $2, $3, $4)`,
@@ -82,7 +76,6 @@ router.post("/", async (req, res) => {
           );
         }
 
-        // 3. Actualizar Producto (Stock, Costo, Ganancia)
         await client.query(
             `UPDATE productos
            SET stock = stock + $1,
@@ -93,7 +86,6 @@ router.post("/", async (req, res) => {
             [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
         );
 
-        // 4. Insertar el nuevo lote en stock_deposito_detalle (Todo el stock nuevo entra al depósito)
         await client.query(
             `INSERT INTO stock_deposito_detalle (producto_id, compra_id, cantidad_actual, fecha_ingreso)
              VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
@@ -101,9 +93,7 @@ router.post("/", async (req, res) => {
         );
       }
 
-      // =============================================================================
-      // 🧠 NUEVA LÓGICA: ACTUALIZAR O ELIMINAR DE FUTUROS PEDIDOS (Consumo Parcial)
-      // =============================================================================
+      // 3. Lógica INTELIGENTE: Consumo de Futuros Pedidos
       const futuroPedido = await client.query(
           `SELECT id, cantidad FROM futuros_pedidos WHERE producto_id = $1`,
           [prod.producto_id]
@@ -111,34 +101,19 @@ router.post("/", async (req, res) => {
 
       if (futuroPedido.rows.length > 0) {
         const pedido = futuroPedido.rows[0];
-
-        // Aseguramos que sean números para la resta
         const cantidadPendiente = parseFloat(pedido.cantidad) || 0;
         const cantidadComprada = parseFloat(prod.cantidad) || 0;
-
-        // Calculamos cuánto falta después de esta compra
         const remanente = cantidadPendiente - cantidadComprada;
 
         if (remanente <= 0) {
-          // CASO A: Compraste todo lo necesario (o más). Se elimina de la lista.
-          await client.query(
-              `DELETE FROM futuros_pedidos WHERE id = $1`,
-              [pedido.id]
-          );
+          await client.query(`DELETE FROM futuros_pedidos WHERE id = $1`, [pedido.id]);
         } else {
-          // CASO B: Compraste menos de lo necesario. Se actualiza con lo que falta.
-          await client.query(
-              `UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`,
-              [remanente, pedido.id]
-          );
+          await client.query(`UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`, [remanente, pedido.id]);
         }
       }
-      // =============================================================================
-
     }
 
     await client.query("COMMIT");
-
     res.status(201).json({ message: "Compra registrada con éxito", compra: compraResult.rows[0] });
   } catch (error) {
     await client.query("ROLLBACK");
@@ -149,7 +124,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// 📌 Obtener compra por ID (con detalles)
+// 📌 Obtener compra por ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -183,7 +158,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// 📌 Eliminar una compra y revertir stock/costo (NUEVO)
+// 📌 Eliminar una compra y revertir stock/costo (CON RESTAURACIÓN DE FUTUROS PEDIDOS)
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
@@ -191,33 +166,30 @@ router.delete("/:id", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1. Obtener detalles de la compra
+    // 1. Obtener detalles de la compra a eliminar
     const detallesResult = await client.query(
-        `SELECT producto_id, cantidad, precio_unitario 
-       FROM detalles_compra 
+        `SELECT producto_id, cantidad, precio_unitario
+       FROM detalles_compra
        WHERE compra_id = $1`,
         [id]
     );
 
     if (detallesResult.rows.length === 0) {
-      // Revertir solo si la compra existe, pero puede que no tenga detalles
       const compraCheck = await client.query(`SELECT 1 FROM compras WHERE id = $1`, [id]);
       if (compraCheck.rows.length === 0) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Compra no encontrada" });
       }
-      // Si la encontró, pero sin detalles, seguimos al paso 3 para eliminarla
     }
 
-    // 2. Revertir stock y costo para cada producto
+    // 2. Procesar reversión por producto
     for (const detalle of detallesResult.rows) {
       const { producto_id, cantidad } = detalle;
 
-      // ************** REVERTIR COSTO (si aplica) **************
-      // Verificar si esta compra CAUSÓ un cambio de costo
+      // A. Revertir Historial de Costos
       const historialResult = await client.query(
-          `SELECT precio_costo_anterior 
-         FROM historial_costos 
+          `SELECT precio_costo_anterior
+         FROM historial_costos
          WHERE compra_id = $1 AND producto_id = $2`,
           [id, producto_id]
       );
@@ -226,42 +198,37 @@ router.delete("/:id", async (req, res) => {
       let ganancia = null;
       let costoRevertido = false;
 
-      // Si la compra modificó el costo, revertimos al costo anterior
       if (historialResult.rows.length > 0) {
         const costoAnterior = historialResult.rows[0].precio_costo_anterior;
         nuevoCostoParaProducto = costoAnterior;
         costoRevertido = true;
-
-        // **IMPORTANTE**: Eliminamos el registro del historial
         await client.query(
-            `DELETE FROM historial_costos 
+            `DELETE FROM historial_costos
            WHERE compra_id = $1 AND producto_id = $2`,
             [id, producto_id]
         );
       }
 
-      // Obtenemos el precio de venta para recalcular la ganancia o para mantener el costo actual
+      // Obtenemos datos del producto (Nombre necesario para restaurar futuro pedido si no existe)
       const currentProd = await client.query(
-          `SELECT precio, precio_costo FROM productos WHERE id = $1`,
+          `SELECT nombre, precio, precio_costo FROM productos WHERE id = $1`,
           [producto_id]
       );
+
+      const prodNombre = currentProd.rows[0]?.nombre || 'Producto Restaurado'; // Fallback por seguridad
 
       if (currentProd.rows.length > 0) {
         const { precio: precioVenta, precio_costo: costoActualDB } = currentProd.rows[0];
 
         if (!costoRevertido) {
-          // Si el costo NO cambió, mantenemos el costo actual de la BD
           nuevoCostoParaProducto = costoActualDB;
         }
-
-        // Recalculamos la ganancia con el costo que vamos a aplicar
         ganancia = ((parseFloat(precioVenta) - parseFloat(nuevoCostoParaProducto)) / parseFloat(nuevoCostoParaProducto)) * 100;
       }
 
-
-      // ************** REVERTIR STOCK Y ACTUALIZAR COSTO **************
+      // B. Revertir Stock y Costo en Productos
       await client.query(
-          `UPDATE productos 
+          `UPDATE productos
          SET stock = stock - $1,
              precio_costo = $2,
              porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
@@ -269,10 +236,38 @@ router.delete("/:id", async (req, res) => {
          WHERE id = $4`,
           [cantidad, nuevoCostoParaProducto, ganancia, producto_id]
       );
+
+      // =============================================================================
+      // 🧠 LÓGICA INVERSA: RESTAURAR FUTUROS PEDIDOS
+      // =============================================================================
+      // Buscamos si ya existe en la lista de pendientes
+      const futuroCheck = await client.query(
+          `SELECT id, cantidad FROM futuros_pedidos WHERE producto_id = $1`,
+          [producto_id]
+      );
+
+      if (futuroCheck.rows.length > 0) {
+        // ESCENARIO 1: Ya estaba en la lista (ej: compra parcial o re-agregado). SUMAMOS la cantidad devuelta.
+        const cantActual = parseFloat(futuroCheck.rows[0].cantidad) || 0;
+        const cantRestaurada = cantActual + parseFloat(cantidad);
+
+        await client.query(
+            `UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`,
+            [cantRestaurada, futuroCheck.rows[0].id]
+        );
+      } else {
+        // ESCENARIO 2: No estaba en la lista (se había borrado al comprar). LO VOLVEMOS A CREAR.
+        await client.query(
+            `INSERT INTO futuros_pedidos (producto_id, producto, cantidad, creado_en)
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+            [producto_id, prodNombre, cantidad]
+        );
+      }
+      // =============================================================================
+
     }
 
-    // 3. Eliminar la compra y sus detalles
-    // (Asumiendo que detalles_compra se borra en cascada o lo borramos explícitamente)
+    // 3. Eliminar registros de la compra
     await client.query(`DELETE FROM stock_deposito_detalle WHERE compra_id = $1`, [id]);
     await client.query(`DELETE FROM detalles_compra WHERE compra_id = $1`, [id]);
     const compraResult = await client.query(`DELETE FROM compras WHERE id = $1 RETURNING *`, [id]);
@@ -282,7 +277,7 @@ router.delete("/:id", async (req, res) => {
     }
 
     await client.query("COMMIT");
-    res.json({ message: "Compra eliminada y stock/costo revertido con éxito" });
+    res.json({ message: "Compra eliminada, stock revertido y pedidos futuros restaurados." });
 
   } catch (error) {
     await client.query("ROLLBACK");
