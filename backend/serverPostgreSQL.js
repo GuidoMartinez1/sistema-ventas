@@ -8,6 +8,8 @@ import pool from './db.js'
 
 
 // importa rutas (asegúrate que existen en ./routes/*.js y usan el mismo pool de ./db.js)
+import authRoutes from './routes/auth.js'
+import usuariosRoutes from './routes/usuarios.js'
 import categoriasRoutes from './routes/categorias.js'
 import productosRoutes from './routes/productos.js'
 import clientesRoutes from './routes/clientes.js'
@@ -75,6 +77,8 @@ app.get('/api/test', (req, res) => res.json({ message: 'Conexión exitosa 🚀' 
  * Ej: /productos  y /api/productos  -> ambos responden.
  */
 const mount = (prefix) => {
+  app.use(`${prefix}/auth`, authRoutes)
+  app.use(`${prefix}/usuarios`, usuariosRoutes)
   app.use(`${prefix}/categorias`, categoriasRoutes)
   app.use(`${prefix}/productos`, productosRoutes)
   app.use(`${prefix}/clientes`, clientesRoutes)
