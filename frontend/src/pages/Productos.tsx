@@ -754,7 +754,7 @@ const Productos = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.precio_kg}
+                                        value={formatPrice(formData.precio_kg)}
                                         onChange={(e) => handlePrecioKgChange(e.target.value)}
                                         className={inputFieldClass}
                                         placeholder="0.00"
@@ -777,7 +777,7 @@ const Productos = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            value={formData.precio_costo}
+                                            value={formatPrice(formData.precio_costo)}
                                             onChange={(e) => handlePrecioCostoChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
@@ -813,7 +813,7 @@ const Productos = () => {
                                         <input
                                             type="text"
                                             required
-                                            value={formData.precio}
+                                            value={formatPrice(formData.precio)}
                                             onChange={(e) => handlePrecioVentaChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
