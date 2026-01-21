@@ -813,7 +813,7 @@ const Productos = () => {
                                         <input
                                             type="text"
                                             required
-                                            value={formatPrice(formData.precio)}
+                                            value={(formData.precio)}
                                             onChange={(e) => handlePrecioVentaChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
