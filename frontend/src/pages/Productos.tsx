@@ -777,7 +777,7 @@ const Productos = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            value={formatPrice(formData.precio_costo)}
+                                            value={(formData.precio_costo)}
                                             onChange={(e) => handlePrecioCostoChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
