@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react' // Se agregó useRef
+import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle, Camera } from 'lucide-react' // Se agregó Camera
 import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
@@ -12,13 +12,11 @@ const inputFieldClass = "w-full border border-gray-300 p-2 rounded-lg focus:ring
 
 const formatPrice = (value: number | string | undefined) => {
   if (value === null || value === undefined || value === '') return '$0';
-  // Aseguramos que el valor sea un número antes de formatear
   const numberValue = typeof value === 'string' ? parseFloat(value) : Number(value);
-  if (isNaN(numberValue)) return '$0'; // Manejo si todavía es NaN
+  if (isNaN(numberValue)) return '$0';
   return '$' + numberValue.toLocaleString("es-AR");
 };
 
-// --- INTERFAZ PARA EL GRUPO DE DEUDAS POR CLIENTE ---
 interface DeudorGroup {
   cliente_nombre: string,
   telefono: string | undefined,
@@ -33,26 +31,25 @@ const Deudas = () => {
   const [loading, setLoading] = useState(true)
   const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
 
+  // ESTADOS Y REFS FALTANTES ARREGLADOS
+  const ticketRef = useRef<HTMLDivElement>(null)
+  const [deudaParaTicket, setDeudaParaTicket] = useState<Deuda | null>(null)
+
   // modal / selección de pago
   const [deudaSeleccionada, setDeudaSeleccionada] = useState<number | null>(null)
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('efectivo')
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [tipoPago, setTipoPago] = useState<'total' | 'parcial'>('total')
   const [montoParcial, setMontoParcial] = useState("")
-
-
   const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchDeudas()
   }, [])
 
-
-const copiarTicketDeuda = async (deuda: Deuda) => {
-    // 1. Seteamos la deuda actual para que el div oculto se actualice
+  const copiarTicketDeuda = async (deuda: Deuda) => {
     setDeudaParaTicket(deuda);
 
-    // 2. Pequeño delay para asegurar que React renderizó el contenido del ticket oculto
     setTimeout(async () => {
       if (!ticketRef.current) return;
 
@@ -90,18 +87,14 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
     }
   }
 
-  // 1. Filtrado de deudas
   const filteredDeudas = deudas.filter((d) =>
       d.cliente_nombre?.toLowerCase().includes(search.toLowerCase()) ||
       d.telefono?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // 2. AGRUPACIÓN DE DEUDAS POR CLIENTE
   const groupedDeudas = filteredDeudas.reduce((acc, deuda) => {
     const key = deuda.cliente_id?.toString() || deuda.cliente_nombre || 'Cliente Desconocido';
-
     const deudaTotal = Number(deuda.total) || 0;
-
     if (!acc[key]) {
       acc[key] = {
         cliente_nombre: deuda.cliente_nombre || 'Cliente sin nombre',
@@ -111,37 +104,27 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
         total_grupo: 0,
       };
     }
-
     acc[key].deudas.push(deuda);
     acc[key].total_grupo += deudaTotal;
     return acc;
   }, {} as Record<string, DeudorGroup>);
 
-  // 3. Convertir el objeto de grupos en un array y ORDENAR POR FECHA
   const deudorGroups: DeudorGroup[] = Object.values(groupedDeudas);
 
-  // Función para encontrar la fecha de deuda más reciente en un grupo
   const getMostRecentDate = (group: DeudorGroup) => {
     if (group.deudas.length === 0) return 0;
-    // Encontrar la fecha más grande (más reciente) en el grupo
-    const maxDate = Math.max(...group.deudas.map(d => new Date(d.fecha!).getTime()));
-    return maxDate;
+    return Math.max(...group.deudas.map(d => new Date(d.fecha!).getTime()));
   };
 
-  // --- CAMBIO CLAVE AQUÍ: Ordenar por la fecha de la deuda más reciente (descendente) ---
   deudorGroups.sort((a, b) => getMostRecentDate(b) - getMostRecentDate(a));
-  // -------------------------------------------------------------------------------------
 
-
-  // Opcional: ordenar las deudas individuales dentro de cada grupo por fecha también
   deudorGroups.forEach(group => {
     group.deudas.sort((a, b) => {
       const dateA = a.fecha ? new Date(a.fecha).getTime() : 0;
       const dateB = b.fecha ? new Date(b.fecha).getTime() : 0;
-      return dateB - dateA; // Más reciente primero
+      return dateB - dateA;
     });
   });
-
 
   const openModalPago = (deudaId: number) => {
     setDeudaSeleccionada(deudaId)
@@ -150,11 +133,8 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
     setMontoParcial("")
   }
 
-
   const handleConfirmarPago = async () => {
     if (!deudaSeleccionada) return
-
-    // Validación de monto parcial
     if (tipoPago === 'parcial') {
       const monto = parseFloat(montoParcial)
       const deudaActual = deudas.find(d => d.id === deudaSeleccionada)
@@ -168,7 +148,6 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
       }
     }
 
-
     try {
       setConfirmLoading(true)
       await deudasAPI.marcarComoPagada(
@@ -177,11 +156,7 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
           tipoPago,
           montoParcial
       )
-
-      toast.success(tipoPago === 'total'
-          ? 'Deuda pagada en su totalidad'
-          : 'Pago parcial registrado')
-
+      toast.success(tipoPago === 'total' ? 'Deuda pagada' : 'Pago parcial registrado')
       setDeudaSeleccionada(null)
       fetchDeudas()
     } catch (error) {
@@ -198,14 +173,10 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
     return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     })
   }
-
 
   if (loading) {
     return (
@@ -224,10 +195,9 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
             <DollarSign className="h-8 w-8 mr-3 text-orange-600" />
             Deudas Pendientes
           </h1>
-          <p className="text-gray-600">
-            Gestiona las ventas registradas como deudas y marca como pagadas cuando corresponda
-          </p>
+          <p className="text-gray-600">Gestiona deudas y pagos</p>
         </div>
+
         <div className="mb-4">
           <input
               type="text"
@@ -236,117 +206,81 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
               onChange={(e) => setSearch(e.target.value)}
               className={`${inputFieldClass} w-full md:w-1/2`}/>
         </div>
+
         {deudas.length === 0 ? (
             <div className={`${cardClass} text-center py-12`}>
               <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No hay deudas pendientes</h3>
-              <p className="text-gray-500">Todas las ventas están al día</p>
             </div>
         ) : (
-            // ITERACIÓN POR GRUPOS DE DEUDORES
             <div className="space-y-8">
               {deudorGroups.map((group, index) => (
                   <div key={index} className="space-y-3 border p-3 rounded-lg bg-gray-50 shadow-md">
-
-                    {/* --- ENCABEZADO DEL GRUPO (DEUDOR) - DISEÑO MÁS COMPACTO --- */}
                     <div className="p-3 bg-orange-100 rounded-lg border border-orange-300 shadow-sm">
                       <h2 className="text-xl font-bold text-orange-900 flex items-center mb-1">
                         <User className="h-5 w-5 mr-2 text-orange-600" />
                         {group.cliente_nombre}
                       </h2>
-                      <div className="flex flex-wrap gap-x-4 text-sm text-orange-700">
-                        {group.telefono && (
-                            <span className="flex items-center">
-                            <Phone className="h-3 w-3 mr-1" /> {group.telefono}
-                          </span>
-                        )}
-                      </div>
-                      {/* El total adeudado ahora usa formato de precio correcto */}
                       <div className="text-2xl font-extrabold text-red-600 mt-2 border-t border-orange-300 pt-1">
-                        Total Adeudado: <span className="text-2xl">{formatPrice(group.total_grupo)}</span>
+                        Total Adeudado: <span>{formatPrice(group.total_grupo)}</span>
                       </div>
                     </div>
 
-                    {/* --- LISTA DE DEUDAS INDIVIDUALES DEL GRUPO --- */}
-                    <h3 className="text-sm font-semibold text-gray-600 mt-4 mb-1 ml-1">
-                      Ventas pendientes ({group.deudas.length}):
-                    </h3>
                     <div className="space-y-3">
-                      {/* Las deudas individuales dentro de este grupo ya están ordenadas por fecha */}
                       {group.deudas.map((deuda) => (
                           <div key={deuda.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
                             <div className="p-4 sm:p-5">
                               <div className="flex flex-col sm:flex-row justify-between items-start">
                                 <div className="flex-1 min-w-0 pr-4 mb-3 sm:mb-0">
-                                  <div className="flex items-center mb-1 gap-3">
-                                    <h4 className="text-md font-semibold text-gray-800 truncate">
-                                      Venta N° {deuda.id}
-                                    </h4>
-                                    <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex-shrink-0">
-                                                  Venta
-                                              </span>
-                                  </div>
+                                  <h4 className="text-md font-semibold text-gray-800">Venta N° {deuda.id}</h4>
                                   <div className="text-sm text-gray-600 flex items-center gap-2">
-                                    <CalendarIcon className="h-4 w-4 flex-shrink-0" />
-                                    <span>Generada: {formatDate(deuda.fecha)}</span>
+                                    <CalendarIcon className="h-4 w-4" />
+                                    <span>{formatDate(deuda.fecha)}</span>
                                   </div>
                                 </div>
-                                  <div className="flex flex-col items-start sm:items-end ml-0 sm:ml-4 flex-shrink-0 gap-2">
-                                  <div className="text-2xl font-bold text-red-600 mb-1">
+                                <div className="flex flex-col items-start sm:items-end gap-2">
+                                  <div className="text-2xl font-bold text-red-600">
                                     {formatPrice(deuda.total)}
                                   </div>
                                   <div className="flex flex-col gap-2 w-full sm:w-auto">
                                       <button
                                         onClick={() => copiarTicketDeuda(deuda)}
-                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100"
                                       >
                                         <Camera className="h-4 w-4 mr-1" />
                                         Copiar Detalle
                                       </button>
                                       <button
                                         onClick={() => openModalPago(deuda.id!)}
-                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
                                       >
                                         <CheckCircle className="h-4 w-4 mr-1" />
-                                        Pagar esta deuda
+                                        Pagar
                                       </button>
                                   </div>
                                 </div>
                               </div>
-
                               <button
                                   onClick={() => toggleExpanded(deuda.id!)}
-                                  className="mt-3 flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  className="mt-3 flex items-center text-blue-600 text-sm font-medium"
                               >
                                 <Package className="h-4 w-4 mr-1" />
                                 {expandedDeuda === deuda.id ? 'Ocultar' : 'Ver'} productos ({deuda.detalles.length})
                               </button>
                             </div>
 
-                            {/* Sección de detalles del producto */}
                             {expandedDeuda === deuda.id && (
-                                <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-3">
-                                  <h4 className="font-medium text-gray-900 mb-2 text-sm">Productos de esta venta:</h4>
+                                <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
                                   <div className="space-y-2">
                                     {deuda.detalles.map((detalle, detIndex) => (
-                                        <div key={detIndex} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-2 rounded-lg border">
-
-                                          <div className='min-w-0 w-full sm:w-auto flex-1 pr-4'>
-                                                      <span className="font-medium text-gray-900 truncate block text-sm">
-                                                        {detalle.producto_nombre || detalle.descripcion}
-                                                      </span>
-                                            <span className="text-xs text-gray-500 block">
-                                                        {formatPrice(detalle.precio_unitario)} c/u
-                                                      </span>
+                                        <div key={detIndex} className="flex justify-between items-center bg-white p-2 rounded border text-sm">
+                                          <div>
+                                              <span className="font-medium block">{detalle.producto_nombre || detalle.descripcion}</span>
+                                              <span className="text-xs text-gray-500">{formatPrice(detalle.precio_unitario)} c/u</span>
                                           </div>
-
-                                          <div className="flex-shrink-0 text-left sm:text-right flex justify-between sm:justify-end w-full sm:w-auto mt-1 sm:mt-0 pt-1 border-t sm:border-none sm:pt-0 text-sm">
-                                            <div className="text-gray-600">
-                                              Cant: **{detalle.cantidad}**
-                                            </div>
-                                            <div className="font-bold text-gray-900 ml-4">
-                                              Total: {formatPrice(detalle.subtotal)}
-                                            </div>
+                                          <div className="text-right">
+                                            <div>Cant: {detalle.cantidad}</div>
+                                            <div className="font-bold">{formatPrice(detalle.subtotal)}</div>
                                           </div>
                                         </div>
                                     ))}
@@ -361,50 +295,19 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
             </div>
         )}
 
-        {/* Modal de método de pago (sin cambios) */}
+        {/* Modal de pago */}
         {deudaSeleccionada && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
               <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
-                <h2 className="text-lg font-bold mb-4">Seleccionar método de pago</h2>
-                <p className="text-sm text-gray-700 mb-3">Podés cambiar la forma de pago con la que se registró originalmente la venta.</p>
-                <select
-                    value={metodoPagoSeleccionado}
-                    onChange={(e) => setMetodoPagoSeleccionado(e.target.value)}
-                    className="w-full border p-2 rounded mb-4">
+                <h2 className="text-lg font-bold mb-4">Método de pago</h2>
+                <select value={metodoPagoSeleccionado} onChange={(e) => setMetodoPagoSeleccionado(e.target.value)} className="w-full border p-2 rounded mb-4">
                   <option value="efectivo">Efectivo</option>
                   <option value="mercadopago">MercadoPago</option>
                   <option value="tarjeta">Tarjeta</option>
                 </select>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de pago</label>
-                  <select
-                      value={tipoPago}
-                      onChange={(e) => setTipoPago(e.target.value as 'total' | 'parcial')}
-                      className="w-full border p-2 rounded">
-                    <option value="total">Total</option>
-                    <option value="parcial">Parcial</option>
-                  </select>
-                </div>
-                {tipoPago === 'parcial' && (
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Monto a pagar
-                      </label>
-                      <input
-                          type="number"
-                          value={montoParcial}
-                          onChange={(e) => setMontoParcial(e.target.value)}
-                          className="w-full border p-2 rounded"
-                          placeholder="Ingrese monto"
-                      />
-                    </div>
-                )}
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-2 bg-gray-300 rounded">Cancelar</button>
-                  <button
-                      onClick={handleConfirmarPago}
-                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center"
-                      disabled={confirmLoading || (tipoPago === 'parcial' && !montoParcial)}>
+                  <button onClick={handleConfirmarPago} className="px-3 py-2 bg-green-600 text-white rounded">
                     {confirmLoading ? 'Procesando...' : 'Confirmar'}
                   </button>
                 </div>
@@ -412,59 +315,34 @@ const copiarTicketDeuda = async (deuda: Deuda) => {
             </div>
         )}
 
-    {/* TICKET DE DEUDA OCULTO PARA CAPTURA */}
-          <div
-            ref={ticketRef}
-            style={{
-              position: 'fixed',
-              top: '-9999px',
-              left: '-9999px',
-              width: '400px',
-              backgroundColor: 'white',
-              padding: '24px',
-              color: 'black',
-              fontFamily: 'sans-serif'
-            }}
-          >
-            <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
-                <h1 className="text-xl font-bold uppercase tracking-widest">Estado de Deuda</h1>
-                <h2 className="text-2xl font-black">ALIMAR</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                    Cliente: {deudaParaTicket?.cliente_nombre}
-                </p>
-                <p className="text-xs text-gray-400">
-                    Venta N° {deudaParaTicket?.id} - {deudaParaTicket?.fecha ? formatDate(deudaParaTicket.fecha) : ''}
-                </p>
-            </div>
-
-            <div className="space-y-3">
-                {deudaParaTicket?.detalles.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start border-b border-gray-100 pb-2">
-                        <div className="flex-1 pr-4">
-                            <span className="font-bold mr-2 text-sm">{item.cantidad}x</span>
-                            <span className="text-sm uppercase font-medium">{item.producto_nombre || item.descripcion}</span>
-                        </div>
-                        <div className="font-bold text-gray-800">{formatPrice(item.subtotal)}</div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="mt-6 pt-4 border-t-4 border-gray-900">
-                <div className="flex justify-between items-center text-3xl font-black">
-                    <span>TOTAL:</span>
-                    <span className="text-red-600">{formatPrice(deudaParaTicket?.total || 0)}</span>
-                </div>
-                <div className="mt-4 p-3 bg-gray-100 rounded text-center border border-gray-300">
-                    <p className="text-xs font-bold text-gray-600 uppercase">Alias para transferencia:</p>
-                    <p className="text-xl font-black text-blue-700">alimar25</p>
-                </div>
-            </div>
-
-            <div className="mt-6 text-center text-xs font-bold text-gray-400 uppercase">
-                <p>Este es un recordatorio de saldo pendiente</p>
-                <p>Gracias por tu confianza</p>
-            </div>
+        {/* TICKET DE DEUDA OCULTO PARA CAPTURA */}
+        <div
+          ref={ticketRef}
+          style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '400px', backgroundColor: 'white', padding: '24px', color: 'black', fontFamily: 'sans-serif' }}
+        >
+          <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
+              <h1 className="text-xl font-bold uppercase">Estado de Deuda</h1>
+              <h2 className="text-2xl font-black">ALIMAR</h2>
+              <p className="text-sm text-gray-500 mt-1">Cliente: {deudaParaTicket?.cliente_nombre}</p>
           </div>
+          <div className="space-y-3">
+              {deudaParaTicket?.detalles.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start border-b border-gray-100 pb-2">
+                      <div className="flex-1 pr-4">
+                          <span className="font-bold mr-2 text-sm">{item.cantidad}x</span>
+                          <span className="text-sm uppercase">{item.producto_nombre || item.descripcion}</span>
+                      </div>
+                      <div className="font-bold">{formatPrice(item.subtotal)}</div>
+                  </div>
+              ))}
+          </div>
+          <div className="mt-6 pt-4 border-t-4 border-gray-900">
+              <div className="flex justify-between items-center text-3xl font-black">
+                  <span>TOTAL:</span>
+                  <span className="text-red-600">{formatPrice(deudaParaTicket?.total || 0)}</span>
+              </div>
+          </div>
+        </div>
       </div>
   )
 }
