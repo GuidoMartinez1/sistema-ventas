@@ -3,6 +3,7 @@ import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle
 import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
+import html2canvas from 'html2canvas'
 
 // Clases de utilidad
 const cardClass = "bg-white shadow-lg rounded-xl p-4 md:p-6";
@@ -45,6 +46,37 @@ const Deudas = () => {
   useEffect(() => {
     fetchDeudas()
   }, [])
+
+
+const copiarTicketDeuda = async (deuda: Deuda) => {
+    // 1. Seteamos la deuda actual para que el div oculto se actualice
+    setDeudaParaTicket(deuda);
+
+    // 2. Pequeño delay para asegurar que React renderizó el contenido del ticket oculto
+    setTimeout(async () => {
+      if (!ticketRef.current) return;
+
+      const promesa = new Promise((resolve, reject) => {
+        html2canvas(ticketRef.current!, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true
+        })
+        .then(canvas => canvas.toBlob(blob => {
+          if (!blob) { reject('Error'); return; }
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+            .then(() => resolve('Copiado'));
+        }))
+        .catch(err => reject(err));
+      });
+
+      toast.promise(promesa, {
+        loading: 'Generando detalle...',
+        success: '¡Detalle copiado al portapapeles!',
+        error: 'Error al generar imagen'
+      });
+    }, 100);
+  };
 
   const fetchDeudas = async () => {
     try {
@@ -259,18 +291,26 @@ const Deudas = () => {
                                     <span>Generada: {formatDate(deuda.fecha)}</span>
                                   </div>
                                 </div>
-
-                                <div className="flex flex-col items-start sm:items-end ml-0 sm:ml-4 flex-shrink-0">
-                                  <div className="text-2xl font-bold text-red-600 mb-2">
+                                  <div className="flex flex-col items-start sm:items-end ml-0 sm:ml-4 flex-shrink-0 gap-2">
+                                  <div className="text-2xl font-bold text-red-600 mb-1">
                                     {formatPrice(deuda.total)}
                                   </div>
-                                  <button
-                                      onClick={() => openModalPago(deuda.id!)}
-                                      className="w-full sm:w-auto flex items-center justify-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Pagar esta deuda
-                                  </button>
+                                  <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                      <button
+                                        onClick={() => copiarTicketDeuda(deuda)}
+                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                      >
+                                        <Camera className="h-4 w-4 mr-1" />
+                                        Copiar Detalle
+                                      </button>
+                                      <button
+                                        onClick={() => openModalPago(deuda.id!)}
+                                        className="flex items-center justify-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Pagar esta deuda
+                                      </button>
+                                  </div>
                                 </div>
                               </div>
 
@@ -371,6 +411,60 @@ const Deudas = () => {
               </div>
             </div>
         )}
+
+    {/* TICKET DE DEUDA OCULTO PARA CAPTURA */}
+          <div
+            ref={ticketRef}
+            style={{
+              position: 'fixed',
+              top: '-9999px',
+              left: '-9999px',
+              width: '400px',
+              backgroundColor: 'white',
+              padding: '24px',
+              color: 'black',
+              fontFamily: 'sans-serif'
+            }}
+          >
+            <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
+                <h1 className="text-xl font-bold uppercase tracking-widest">Estado de Deuda</h1>
+                <h2 className="text-2xl font-black">ALIMAR</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                    Cliente: {deudaParaTicket?.cliente_nombre}
+                </p>
+                <p className="text-xs text-gray-400">
+                    Venta N° {deudaParaTicket?.id} - {deudaParaTicket?.fecha ? formatDate(deudaParaTicket.fecha) : ''}
+                </p>
+            </div>
+
+            <div className="space-y-3">
+                {deudaParaTicket?.detalles.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-start border-b border-gray-100 pb-2">
+                        <div className="flex-1 pr-4">
+                            <span className="font-bold mr-2 text-sm">{item.cantidad}x</span>
+                            <span className="text-sm uppercase font-medium">{item.producto_nombre || item.descripcion}</span>
+                        </div>
+                        <div className="font-bold text-gray-800">{formatPrice(item.subtotal)}</div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-6 pt-4 border-t-4 border-gray-900">
+                <div className="flex justify-between items-center text-3xl font-black">
+                    <span>TOTAL:</span>
+                    <span className="text-red-600">{formatPrice(deudaParaTicket?.total || 0)}</span>
+                </div>
+                <div className="mt-4 p-3 bg-gray-100 rounded text-center border border-gray-300">
+                    <p className="text-xs font-bold text-gray-600 uppercase">Alias para transferencia:</p>
+                    <p className="text-xl font-black text-blue-700">alimar25</p>
+                </div>
+            </div>
+
+            <div className="mt-6 text-center text-xs font-bold text-gray-400 uppercase">
+                <p>Este es un recordatorio de saldo pendiente</p>
+                <p>Gracias por tu confianza</p>
+            </div>
+          </div>
       </div>
   )
 }
