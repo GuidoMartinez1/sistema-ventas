@@ -1,4 +1,3 @@
-// src/pages/NuevaVenta.tsx
 import { useEffect, useMemo, useState, useRef } from 'react'
 import {
     Plus, Minus, Trash2, DollarSign, Camera, Printer,
@@ -173,7 +172,6 @@ const NuevaVenta = () => {
         if (cartItems.length === 0) { toast.error('Agregá al menos un ítem'); return; }
         if (esDeuda && !selectedCliente) { toast.error('Para registrar una deuda, seleccioná un cliente'); return; }
 
-        // Recálculo seguro del total para evitar NaN en el envío
         const totalCalculado = cartItems.reduce((acc, item) => {
             const sub = Number(item.subtotal);
             return acc + (isNaN(sub) ? 0 : sub);
@@ -188,17 +186,15 @@ const NuevaVenta = () => {
                     producto_id: d.producto_id,
                     cantidad: Number(d.cantidad),
                     precio_unitario: Number(d.precio_unitario),
-                    subtotal: Number(d.subtotal) || 0, // Fallback a 0 si es NaN
+                    subtotal: Number(d.subtotal) || 0,
                     producto_nombre: d.producto_nombre,
                     descripcion: d.descripcion,
                     es_custom: d.es_custom === true
                 })),
-                total: totalCalculado, // Usamos el cálculo limpio
-                estado: esDeuda ? 'adeuda' : 'pagada', // 'pagada' para mantener consistencia con backend
+                total: totalCalculado,
+                estado: esDeuda ? 'adeuda' : 'pagada',
                 metodo_pago: esDeuda ? 'cuenta_corriente' : metodoPago
             }
-
-            console.log("Enviando venta:", payload); // Debug
 
             await ventasAPI.create(payload)
             toast.success(esDeuda ? 'Deuda registrada' : 'Venta registrada')
@@ -306,9 +302,6 @@ const NuevaVenta = () => {
                                 <p>Seleccioná una categoría arriba para ver los productos</p>
                             </div>
                         )}
-                        {busqueda && productosVisibles.length === 0 && (
-                            <div className="text-center py-10 text-gray-400"><p>No se encontraron productos.</p></div>
-                        )}
                     </div>
                 </div>
 
@@ -363,7 +356,6 @@ const NuevaVenta = () => {
 
                         {cartItems.length > 0 && (
                             <div className="border-t pt-4">
-                                {/* FIXED: LLAVES SIMPLES (SOLUCIÓN AL ERROR DE BUILD) */}
                                 {esDeuda ? (
                                     <div className="text-sm text-orange-600 font-bold bg-orange-50 p-2 rounded border border-orange-200 text-center">
                                         Se registrará en Cuenta Corriente
@@ -405,7 +397,7 @@ const NuevaVenta = () => {
             </div>
 
             {/* TICKETS (Ocultos) */}
-            <div ref={ticketRef} style={{position: 'fixed', top: '-9999px', left: '-9999px', width: '450px', backgroundColor: 'white', padding: '24px', color: 'black'}}>
+            <div ref={ticketRef} style={{position: 'fixed', top: '-9999px', left: '-9999px', width: '450px', backgroundColor: 'white', padding: '24px', color: 'black', fontFamily: 'sans-serif'}}>
                 <div className="text-center border-b border-gray-300 pb-4 mb-4">
                     <h1 className="text-2xl font-bold uppercase tracking-wider">Detalle de Pedido</h1>
                     <p className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('es-AR')} - {new Date().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit', hour12: false})}hs</p>
@@ -423,10 +415,18 @@ const NuevaVenta = () => {
                 </div>
                 <div className="mt-6 pt-4 border-t-2 border-gray-800">
                     <div className="flex justify-between items-center mb-2 text-sm text-gray-600"><span>Método:</span><span className="uppercase">{metodoPago}</span></div>
-                    {metodoPago === 'mercadopago' && (<div className="mb-4 text-center bg-gray-100 p-2 rounded border border-gray-200"><span className="text-xs text-gray-500 uppercase block">Alias:</span><span className="text-xl font-bold text-gray-900 block">alimar25</span></div>)}
-                    <div className="flex justify-between items-center text-3xl font-bold mt-2"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
+
+                    {metodoPago === 'mercadopago' && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 text-center">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Alias para transferencia:</p>
+                            <p className="text-2xl font-black text-blue-800">alimar25</p>
+                            <p className="text-[10px] font-semibold text-gray-600 mt-1">Titular: Carlos Alberto Martinez</p>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center text-3xl font-bold mt-4"><span>TOTAL:</span><span>{formatPrice(total)}</span></div>
                 </div>
-                <div className="mt-8 text-center text-xs text-gray-400"><p>GRACIAS POR TU COMPRA - ALIMAR</p></div>
+                <div className="mt-8 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest"><p>Gracias por elegir Alimar Petshop</p></div>
             </div>
 
             <div id="ticket-imprimible" className="printable-content">
@@ -461,9 +461,10 @@ const NuevaVenta = () => {
                         </div>
 
                         {metodoPago === 'mercadopago' && (
-                            <div style={{ margin: '8px 0', textAlign: 'center', border: '2px solid black', padding: '4px' }}>
-                                <p style={{ fontSize: '10px', margin: 0, fontWeight: 'bold' }}>ALIAS:</p>
-                                <p style={{ fontSize: '16px', margin: 0, fontWeight: '900' }}>alimar25</p>
+                            <div style={{ margin: '8px 0', textAlign: 'center', border: '1px solid black', padding: '4px' }}>
+                                <p style={{ fontSize: '8px', margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>Alias:</p>
+                                <p style={{ fontSize: '14px', margin: 0, fontWeight: '900' }}>alimar25</p>
+                                <p style={{ fontSize: '8px', margin: '2px 0 0 0', fontWeight: 'bold' }}>C. Alberto Martinez</p>
                             </div>
                         )}
 
@@ -473,25 +474,21 @@ const NuevaVenta = () => {
                         </div>
                     </div>
 
-                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                    <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold' }}>
                         <p>*** GRACIAS ***</p>
-                        <p style={{ marginTop: '15px' }}>.</p>
                     </div>
                 </div>
             </div>
 
             <style>{`
                 #ticket-imprimible { display: none; }
-
                 @media print {
                     body * { visibility: hidden; }
                     .no-print, .no-print * { display: none !important; }
-
                     #ticket-imprimible, #ticket-imprimible * {
                         visibility: visible;
                         display: block !important;
                     }
-
                     #ticket-imprimible {
                         position: absolute;
                         left: 0;
@@ -500,16 +497,11 @@ const NuevaVenta = () => {
                         margin: 0;
                         padding: 0;
                     }
-
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                         color-adjust: exact !important;
-                        -webkit-font-smoothing: none !important;
-                        -moz-osx-font-smoothing: grayscale;
-                        text-rendering: optimizeSpeed;
                     }
-
                     @page { margin: 0; size: auto; }
                 }
             `}</style>
