@@ -754,7 +754,7 @@ const Productos = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formatPrice(formData.precio_kg)}
+                                        value={formData.precio_kg}
                                         onChange={(e) => handlePrecioKgChange(e.target.value)}
                                         className={inputFieldClass}
                                         placeholder="0.00"
