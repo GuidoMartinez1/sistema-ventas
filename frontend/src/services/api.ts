@@ -203,6 +203,13 @@ export interface ActualizacionPrecio {
     proveedor_nombre?: string;
 }
 
+export interface HistorialCosto {
+    fecha: string;
+    costo: number;
+    cantidad: number;
+    proveedor: string;
+}
+
 // ----------------------
 // ENDPOINTS
 // ----------------------
@@ -213,6 +220,7 @@ export const productosAPI = {
     delete: (id: number) => api.delete(`/productos/${id}`),
     getBajoStock: () => api.get<Producto[]>("/productos/bajo-stock"),
     abrirBolsa: (id: number) => api.post(`/productos/${id}/abrir-bolsa`),
+    getHistorial: (id: number) => api.get<HistorialCosto[]>(`/productos/${id}/historial`),
 }
 
 export const categoriasAPI = {

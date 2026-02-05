@@ -1,6 +1,6 @@
 // src/pages/Productos.tsx
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package, Download, ClipboardList } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, Download, ClipboardList, History } from 'lucide-react'
 import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
@@ -75,6 +75,21 @@ const Productos = () => {
     const [productos, setProductos] = useState<Producto[]>([])
     const [categorias, setCategorias] = useState<Categoria[]>([])
     const [loading, setLoading] = useState(true)
+
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [historialData, setHistorialData] = useState<any[]>([]);
+    const [selectedProductName, setSelectedProductName] = useState('');
+
+    const verHistorial = async (producto: Producto) => {
+        try {
+            const response = await productosAPI.getHistorial(producto.id!); // Debes agregar esto a tu api.ts
+            setHistorialData(response.data);
+            setSelectedProductName(producto.nombre);
+            setShowHistoryModal(true);
+        } catch {
+            toast.error("No se pudo cargar el historial");
+        }
+    };
 
     // Estados del Modal de Productos
     const [showModal, setShowModal] = useState(false)
@@ -577,7 +592,16 @@ const Productos = () => {
                                     {formatKilos(producto.kilos)}
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                    {formatPrice(producto.precio_costo)}
+                                    <div className="flex items-center justify-center gap-2">
+                                            {formatPrice(producto.precio_costo)}
+                                            <button
+                                                onClick={() => verHistorial(producto)}
+                                                className="text-orange-500 hover:text-orange-700 transition-colors"
+                                                title="Ver historial de precios"
+                                            >
+                                                <History className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -924,7 +948,40 @@ const Productos = () => {
                     </div>
                 </div>
             )}
-
+            {/* MODAL PARA VER HISTORICO DE COSTO*/}
+           {showHistoryModal && (
+               <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+                   <div className="relative bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl">
+                       <div className="flex justify-between items-center mb-4">
+                           <h3 className="text-xl font-bold text-gray-900">Historial: {selectedProductName}</h3>
+                           <button onClick={() => setShowHistoryModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                       </div>
+                       <div className="overflow-hidden border rounded-lg">
+                           <table className="min-w-full divide-y divide-gray-200">
+                               <thead className="bg-gray-50">
+                                   <tr>
+                                       <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                                       <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Proveedor</th>
+                                       <th className="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Cant.</th>
+                                       <th className="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase">Costo</th>
+                                   </tr>
+                               </thead>
+                               <tbody className="bg-white divide-y divide-gray-200">
+                                   {historialData.map((h, i) => (
+                                       <tr key={i} className="hover:bg-gray-50">
+                                           <td className="px-4 py-2 text-sm">{new Date(h.fecha).toLocaleDateString()}</td>
+                                           <td className="px-4 py-2 text-sm font-medium">{h.proveedor}</td>
+                                           <td className="px-4 py-2 text-sm text-center">{h.cantidad}</td>
+                                           <td className="px-4 py-2 text-sm text-right font-bold text-orange-600">{formatPrice(h.costo)}</td>
+                                       </tr>
+                                   ))}
+                               </tbody>
+                           </table>
+                       </div>
+                       <button onClick={() => setShowHistoryModal(false)} className="mt-6 w-full btn-secondary">Cerrar</button>
+                   </div>
+               </div>
+           )}
         </div>
     )
 }

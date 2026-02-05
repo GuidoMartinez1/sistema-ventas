@@ -185,4 +185,29 @@ router.post('/:id/abrir-bolsa', async (req, res) => {
     }
 });
 
+// Obtener historial de costos de un producto específico
+router.get("/:id/historial", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT
+          hc.creado_at AS fecha,
+          hc.precio_costo_nuevo AS costo,
+          hc.cantidad,
+          p.nombre AS proveedor
+       FROM historial_costos hc
+       JOIN compras c ON hc.compra_id = c.id
+       JOIN proveedores p ON c.proveedor_id = p.id
+       WHERE hc.producto_id = $1
+       ORDER BY hc.creado_at DESC
+       LIMIT 10`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error al obtener historial:", error);
+    res.status(500).json({ error: "Error al obtener historial" });
+  }
+});
+
 export default router;

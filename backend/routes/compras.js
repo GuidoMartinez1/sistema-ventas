@@ -70,11 +70,20 @@ router.post("/", async (req, res) => {
           nuevoPorcentajeGanancia = ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
 
           await client.query(
-              `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo)
-               VALUES ($1, $2, $3, $4)`,
-              [prod.producto_id, compraId, costoActual, nuevoPrecioCosto]
+              `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo, cantidad)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [prod.producto_id, compraId, costoActual, nuevoPrecioCosto, prod.cantidad]
           );
         }
+        // 2. LÓGICA DE ACTUALIZACIÓN DEL PRODUCTO
+            let nuevoPrecioCosto = costoActual;
+            let nuevoPorcentajeGanancia = null;
+
+            // Solo actualizamos el costo maestro si el nuevo es mayor
+            if (costoNuevo > costoActual) {
+                nuevoPrecioCosto = costoNuevo;
+                nuevoPorcentajeGanancia = ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
+            }
 
         await client.query(
             `UPDATE productos
