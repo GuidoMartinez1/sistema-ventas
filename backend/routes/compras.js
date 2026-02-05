@@ -44,14 +44,14 @@ router.post("/", async (req, res) => {
 
     // Insertar detalles y actualizar stock / precio_costo / ganancia
     for (const prod of productos) {
-      // 1. Insertar detalle
+      // 1. Insertar detalle de la compra
       await client.query(
           `INSERT INTO detalles_compra (compra_id, producto_id, cantidad, precio_unitario, subtotal)
          VALUES ($1, $2, $3, $4, $5)`,
           [compraId, prod.producto_id, prod.cantidad, prod.precio_unitario, prod.subtotal]
       );
 
-      // 2. Lógica de Precios y Stock
+      // 2. Lógica de Precios, Historial y Stock
       const productoDB = await client.query(
           `SELECT precio, precio_costo FROM productos WHERE id = $1`,
           [prod.producto_id]
@@ -59,32 +59,28 @@ router.post("/", async (req, res) => {
 
       if (productoDB.rows.length > 0) {
         const { precio, precio_costo } = productoDB.rows[0];
-        let nuevoPrecioCosto = parseFloat(precio_costo);
+        const costoActual = parseFloat(precio_costo) || 0;
+        const costoNuevo = parseFloat(prod.precio_unitario) || 0;
+        const precioVentaActual = parseFloat(precio) || 0;
+
+        // Variables para decidir qué se actualiza en la tabla productos
+        let precioCostoParaUpdate = costoActual;
         let nuevoPorcentajeGanancia = null;
 
-        const costoActual = parseFloat(precio_costo);
-        const costoNuevo = parseFloat(prod.precio_unitario);
+        // ✅ REGISTRO EN HISTORIAL: Se hace SIEMPRE para tener trazabilidad comercial
+        await client.query(
+            `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo, cantidad)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [prod.producto_id, compraId, costoActual, costoNuevo, prod.cantidad]
+        );
 
+        // ✅ REGLA DE NEGOCIO: Solo actualizamos el costo maestro si el nuevo es mayor
         if (costoNuevo > costoActual) {
-          nuevoPrecioCosto = costoNuevo;
-          nuevoPorcentajeGanancia = ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
-
-          await client.query(
-              `INSERT INTO historial_costos (producto_id, compra_id, precio_costo_anterior, precio_costo_nuevo, cantidad)
-               VALUES ($1, $2, $3, $4, $5)`,
-              [prod.producto_id, compraId, costoActual, nuevoPrecioCosto, prod.cantidad]
-          );
+          precioCostoParaUpdate = costoNuevo;
+          nuevoPorcentajeGanancia = ((precioVentaActual - precioCostoParaUpdate) / precioCostoParaUpdate) * 100;
         }
-        // 2. LÓGICA DE ACTUALIZACIÓN DEL PRODUCTO
-            let nuevoPrecioCosto = costoActual;
-            let nuevoPorcentajeGanancia = null;
 
-            // Solo actualizamos el costo maestro si el nuevo es mayor
-            if (costoNuevo > costoActual) {
-                nuevoPrecioCosto = costoNuevo;
-                nuevoPorcentajeGanancia = ((parseFloat(precio) - nuevoPrecioCosto) / nuevoPrecioCosto) * 100;
-            }
-
+        // Actualizar el producto (Stock siempre suma, costo y ganancia dependen de la comparación anterior)
         await client.query(
             `UPDATE productos
            SET stock = stock + $1,
@@ -92,9 +88,10 @@ router.post("/", async (req, res) => {
                porcentaje_ganancia = COALESCE($3, porcentaje_ganancia),
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $4`,
-            [prod.cantidad, nuevoPrecioCosto, nuevoPorcentajeGanancia, prod.producto_id]
+            [prod.cantidad, precioCostoParaUpdate, nuevoPorcentajeGanancia, prod.producto_id]
         );
 
+        // Registro para el sistema de depósito
         await client.query(
             `INSERT INTO stock_deposito_detalle (producto_id, compra_id, cantidad_actual, fecha_ingreso)
              VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
@@ -102,7 +99,7 @@ router.post("/", async (req, res) => {
         );
       }
 
-      // 3. Lógica INTELIGENTE: Consumo de Futuros Pedidos
+      // 3. Lógica de Futuros Pedidos (Consumo inteligente)
       const futuroPedido = await client.query(
           `SELECT id, cantidad FROM futuros_pedidos WHERE producto_id = $1`,
           [prod.producto_id]
@@ -133,7 +130,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// 📌 Obtener compra por ID
+// 📌 Obtener compra por ID con sus detalles
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -167,7 +164,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// 📌 Eliminar una compra y revertir stock/costo (CON RESTAURACIÓN DE FUTUROS PEDIDOS)
+// 📌 Eliminar compra y revertir stock/costo/pedidos futuros
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
@@ -175,7 +172,6 @@ router.delete("/:id", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // 1. Obtener detalles de la compra a eliminar
     const detallesResult = await client.query(
         `SELECT producto_id, cantidad, precio_unitario
        FROM detalles_compra
@@ -183,19 +179,10 @@ router.delete("/:id", async (req, res) => {
         [id]
     );
 
-    if (detallesResult.rows.length === 0) {
-      const compraCheck = await client.query(`SELECT 1 FROM compras WHERE id = $1`, [id]);
-      if (compraCheck.rows.length === 0) {
-        await client.query("ROLLBACK");
-        return res.status(404).json({ error: "Compra no encontrada" });
-      }
-    }
-
-    // 2. Procesar reversión por producto
     for (const detalle of detallesResult.rows) {
       const { producto_id, cantidad } = detalle;
 
-      // A. Revertir Historial de Costos
+      // Revertir Historial de Costos
       const historialResult = await client.query(
           `SELECT precio_costo_anterior
          FROM historial_costos
@@ -208,34 +195,25 @@ router.delete("/:id", async (req, res) => {
       let costoRevertido = false;
 
       if (historialResult.rows.length > 0) {
-        const costoAnterior = historialResult.rows[0].precio_costo_anterior;
-        nuevoCostoParaProducto = costoAnterior;
+        nuevoCostoParaProducto = historialResult.rows[0].precio_costo_anterior;
         costoRevertido = true;
         await client.query(
-            `DELETE FROM historial_costos
-           WHERE compra_id = $1 AND producto_id = $2`,
+            `DELETE FROM historial_costos WHERE compra_id = $1 AND producto_id = $2`,
             [id, producto_id]
         );
       }
 
-      // Obtenemos datos del producto (Nombre necesario para restaurar futuro pedido si no existe)
       const currentProd = await client.query(
           `SELECT nombre, precio, precio_costo FROM productos WHERE id = $1`,
           [producto_id]
       );
 
-      const prodNombre = currentProd.rows[0]?.nombre || 'Producto Restaurado'; // Fallback por seguridad
-
       if (currentProd.rows.length > 0) {
         const { precio: precioVenta, precio_costo: costoActualDB } = currentProd.rows[0];
-
-        if (!costoRevertido) {
-          nuevoCostoParaProducto = costoActualDB;
-        }
+        if (!costoRevertido) nuevoCostoParaProducto = costoActualDB;
         ganancia = ((parseFloat(precioVenta) - parseFloat(nuevoCostoParaProducto)) / parseFloat(nuevoCostoParaProducto)) * 100;
       }
 
-      // B. Revertir Stock y Costo en Productos
       await client.query(
           `UPDATE productos
          SET stock = stock - $1,
@@ -246,52 +224,36 @@ router.delete("/:id", async (req, res) => {
           [cantidad, nuevoCostoParaProducto, ganancia, producto_id]
       );
 
-      // =============================================================================
-      // 🧠 LÓGICA INVERSA: RESTAURAR FUTUROS PEDIDOS
-      // =============================================================================
-      // Buscamos si ya existe en la lista de pendientes
+      // Restaurar Futuros Pedidos
       const futuroCheck = await client.query(
           `SELECT id, cantidad FROM futuros_pedidos WHERE producto_id = $1`,
           [producto_id]
       );
 
       if (futuroCheck.rows.length > 0) {
-        // ESCENARIO 1: Ya estaba en la lista (ej: compra parcial o re-agregado). SUMAMOS la cantidad devuelta.
-        const cantActual = parseFloat(futuroCheck.rows[0].cantidad) || 0;
-        const cantRestaurada = cantActual + parseFloat(cantidad);
-
-        await client.query(
-            `UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`,
-            [cantRestaurada, futuroCheck.rows[0].id]
-        );
+        const cantRestaurada = (parseFloat(futuroCheck.rows[0].cantidad) || 0) + parseFloat(cantidad);
+        await client.query(`UPDATE futuros_pedidos SET cantidad = $1 WHERE id = $2`, [cantRestaurada, futuroCheck.rows[0].id]);
       } else {
-        // ESCENARIO 2: No estaba en la lista (se había borrado al comprar). LO VOLVEMOS A CREAR.
+        const prodNombre = currentProd.rows[0]?.nombre || 'Producto Restaurado';
         await client.query(
             `INSERT INTO futuros_pedidos (producto_id, producto, cantidad, creado_en)
              VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
             [producto_id, prodNombre, cantidad]
         );
       }
-      // =============================================================================
-
     }
 
-    // 3. Eliminar registros de la compra
     await client.query(`DELETE FROM stock_deposito_detalle WHERE compra_id = $1`, [id]);
     await client.query(`DELETE FROM detalles_compra WHERE compra_id = $1`, [id]);
-    const compraResult = await client.query(`DELETE FROM compras WHERE id = $1 RETURNING *`, [id]);
-
-    if (compraResult.rows.length === 0) {
-      throw new Error("Compra no encontrada después de revertir.");
-    }
+    await client.query(`DELETE FROM compras WHERE id = $1`, [id]);
 
     await client.query("COMMIT");
-    res.json({ message: "Compra eliminada, stock revertido y pedidos futuros restaurados." });
+    res.json({ message: "Compra eliminada y datos revertidos correctamente." });
 
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Error al eliminar compra y revertir:", error);
-    res.status(500).json({ error: "Error al eliminar compra y revertir" });
+    console.error("Error al eliminar compra:", error);
+    res.status(500).json({ error: "Error al eliminar compra" });
   } finally {
     client.release();
   }
