@@ -1,6 +1,9 @@
 // src/pages/Productos.tsx
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, Package, Download, ClipboardList, History } from 'lucide-react'
+import {
+    Plus, Edit, Trash2, Package, Download, ClipboardList, History,
+    Cookie, Layers, Syringe, Wheat, Bath, ShoppingBag, Cat, Dog
+} from 'lucide-react'
 import { productosAPI, categoriasAPI, futurosPedidosAPI } from '../services/api'
 import { Producto, Categoria } from '../services/api'
 import toast from 'react-hot-toast'
@@ -69,6 +72,22 @@ const parseNumericInput = (value: string): string => {
     // 1. Reemplaza cualquier coma por un punto
     // 2. Elimina cualquier caracter que no sea número o punto
     return value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+};
+
+const getCategoriaIcon = (categoriaNombre: string) => {
+    const nombre = categoriaNombre.toLowerCase();
+
+    if (nombre.includes('golosinas')) return <Cookie className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('pipetas')) return <Syringe className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('cereales')) return <Wheat className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('sanitarios')) return <Bath className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('accesorios perro')) return <ShoppingBag className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('accesorios gato')) return <ShoppingBag className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('alimento gato')) return <Cat className="h-5 w-5 text-orange-600" />;
+    if (nombre.includes('alimento perro')) return <Dog className="h-5 w-5 text-orange-600" />;
+
+    // Icono por defecto (la cajita) para "Varios" o categorías no mapeadas
+    return <Package className="h-5 w-5 text-orange-600" />;
 };
 
 const Productos = () => {
@@ -564,7 +583,7 @@ const Productos = () => {
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-8 w-8">
                                             <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
-                                                <Package className="h-5 w-5 text-orange-600" />
+                                                {getCategoriaIcon(getCategoriaNombre(producto.categoria_id))}
                                             </div>
                                         </div>
                                         <div className="ml-3">
