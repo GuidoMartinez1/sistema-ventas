@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Check, X, ArrowRight, DollarSign, Calendar, Building } from 'lucide-react' // <--- Agregue iconos
+import { TrendingUp, TrendingDown, Check, X, ArrowRight, DollarSign, Calendar, Building } from 'lucide-react'
 import { actualizacionesAPI, ActualizacionPrecio } from '../services/api'
 import toast from 'react-hot-toast'
 
 // Utilidades
 const formatPrice = (value: number | string | undefined) => {
     if (value === null || value === undefined || value === '') return '$0';
-
-    // { maximumFractionDigits: 0 } hace que no muestre comas ni centavos
     return '$' + Number(value).toLocaleString("es-AR", { maximumFractionDigits: 0 });
 };
 
@@ -100,7 +98,7 @@ const ActualizacionesPendientes = () => {
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Actualizaciones de Precios</h1>
-                    <p className="text-gray-600">Productos que aumentaron de costo y requieren revisión.</p>
+                    <p className="text-gray-600">Revisión de cambios en costos detectados en compras.</p>
                 </div>
             </div>
 
@@ -115,22 +113,34 @@ const ActualizacionesPendientes = () => {
             <div className="grid gap-4">
                 {pendientes.map((item) => {
                     const diferencia = item.costo_nuevo - item.costo_anterior;
-                    const porcentajeAumento = ((diferencia / item.costo_anterior) * 100).toFixed(1);
+                    const esAumento = diferencia > 0;
+                    const esRebaja = diferencia < 0;
+
+                    const porcentajeCambio = Math.abs((diferencia / item.costo_anterior) * 100).toFixed(1);
+
+                    // Estilos dinámicos según el tipo de cambio
+                    const borderClase = esAumento ? 'border-orange-500' : 'border-green-500';
+                    const badgeClase = esAumento ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                    const IconoCambio = esAumento ? TrendingUp : TrendingDown;
 
                     return (
-                        <div key={item.id} className="bg-white border-l-4 border-orange-500 shadow-md rounded-r-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fadeIn">
+                        <div key={item.id} className={`bg-white border-l-4 ${borderClase} shadow-md rounded-r-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fadeIn`}>
 
                             {/* INFO DEL PRODUCTO */}
-                            <div className="flex-1 min-w-0"> {/* min-w-0 ayuda con el truncate si fuera necesario */}
+                            <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
                                     <h3 className="text-lg font-bold text-gray-900">{item.producto_nombre}</h3>
-                                    <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded flex items-center whitespace-nowrap">
-                                        <TrendingUp className="h-3 w-3 mr-1"/>
-                                        +{porcentajeAumento}% Costo
+                                    <span className={`${badgeClase} text-xs font-bold px-2 py-0.5 rounded flex items-center whitespace-nowrap`}>
+                                        <IconoCambio className="h-3 w-3 mr-1"/>
+                                        {esAumento ? '+' : '-'}{porcentajeCambio}% Costo
                                     </span>
+                                    {esRebaja && (
+                                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                            Mayor Margen
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* NUEVA SECCIÓN: FECHA Y PROVEEDOR */}
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                                     <div className="flex items-center gap-1">
                                         <Calendar className="h-4 w-4 text-gray-400" />
@@ -153,7 +163,9 @@ const ActualizacionesPendientes = () => {
                                 </div>
                                 <ArrowRight className="h-5 w-5 text-gray-400" />
                                 <div>
-                                    <p className="text-xs text-orange-600 uppercase font-bold">Nuevo Costo</p>
+                                    <p className={`text-xs ${esAumento ? 'text-orange-600' : 'text-green-600'} uppercase font-bold`}>
+                                        {esAumento ? 'Nuevo Costo' : 'Costo Menor'}
+                                    </p>
                                     <p className="text-gray-900 font-bold text-lg">{formatPrice(item.costo_nuevo)}</p>
                                 </div>
                             </div>
@@ -162,7 +174,7 @@ const ActualizacionesPendientes = () => {
                             <div className="text-right px-4">
                                 <p className="text-xs text-gray-500 uppercase font-bold">Venta Actual</p>
                                 <p className="text-gray-900 font-bold text-xl">{formatPrice(item.precio_venta_actual)}</p>
-                                <p className="text-xs text-red-500 font-medium whitespace-nowrap">
+                                <p className={`text-xs font-medium whitespace-nowrap ${esAumento ? 'text-red-500' : 'text-green-600'}`}>
                                     Margen hoy: {(((item.precio_venta_actual - item.costo_nuevo)/item.costo_nuevo)*100).toFixed(1)}%
                                 </p>
                             </div>
@@ -171,15 +183,15 @@ const ActualizacionesPendientes = () => {
                             <div className="flex flex-col gap-2 w-full md:w-auto">
                                 <button
                                     onClick={() => handleOpenResolver(item)}
-                                    className="btn-primary bg-orange-600 hover:bg-orange-700 flex items-center justify-center gap-2 whitespace-nowrap"
+                                    className={`btn-primary ${esAumento ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} flex items-center justify-center gap-2 whitespace-nowrap`}
                                 >
-                                    <DollarSign className="h-4 w-4"/> Actualizar Precio
+                                    <DollarSign className="h-4 w-4"/> {esAumento ? 'Actualizar Precio' : 'Revisar Precio'}
                                 </button>
                                 <button
                                     onClick={() => handleDescartar(item.id!)}
                                     className="text-gray-400 hover:text-gray-600 text-sm underline"
                                 >
-                                    Ignorar cambio
+                                    Ignorar alerta
                                 </button>
                             </div>
                         </div>
@@ -187,7 +199,7 @@ const ActualizacionesPendientes = () => {
                 })}
             </div>
 
-            {/* MODAL (Sin cambios funcionales, solo se mantiene) */}
+            {/* MODAL */}
             {selectedItem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
@@ -199,9 +211,11 @@ const ActualizacionesPendientes = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                                <p className="text-sm text-blue-800 mb-1">El costo aumentó a <strong>{formatPrice(selectedItem.costo_nuevo)}</strong></p>
-                                <p className="text-xs text-blue-600">
+                            <div className={`p-4 rounded-lg ${ (selectedItem.costo_nuevo > selectedItem.costo_anterior) ? 'bg-blue-50' : 'bg-green-50'}`}>
+                                <p className="text-sm text-gray-800 mb-1">
+                                    El costo cambió a <strong>{formatPrice(selectedItem.costo_nuevo)}</strong>
+                                </p>
+                                <p className="text-xs text-gray-600">
                                     Sugerido para mantener margen anterior:
                                     <strong> {formatPrice(selectedItem.costo_nuevo * (1 + ((selectedItem.precio_venta_actual - selectedItem.costo_anterior)/selectedItem.costo_anterior)))}</strong>
                                 </p>
