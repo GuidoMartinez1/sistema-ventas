@@ -605,13 +605,15 @@ const Productos = () => {
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        (producto.porcentaje_ganancia || 0) >= 50
-                            ? 'bg-green-100 text-green-800'
-                            : (producto.porcentaje_ganancia || 0) >= 30
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
+                        (producto.porcentaje_ganancia || 0) > 30
+                            ? 'bg-green-600 text-white'
+                            : (producto.porcentaje_ganancia || 0) >= 25
+                                ? 'bg-green-100 text-green-800'
+                                : (producto.porcentaje_ganancia || 0) >= 15
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
                     }`}>
-                      {producto.porcentaje_ganancia || 0}%
+                        {Number(producto.porcentaje_ganancia || 0).toFixed(1)}%
                     </span>
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-center">
@@ -702,10 +704,16 @@ const Productos = () => {
                                 <div>
                                     <span className="text-xs text-gray-500 block">Costo / Ganancia</span>
                                     <span className="font-bold text-base text-gray-900">{formatPrice(producto.precio_costo)} /
-                    <span className={`ml-1 text-xs font-medium ${
-                        (producto.porcentaje_ganancia || 0) >= 50 ? 'text-green-600' : 'text-yellow-600'
+                    <span className={`ml-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                        (producto.porcentaje_ganancia || 0) > 30
+                            ? 'bg-green-600 text-white'
+                            : (producto.porcentaje_ganancia || 0) >= 25
+                                ? 'bg-green-100 text-green-800'
+                                : (producto.porcentaje_ganancia || 0) >= 15
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
                     }`}>
-                      {producto.porcentaje_ganancia || 0}%
+                        {Number(producto.porcentaje_ganancia || 0).toFixed(1)}%
                     </span>
                   </span>
                                 </div>
