@@ -605,13 +605,15 @@ const Productos = () => {
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        (producto.porcentaje_ganancia || 0) >= 50
-                            ? 'bg-green-100 text-green-800'
-                            : (producto.porcentaje_ganancia || 0) >= 30
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
+                        (producto.porcentaje_ganancia || 0) > 30
+                            ? 'bg-green-600 text-white' // Verde fuerte (> 30)
+                            : (producto.porcentaje_ganancia || 0) >= 25
+                                ? 'bg-green-100 text-green-800' // Verde menos claro (25 a 30)
+                                : (producto.porcentaje_ganancia || 0) >= 15
+                                    ? 'bg-yellow-100 text-yellow-800' // Amarillo (15 a 25)
+                                    : 'bg-red-100 text-red-800' // Rojo (< 15)
                     }`}>
-                      {producto.porcentaje_ganancia || 0}%
+                      {(producto.porcentaje_ganancia || 0).toFixed(1)}%
                     </span>
                                 </td>
                                 <td className="px-2 py-4 whitespace-nowrap text-center">
