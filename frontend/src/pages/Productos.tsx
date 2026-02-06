@@ -685,41 +685,30 @@ const Productos = () => {
                 </div>
 
                 {/* VISTA DE TARJETA (MÓVIL) - CORREGIDA Y OPTIMIZADA */}
-                {/* VISTA DE TARJETA (MÓVIL) */}
                 <div className="md:hidden space-y-4">
                     {productosFiltrados.map((producto) => (
-                        <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md bg-white">
-                            <div className="flex justify-between items-start mb-3 gap-3">
-                                <div className="flex items-start gap-3 min-w-0 flex-1">
-                                    {/* Círculo con Icono Dinámico según Categoría */}
-                                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                        {getCategoriaIcon(getCategoriaNombre(producto.categoria_id))}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                                            {producto.nombre}
-                                        </h3>
-                                        {producto.descripcion && (
-                                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                                {producto.descripcion}
-                                            </p>
-                                        )}
-                                    </div>
+                        <div key={producto.id} className="border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="min-w-0 flex-1 pr-2">
+                                    <h3 className="text-lg font-bold text-gray-900">
+                                        {producto.nombre}
+                                    </h3>
+                                    {producto.descripcion && <p className="text-xs text-gray-500  mt-1">{producto.descripcion}</p>}
                                 </div>
-
-                                <div className="flex space-x-1 flex-shrink-0">
-                                    <button onClick={() => handleEdit(producto)} className="text-indigo-600 p-1">
+                                <div className="flex space-x-2 flex-shrink-0 ml-auto">
+                                    <button onClick={() => handleEdit(producto)} className="text-indigo-600 hover:text-indigo-900 p-1">
                                         <Edit className="h-4 w-4" />
                                     </button>
-                                    <button onClick={() => handleDelete(producto.id!)} className="text-red-600 p-1">
+                                    <button onClick={() => handleDelete(producto.id!)} className="text-red-600 hover:text-red-900 p-1">
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                     {(producto.stock || 0) > 0 && (
-                                        <button onClick={() => handleAbrirBolsa(producto.id!)} className="text-orange-600 p-1">
+                                        <button onClick={() => handleAbrirBolsa(producto.id!)} className="text-orange-600 hover:text-orange-900 p-1">
                                             📦
                                         </button>
                                     )}
-                                    <button onClick={() => openFutureModal(producto)} className="text-blue-600 p-1">
+                                    {/* BOTÓN AGREGAR FUTUROS (MÓVIL) */}
+                                    <button onClick={() => openFutureModal(producto)} className="text-blue-600 hover:text-blue-900 p-1">
                                         <ClipboardList className="h-4 w-4" />
                                     </button>
                                 </div>
@@ -732,60 +721,63 @@ const Productos = () => {
                                 </div>
                                 <div>
                                     <span className="text-xs text-gray-500 block">Costo / Ganancia</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-bold text-gray-900">{formatPrice(producto.precio_costo)}</span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                                            (producto.porcentaje_ganancia || 0) > 30
-                                                ? 'bg-green-600 text-white'
-                                                : (producto.porcentaje_ganancia || 0) >= 25
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : (producto.porcentaje_ganancia || 0) >= 15
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            {Number(producto.porcentaje_ganancia || 0).toFixed(1)}%
-                                        </span>
-                                    </div>
+                                    <span className="font-bold text-base text-gray-900">{formatPrice(producto.precio_costo)} /
+                    <span className={`ml-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                        (producto.porcentaje_ganancia || 0) > 30
+                            ? 'bg-green-600 text-white'
+                            : (producto.porcentaje_ganancia || 0) >= 25
+                                ? 'bg-green-100 text-green-800'
+                                : (producto.porcentaje_ganancia || 0) >= 15
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
+                    }`}>
+                        {Number(producto.porcentaje_ganancia || 0).toFixed(1)}%
+                    </span>
+                  </span>
                                 </div>
                                 <div className="col-span-1">
                                     <span className="text-xs text-gray-500 block">Stock</span>
                                     <span className={`font-bold text-base ${
                                         (producto.stock || 0) <= 4 ? 'text-red-600' : 'text-green-600'
                                     }`}>
-                                        {producto.stock} uds
-                                    </span>
+                    {producto.stock} uds
+                  </span>
                                 </div>
                                 <div className="col-span-1">
                                     <span className="text-xs text-gray-500 block">Categoría</span>
                                     <span className="text-sm font-medium text-gray-700">{getCategoriaNombre(producto.categoria_id)}</span>
                                 </div>
-                                {producto.kilos != null && producto.kilos > 0 && (
+                                {producto.kilos != null && producto.kilos > 0 ? (
                                     <div className="col-span-2">
                                         <span className="text-xs text-gray-500 block">Kilos/Litros</span>
                                         <span className="text-sm font-bold text-orange-600">{formatKilos(producto.kilos)}</span>
                                     </div>
-                                )}
-                                {producto.precio_kg && (
+                                ) : null}
+                                {producto.precio_kg ? (
                                     <div className="col-span-2">
                                         <span className="text-xs text-gray-500 block">Precio x Kg</span>
                                         <span className="text-sm font-medium text-gray-700">{formatPrice(producto.precio_kg)}</span>
                                     </div>
-                                )}
+                                ) : null}
                             </div>
                         </div>
                     ))}
                 </div>
+            </div>
 
-                {/* Modal Productos */}
-                {showModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-                        <div className="relative mx-auto border w-full max-w-lg shadow-lg rounded-xl bg-white p-6">
-                            <h3 className="text-xl font-bold text-gray-900 mb-6 border-b pb-2">
+            {/* Modal Productos */}
+            {showModal && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+                        <div className="mt-3">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">
                                 {editingProducto ? 'Editar Producto' : 'Nuevo Producto'}
                             </h3>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Nombre *
+                                    </label>
                                     <input
                                         type="text"
                                         required
@@ -795,16 +787,21 @@ const Productos = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Descripción
+                                    </label>
                                     <textarea
                                         value={formData.descripcion}
                                         onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
                                         className={inputFieldClass}
-                                        rows={2}
+                                        rows={3}
                                     />
                                 </div>
+                                {/* CAMBIO EN EL INPUT DE PRECIO POR KILO */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Precio por Kilo</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Precio por Kilo
+                                    </label>
                                     <input
                                         type="text"
                                         value={formData.precio_kg}
@@ -812,10 +809,12 @@ const Productos = () => {
                                         className={inputFieldClass}
                                         placeholder="0.00"
                                     />
+                                    {/* MOSTRAR SUGERENCIA */}
                                     {sugerenciaKg && (
                                         <div
                                             className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
                                             onClick={() => setFormData({...formData, precio_kg: sugerenciaKg.toFixed(2)})}
+                                            title="Click para aplicar este precio"
                                         >
                                             💡 Sugerido (Venta + 20%): <strong>{formatPrice(sugerenciaKg)}</strong>
                                         </div>
@@ -823,17 +822,21 @@ const Productos = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Costo</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Precio de Costo
+                                        </label>
                                         <input
                                             type="text"
-                                            value={formData.precio_costo}
+                                            value={(formData.precio_costo)}
                                             onChange={(e) => handlePrecioCostoChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Ganancia %</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Porcentaje de Ganancia
+                                        </label>
                                         <div className="flex">
                                             <input
                                                 type="text"
@@ -847,25 +850,29 @@ const Productos = () => {
                                                 onClick={calcularPrecioAutomatico}
                                                 className="px-3 py-2 bg-orange-500 text-white rounded-r-lg hover:bg-orange-600 transition-colors"
                                             >
-                                                <Plus className="h-4 w-4" />
+                                                Calcular
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Venta *</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Precio de Venta *
+                                        </label>
                                         <input
                                             type="text"
                                             required
-                                            value={formData.precio}
+                                            value={(formData.precio)}
                                             onChange={(e) => handlePrecioVentaChange(e.target.value)}
                                             className={inputFieldClass}
                                             placeholder="0.00"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Stock
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.stock}
@@ -876,7 +883,9 @@ const Productos = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Categoría
+                                        </label>
                                         <select
                                             value={formData.categoria_id}
                                             onChange={(e) => setFormData({...formData, categoria_id: e.target.value})}
@@ -884,12 +893,16 @@ const Productos = () => {
                                         >
                                             <option value="">Seleccione</option>
                                             {categorias.map((c) => (
-                                                <option key={c.id} value={c.id?.toString()}>{c.nombre}</option>
+                                                <option key={c.id} value={c.id?.toString()}>
+                                                    {c.nombre}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Código
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.codigo}
@@ -898,8 +911,11 @@ const Productos = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex justify-end space-x-2 pt-4 border-t">
-                                    <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
+                                <div className="flex justify-end space-x-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="btn-secondary">
                                         Cancelar
                                     </button>
                                     <button type="submit" className="btn-primary">
@@ -909,7 +925,8 @@ const Productos = () => {
                             </form>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
             {/* MODAL PARA AGREGAR A FUTUROS PEDIDOS */}
             {showFutureModal && futureProduct && (
