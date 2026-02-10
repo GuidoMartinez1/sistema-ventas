@@ -111,7 +111,7 @@ const ActualizacionesPendientes = () => {
             )}
 
             <div className="grid gap-4">
-                {pendientes.map((item) => {
+                {pendientes.filter(item => item.costo_nuevo !== item.costo_anterior).map((item) => {
                     const diferencia = item.costo_nuevo - item.costo_anterior;
                     const esAumento = diferencia > 0;
                     const esRebaja = diferencia < 0;
