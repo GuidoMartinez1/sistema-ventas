@@ -88,13 +88,29 @@ const ActualizacionesPendientes = () => {
 
     const handleConfirmar = async () => {
         if (!selectedItem) return;
+
         try {
-            await actualizacionesAPI.resolve(selectedItem.id!, parseFloat(nuevoPrecioVenta))
-            toast.success(`Precio de ${selectedItem.producto_nombre} actualizado!`)
-            setPendientes(prev => prev.filter(p => p.id !== selectedItem.id))
-            setSelectedItem(null)
+            // 1. Calculamos el nuevo porcentaje de ganancia basado en el costo nuevo
+            const precioVentaNum = parseFloat(nuevoPrecioVenta);
+            const costoNuevo = selectedItem.costo_nuevo;
+
+            // Fórmula: ((Venta - Costo) / Costo) * 100
+            const nuevoPorcentaje = ((precioVentaNum - costoNuevo) / costoNuevo) * 100;
+
+            // 2. Enviamos AMBOS datos a la API
+            // Nota: Asegúrate de que tu backend/servicio acepte este nuevo parámetro
+            await actualizacionesAPI.resolve(
+                selectedItem.id!,
+                precioVentaNum,
+                parseFloat(nuevoPorcentaje.toFixed(2)) // Enviamos el porcentaje con 2 decimales
+            );
+
+            toast.success(`Precio y ganancia de ${selectedItem.producto_nombre} actualizados!`);
+            setPendientes(prev => prev.filter(p => p.id !== selectedItem.id));
+            setSelectedItem(null);
         } catch (error) {
-            toast.error("Error al actualizar precio")
+            toast.error("Error al actualizar precio");
+            console.error(error);
         }
     }
 

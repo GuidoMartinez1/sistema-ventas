@@ -327,7 +327,7 @@ export const actualizacionesAPI = {
     getAll: () => api.get<ActualizacionPrecio[]>("/actualizaciones-precios"),
 
     // Confirmar actualización: Cambia el precio de venta y borra la alerta
-    resolve: (id: number, nuevoPrecioVenta: number) => api.post(`/actualizaciones-precios/${id}/resolver`, { precio: nuevoPrecioVenta }),
+    resolve: (id: number, nuevoPrecioVenta: number, nuevoPorcentaje: number) => api.post(`/actualizaciones-precios/${id}/resolver`, { precio: nuevoPrecioVenta, porcentaje_ganancia: nuevoPorcentaje }),
 
     // Descartar alerta: Borra la notificación sin cambiar el precio de venta
     delete: (id: number) => api.delete(`/actualizaciones-precios/${id}`),
