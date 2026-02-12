@@ -15,6 +15,32 @@ const api = axios.create({
     },
 })
 
+// Interceptor para agregar token automáticamente
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar respuestas de error (token expirado)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ----------------------
 // TIPOS Y INTERFACES
 // ----------------------
@@ -186,6 +212,20 @@ export interface Gasto {
     created_at?: string
 }
 
+export interface User {
+  id?: number
+  nombre: string
+  email: string
+  password?: string
+  rol?: 'ADMIN' | 'EMPLEADO'
+  activo?: boolean
+}
+
+export interface LoginResponse {
+  token: string
+  data: User
+}
+
 export interface Cotizacion {
     id?: number
     fecha: string
@@ -331,6 +371,14 @@ export const actualizacionesAPI = {
 
     // Descartar alerta: Borra la notificación sin cambiar el precio de venta
     delete: (id: number) => api.delete(`/actualizaciones-precios/${id}`),
+}
+
+export const authAPI = {
+  register: (user: { username: string; email: string; password: string }) =>
+      api.post<{ data: User }>("/auth/register", user),
+
+  login: (credentials: { email: string; password: string }) =>
+      api.post<LoginResponse>("/auth/login", credentials),
 }
 
 export default api
