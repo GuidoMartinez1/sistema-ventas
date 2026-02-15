@@ -210,17 +210,17 @@ const Deudas = () => {
                   {expandedDeuda === deuda.id && (
                     <div className="mt-3 bg-gray-50 p-2 rounded border space-y-2">
                       {deuda.detalles.map((det, detIdx) => {
-                        // Nueva prioridad: Si es custom o no tiene nombre, mostramos la descripción directo
-                        const nombrePantalla = det.producto_nombre || det.descripcion || "Producto";
+                          // PRIORIDAD: Si existe el nombre lo usa, sino usa la descripción
+                          const nombreAMostrar = det.producto_nombre || det.descripcion || "Producto";
 
-                        return (
-                          <div key={detIdx} className="flex justify-between text-sm">
-                            <span className="text-gray-700">
-                              <span className="font-bold">{det.cantidad}x</span> {nombrePantalla}
-                            </span>
-                            <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                          </div>
-                        );
+                          return (
+                              <div key={detIdx} className="flex justify-between text-sm">
+                                  <span className="text-gray-700">
+                                      <span className="font-bold">{det.cantidad}x</span> {nombreAMostrar}
+                                  </span>
+                                  <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                              </div>
+                          );
                       })}
                     </div>
                   )}
@@ -292,18 +292,18 @@ const Deudas = () => {
               </div>
               <div className="space-y-1">
                 {deuda.detalles.map((det, detIdx) => {
-                  // Aquí aplicamos lo mismo: Priorizar descripción para productos custom/sueltos
-                  const nombreTicket = det.producto_nombre || det.descripcion || "Producto";
+                        // APLICAMOS LA MISMA LÓGICA: Priorizar descripción para productos custom/sueltos
+                        const nombreParaTicket = det.producto_nombre || det.descripcion || "Producto";
 
-                  return (
-                    <div key={detIdx} className="flex justify-between text-sm">
-                      <span className="text-gray-700">
-                        <span className="font-bold">{det.cantidad}x</span> {nombreTicket}
-                      </span>
-                      <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                    </div>
-                  );
-                })}
+                        return (
+                            <div key={detIdx} className="flex justify-between text-sm">
+                                <span className="text-gray-700">
+                                    <span className="font-bold">{det.cantidad}x</span> {nombreParaTicket}
+                                </span>
+                                <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                            </div>
+                        );
+                    })}
               </div>
               <div className="text-right mt-1 font-bold text-sm text-gray-500 italic">
                 Subtotal: {formatPrice(deuda.total)}
