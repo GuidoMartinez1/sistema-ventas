@@ -125,17 +125,26 @@ const NuevaVenta = () => {
             return;
         }
 
-        // 1. Identificamos la categoría para saber si es peso o unidad
+        // 1. Obtenemos el nombre de la categoría
         const categoria = categorias.find(c => c.id === producto.categoria_id);
         const catNombre = (categoria?.nombre || '').toLowerCase();
 
-        // Determinamos el sufijo: Peso para Alimentos/Cereales, Unidad para el resto
-        const esPeso = catNombre.includes('alimento') || catNombre.includes('cereales');
-        const sufijo = esPeso ? '(x Kg)' : '(x Un)';
+        /**
+         * LÓGICA DE DETECCIÓN:
+         * Solo marcamos como Kg si la categoría dice explícitamente "alimento" o "cereales".
+         * Cualquier otra categoría (Accesorios, Farmacia, Golosinas, Sanitarios, etc.)
+         * se tratará automáticamente como Unidad.
+         */
+        const esPesable = catNombre.includes('alimento') || catNombre.includes('cereales');
+        const sufijo = esPesable ? '(x Kg)' : '(x Un)';
 
-        // 2. Limpiamos el nombre: eliminamos patrones como "10 KG", "20 KG", etc.
-        // La regex /\d+\s*KG/gi quita números seguidos de KG sin importar mayúsculas
-        const nombreLimpio = producto.nombre.replace(/\d+\s*KG/gi, '').replace(/\s+/g, ' ').trim();
+        // 2. Limpieza del nombre (Regex):
+        // Quitamos cualquier mención de peso (ej: "10 KG", "3 kg") para que el ticket
+        // no sea redundante al decir "Producto 10 KG (x Kg)"
+        const nombreLimpio = producto.nombre
+            .replace(/\d+\s*KG/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
 
         const item: DetalleVenta = {
             cantidad: 1,
