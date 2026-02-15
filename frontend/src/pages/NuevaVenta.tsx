@@ -118,15 +118,25 @@ const NuevaVenta = () => {
         })
     }
 
+    // --- CAMBIO SOLICITADO: Limpieza de nombre en venta x Kg ---
     const addPrecioKgItem = (producto: Producto) => {
         const precioKg = Number(producto.precio_kg);
         if (!precioKg || precioKg <= 0) { toast.error('Este producto no tiene precio por Kg configurado'); return; }
+
+        // PARSEO: Eliminamos patrones como "10 KG", "20KG", "15 kg" del nombre
+        // La regex /\d+\s*KG/gi busca: uno o más dígitos, espacios opcionales, y las letras KG (ignora mayúsculas/minúsculas)
+        const nombreLimpio = producto.nombre.replace(/\d+\s*KG/gi, '').replace(/\s+/g, ' ').trim();
+
         const item: DetalleVenta = {
-            cantidad: 1, precio_unitario: precioKg, subtotal: precioKg,
-            descripcion: `${producto.nombre} (x Kg)`, es_custom: true
+            cantidad: 1,
+            precio_unitario: precioKg,
+            subtotal: precioKg,
+            descripcion: `${nombreLimpio} (x Kg)`,
+            es_custom: true
         };
+
         setCartItems(prev => [item, ...prev]);
-        toast.success(`Agregado 1 Kg de ${producto.nombre}`);
+        toast.success(`Agregado 1 Kg de ${nombreLimpio}`);
     };
 
     const addImporteDirecto = () => {
@@ -150,10 +160,8 @@ const NuevaVenta = () => {
 
     const removeItem = (idx: number) => setCartItems(prev => prev.filter((_, i) => i !== idx))
 
-    // Cálculo seguro del total para visualización
     const total = useMemo(() => cartItems.reduce((acc, it) => acc + (Number(it.subtotal) || 0), 0), [cartItems])
 
-    // --- FUNCIONES EXTRA ---
     const copiarTicket = async () => {
         if (!ticketRef.current) return;
         const promesa = new Promise((resolve, reject) => {
@@ -166,7 +174,6 @@ const NuevaVenta = () => {
 
     const handlePrint = () => window.print();
 
-    // --- SUBMIT ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (cartItems.length === 0) { toast.error('Agregá al menos un ítem'); return; }
