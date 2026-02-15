@@ -23,7 +23,8 @@ router.get("/", async (req, res) => {
             // Traemos los detalles de cada venta
             const detallesResult = await pool.query(`
         SELECT dv.id, dv.producto_id, p.nombre AS producto_nombre,
-               dv.cantidad, dv.precio_unitario, dv.subtotal
+               dv.cantidad, dv.precio_unitario, dv.subtotal,
+               dv.descripcion
         FROM detalles_venta dv
         LEFT JOIN productos p ON dv.producto_id = p.id
         WHERE dv.venta_id = $1
