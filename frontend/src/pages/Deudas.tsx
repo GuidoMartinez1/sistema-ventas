@@ -25,7 +25,6 @@ interface DeudorGroup {
 }
 
 const Deudas = () => {
-  // --- ESTADOS ---
   const [deudas, setDeudas] = useState<Deuda[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
@@ -56,17 +55,6 @@ const Deudas = () => {
     }
   }
 
-  // --- LÓGICA DE PRIORIDAD PARA NOMBRES ---
-  const obtenerNombreProducto = (det: any) => {
-    const nombreValido = det.producto_nombre && det.producto_nombre.trim() !== "";
-    const descripcionValida = det.descripcion && det.descripcion.trim() !== "";
-
-    if (nombreValido) return det.producto_nombre;
-    if (descripcionValida) return det.descripcion;
-    return "Producto";
-  };
-
-  // --- LÓGICA DE CAPTURA DE IMAGEN ---
   const copiarEstadoCuenta = async (group: DeudorGroup) => {
     setGrupoParaTicket(group);
     setTimeout(async () => {
@@ -93,7 +81,6 @@ const Deudas = () => {
     }, 150);
   };
 
-  // --- FILTRADO Y AGRUPACIÓN ---
   const filteredDeudas = deudas.filter((d) =>
       d.cliente_nombre?.toLowerCase().includes(search.toLowerCase()) ||
       d.telefono?.toLowerCase().includes(search.toLowerCase())
@@ -209,7 +196,7 @@ const Deudas = () => {
                       {deuda.detalles.map((det, detIdx) => (
                           <div key={detIdx} className="flex justify-between text-sm">
                               <span className="text-gray-700">
-                                  <span className="font-bold">{det.cantidad}x</span> {obtenerNombreProducto(det)}
+                                  <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion}
                               </span>
                               <span className="font-medium">{formatPrice(det.subtotal)}</span>
                           </div>
@@ -266,7 +253,7 @@ const Deudas = () => {
         </div>
       )}
 
-      {/* TICKET CONSOLIDADO (PARA GENERACIÓN DE IMAGEN) */}
+      {/* TICKET CONSOLIDADO (IMAGEN) */}
       <div
         ref={ticketRef}
         style={{
@@ -294,7 +281,7 @@ const Deudas = () => {
                 {deuda.detalles.map((det, detIdx) => (
                     <div key={detIdx} className="flex justify-between text-sm">
                         <span className="text-gray-700">
-                            <span className="font-bold">{det.cantidad}x</span> {obtenerNombreProducto(det)}
+                            <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion || "Producto"}
                         </span>
                         <span className="font-medium">{formatPrice(det.subtotal)}</span>
                     </div>
