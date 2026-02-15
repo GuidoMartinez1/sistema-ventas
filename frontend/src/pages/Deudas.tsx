@@ -210,8 +210,9 @@ const Deudas = () => {
                   {expandedDeuda === deuda.id && (
                     <div className="mt-3 bg-gray-50 p-2 rounded border space-y-2">
                       {deuda.detalles.map((det, detIdx) => {
-                        // SEGURIDAD 1: UI EXPANDIBLE
-                        const nombrePantalla = det.producto_nombre || det.descripcion || "Producto (x Kg)";
+                        // Nueva prioridad: Si es custom o no tiene nombre, mostramos la descripción directo
+                        const nombrePantalla = det.producto_nombre || det.descripcion || "Producto";
+
                         return (
                           <div key={detIdx} className="flex justify-between text-sm">
                             <span className="text-gray-700">
@@ -291,8 +292,9 @@ const Deudas = () => {
               </div>
               <div className="space-y-1">
                 {deuda.detalles.map((det, detIdx) => {
-                  // SEGURIDAD 2: TICKET IMAGEN (Aquí estaba el error)
-                  const nombreTicket = det.producto_nombre || det.descripcion || "Producto (x Kg)";
+                  // Aquí aplicamos lo mismo: Priorizar descripción para productos custom/sueltos
+                  const nombreTicket = det.producto_nombre || det.descripcion || "Producto";
+
                   return (
                     <div key={detIdx} className="flex justify-between text-sm">
                       <span className="text-gray-700">
