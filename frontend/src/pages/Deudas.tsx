@@ -25,20 +25,17 @@ interface DeudorGroup {
 }
 
 const Deudas = () => {
-  // --- ESTADOS ORIGINALES ---
   const [deudas, setDeudas] = useState<Deuda[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
   const [search, setSearch] = useState("")
 
-  // Estados para Modal de Pago (Funcionalidad Original)
   const [deudaSeleccionada, setDeudaSeleccionada] = useState<number | null>(null)
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('efectivo')
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [tipoPago, setTipoPago] = useState<'total' | 'parcial'>('total')
   const [montoParcial, setMontoParcial] = useState("")
 
-  // Estados para el Ticket Consolidado
   const ticketRef = useRef<HTMLDivElement>(null)
   const [grupoParaTicket, setGrupoParaTicket] = useState<DeudorGroup | null>(null)
 
@@ -58,7 +55,6 @@ const Deudas = () => {
     }
   }
 
-  // --- LÓGICA DE CAPTURA CONSOLIDADA ---
   const copiarEstadoCuenta = async (group: DeudorGroup) => {
     setGrupoParaTicket(group);
     setTimeout(async () => {
@@ -85,7 +81,6 @@ const Deudas = () => {
     }, 150);
   };
 
-  // --- FILTRADO Y AGRUPACIÓN ---
   const filteredDeudas = deudas.filter((d) =>
       d.cliente_nombre?.toLowerCase().includes(search.toLowerCase()) ||
       d.telefono?.toLowerCase().includes(search.toLowerCase())
@@ -114,7 +109,6 @@ const Deudas = () => {
     return dateB - dateA;
   });
 
-  // --- FUNCIONES DE PAGO (ORIGINALES) ---
   const openModalPago = (deudaId: number) => {
     setDeudaSeleccionada(deudaId)
     setMetodoPagoSeleccionado('efectivo')
@@ -174,7 +168,6 @@ const Deudas = () => {
       <div className="space-y-8">
         {deudorGroups.map((group, index) => (
           <div key={index} className="space-y-3 border p-3 rounded-lg bg-gray-50 shadow-md">
-            {/* CABECERA DEL GRUPO */}
             <div className="p-3 bg-orange-100 rounded-lg border border-orange-300 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-orange-900 flex items-center mb-1">
@@ -194,7 +187,6 @@ const Deudas = () => {
               </button>
             </div>
 
-            {/* LISTA DE DEUDAS (VISTA ORIGINAL) */}
             <div className="space-y-3">
               {group.deudas.map((deuda) => (
                 <div key={deuda.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -218,18 +210,17 @@ const Deudas = () => {
                   {expandedDeuda === deuda.id && (
                     <div className="mt-3 bg-gray-50 p-2 rounded border space-y-2">
                       {deuda.detalles.map((det, detIdx) => {
-                          // REPLICAMOS LA LÓGICA DE PRIORIDAD AQUÍ TAMBIÉN
-                          const nombreTicket = det.producto_nombre || det.descripcion || "Producto";
-
-                          return (
-                            <div key={detIdx} className="flex justify-between text-sm">
-                              <span className="text-gray-700">
-                                <span className="font-bold">{det.cantidad}x</span> {nombreTicket}
-                              </span>
-                              <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                            </div>
-                          );
-                        })}
+                        // SEGURIDAD 1: UI EXPANDIBLE
+                        const nombrePantalla = det.producto_nombre || det.descripcion || "Producto (x Kg)";
+                        return (
+                          <div key={detIdx} className="flex justify-between text-sm">
+                            <span className="text-gray-700">
+                              <span className="font-bold">{det.cantidad}x</span> {nombrePantalla}
+                            </span>
+                            <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -239,7 +230,7 @@ const Deudas = () => {
         ))}
       </div>
 
-      {/* --- MODAL DE PAGO (FUNCIONALIDAD ORIGINAL INTEGRADA) --- */}
+      {/* MODAL DE PAGO */}
       {deudaSeleccionada && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
@@ -274,7 +265,7 @@ const Deudas = () => {
         </div>
       )}
 
-      {/* --- TICKET CONSOLIDADO (DISEÑO LIMPIO) --- */}
+      {/* TICKET CONSOLIDADO (IMAGEN) */}
       <div
         ref={ticketRef}
         style={{
@@ -299,14 +290,18 @@ const Deudas = () => {
                 </span>
               </div>
               <div className="space-y-1">
-                {deuda.detalles.map((det, detIdx) => (
-                  <div key={detIdx} className="flex justify-between text-sm">
-                    <span className="text-gray-700">
-                      <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion}
-                    </span>
-                    <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                  </div>
-                ))}
+                {deuda.detalles.map((det, detIdx) => {
+                  // SEGURIDAD 2: TICKET IMAGEN (Aquí estaba el error)
+                  const nombreTicket = det.producto_nombre || det.descripcion || "Producto (x Kg)";
+                  return (
+                    <div key={detIdx} className="flex justify-between text-sm">
+                      <span className="text-gray-700">
+                        <span className="font-bold">{det.cantidad}x</span> {nombreTicket}
+                      </span>
+                      <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="text-right mt-1 font-bold text-sm text-gray-500 italic">
                 Subtotal: {formatPrice(deuda.total)}
