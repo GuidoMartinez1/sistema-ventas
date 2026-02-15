@@ -253,7 +253,7 @@ const Deudas = () => {
         </div>
       )}
 
-      {/* TICKET CONSOLIDADO (IMAGEN) */}
+      {/* TICKET CONSOLIDADO (PARA GENERACIÓN DE IMAGEN) */}
       <div
         ref={ticketRef}
         style={{
@@ -281,7 +281,7 @@ const Deudas = () => {
                 {deuda.detalles.map((det, detIdx) => (
                     <div key={detIdx} className="flex justify-between text-sm">
                         <span className="text-gray-700">
-                            <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion || "Producto"}
+                            <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion}
                         </span>
                         <span className="font-medium">{formatPrice(det.subtotal)}</span>
                     </div>
