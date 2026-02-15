@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle, Camera } from 'lucide-react'
+import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle, Camera, X } from 'lucide-react'
 import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
@@ -25,6 +25,7 @@ interface DeudorGroup {
 }
 
 const Deudas = () => {
+  // --- ESTADOS ---
   const [deudas, setDeudas] = useState<Deuda[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedDeuda, setExpandedDeuda] = useState<number | null>(null)
@@ -55,6 +56,17 @@ const Deudas = () => {
     }
   }
 
+  // --- LÓGICA DE PRIORIDAD PARA NOMBRES ---
+  const obtenerNombreProducto = (det: any) => {
+    const nombreValido = det.producto_nombre && det.producto_nombre.trim() !== "";
+    const descripcionValida = det.descripcion && det.descripcion.trim() !== "";
+
+    if (nombreValido) return det.producto_nombre;
+    if (descripcionValida) return det.descripcion;
+    return "Producto";
+  };
+
+  // --- LÓGICA DE CAPTURA DE IMAGEN ---
   const copiarEstadoCuenta = async (group: DeudorGroup) => {
     setGrupoParaTicket(group);
     setTimeout(async () => {
@@ -81,6 +93,7 @@ const Deudas = () => {
     }, 150);
   };
 
+  // --- FILTRADO Y AGRUPACIÓN ---
   const filteredDeudas = deudas.filter((d) =>
       d.cliente_nombre?.toLowerCase().includes(search.toLowerCase()) ||
       d.telefono?.toLowerCase().includes(search.toLowerCase())
@@ -109,24 +122,8 @@ const Deudas = () => {
     return dateB - dateA;
   });
 
-  const openModalPago = (deudaId: number) => {
-    setDeudaSeleccionada(deudaId)
-    setMetodoPagoSeleccionado('efectivo')
-    setTipoPago('total')
-    setMontoParcial("")
-  }
-
   const handleConfirmarPago = async () => {
     if (!deudaSeleccionada) return
-    if (tipoPago === 'parcial') {
-      const monto = parseFloat(montoParcial)
-      const deudaActual = deudas.find(d => d.id === deudaSeleccionada)
-      if (isNaN(monto) || monto <= 0 || (deudaActual && monto > deudaActual.total)) {
-        toast.error('Monto inválido o superior a la deuda')
-        return
-      }
-    }
-
     try {
       setConfirmLoading(true)
       await deudasAPI.marcarComoPagada(deudaSeleccionada, metodoPagoSeleccionado, tipoPago, montoParcial)
@@ -199,7 +196,7 @@ const Deudas = () => {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xl font-bold text-red-600">{formatPrice(deuda.total)}</span>
-                      <button onClick={() => openModalPago(deuda.id!)} className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                      <button onClick={() => setDeudaSeleccionada(deuda.id!)} className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
                         <CheckCircle className="h-4 w-4 mr-1" /> Pagar
                       </button>
                     </div>
@@ -209,19 +206,14 @@ const Deudas = () => {
                   </button>
                   {expandedDeuda === deuda.id && (
                     <div className="mt-3 bg-gray-50 p-2 rounded border space-y-2">
-                      {deuda.detalles.map((det, detIdx) => {
-                          // PRIORIDAD: Si existe el nombre lo usa, sino usa la descripción
-                          const nombreAMostrar = det.producto_nombre || det.descripcion || "Producto";
-
-                          return (
-                              <div key={detIdx} className="flex justify-between text-sm">
-                                  <span className="text-gray-700">
-                                      <span className="font-bold">{det.cantidad}x</span> {nombreAMostrar}
-                                  </span>
-                                  <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                              </div>
-                          );
-                      })}
+                      {deuda.detalles.map((det, detIdx) => (
+                          <div key={detIdx} className="flex justify-between text-sm">
+                              <span className="text-gray-700">
+                                  <span className="font-bold">{det.cantidad}x</span> {obtenerNombreProducto(det)}
+                              </span>
+                              <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                          </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -235,7 +227,12 @@ const Deudas = () => {
       {deudaSeleccionada && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
-            <h2 className="text-lg font-bold mb-4">Registrar Pago</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Registrar Pago</h2>
+              <button onClick={() => setDeudaSeleccionada(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Método</label>
@@ -253,20 +250,23 @@ const Deudas = () => {
                 </select>
               </div>
               {tipoPago === 'parcial' && (
-                <input type="number" value={montoParcial} onChange={(e) => setMontoParcial(e.target.value)} className="w-full border p-2 rounded" placeholder="Monto a entregar" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Monto a entregar</label>
+                  <input type="number" value={montoParcial} onChange={(e) => setMontoParcial(e.target.value)} className="w-full border p-2 rounded" placeholder="0.00" />
+                </div>
               )}
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setDeudaSeleccionada(null)} className="px-3 py-2 bg-gray-300 rounded">Cancelar</button>
-              <button onClick={handleConfirmarPago} disabled={confirmLoading} className="px-3 py-2 bg-green-600 text-white rounded">
-                {confirmLoading ? 'Procesando...' : 'Confirmar'}
+              <button onClick={() => setDeudaSeleccionada(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Cancelar</button>
+              <button onClick={handleConfirmarPago} disabled={confirmLoading} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                {confirmLoading ? 'Procesando...' : 'Confirmar Pago'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* TICKET CONSOLIDADO (IMAGEN) */}
+      {/* TICKET CONSOLIDADO (PARA GENERACIÓN DE IMAGEN) */}
       <div
         ref={ticketRef}
         style={{
@@ -291,19 +291,14 @@ const Deudas = () => {
                 </span>
               </div>
               <div className="space-y-1">
-                {deuda.detalles.map((det, detIdx) => {
-                        // APLICAMOS LA MISMA LÓGICA: Priorizar descripción para productos custom/sueltos
-                        const nombreParaTicket = det.producto_nombre || det.descripcion || "Producto";
-
-                        return (
-                            <div key={detIdx} className="flex justify-between text-sm">
-                                <span className="text-gray-700">
-                                    <span className="font-bold">{det.cantidad}x</span> {nombreParaTicket}
-                                </span>
-                                <span className="font-medium">{formatPrice(det.subtotal)}</span>
-                            </div>
-                        );
-                    })}
+                {deuda.detalles.map((det, detIdx) => (
+                    <div key={detIdx} className="flex justify-between text-sm">
+                        <span className="text-gray-700">
+                            <span className="font-bold">{det.cantidad}x</span> {obtenerNombreProducto(det)}
+                        </span>
+                        <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                    </div>
+                ))}
               </div>
               <div className="text-right mt-1 font-bold text-sm text-gray-500 italic">
                 Subtotal: {formatPrice(deuda.total)}
