@@ -118,25 +118,35 @@ const NuevaVenta = () => {
         })
     }
 
-    // --- CAMBIO SOLICITADO: Limpieza de nombre en venta x Kg ---
     const addPrecioKgItem = (producto: Producto) => {
-        const precioKg = Number(producto.precio_kg);
-        if (!precioKg || precioKg <= 0) { toast.error('Este producto no tiene precio por Kg configurado'); return; }
+        const precioFraccionado = Number(producto.precio_kg);
+        if (!precioFraccionado || precioFraccionado <= 0) {
+            toast.error('Este producto no tiene precio fraccionado configurado');
+            return;
+        }
 
-        // PARSEO: Eliminamos patrones como "10 KG", "20KG", "15 kg" del nombre
-        // La regex /\d+\s*KG/gi busca: uno o más dígitos, espacios opcionales, y las letras KG (ignora mayúsculas/minúsculas)
+        // 1. Identificamos la categoría para saber si es peso o unidad
+        const categoria = categorias.find(c => c.id === producto.categoria_id);
+        const catNombre = (categoria?.nombre || '').toLowerCase();
+
+        // Determinamos el sufijo: Peso para Alimentos/Cereales, Unidad para el resto
+        const esPeso = catNombre.includes('alimento') || catNombre.includes('cereales');
+        const sufijo = esPeso ? '(x Kg)' : '(x Un)';
+
+        // 2. Limpiamos el nombre: eliminamos patrones como "10 KG", "20 KG", etc.
+        // La regex /\d+\s*KG/gi quita números seguidos de KG sin importar mayúsculas
         const nombreLimpio = producto.nombre.replace(/\d+\s*KG/gi, '').replace(/\s+/g, ' ').trim();
 
         const item: DetalleVenta = {
             cantidad: 1,
-            precio_unitario: precioKg,
-            subtotal: precioKg,
-            descripcion: `${nombreLimpio} (x Kg)`,
+            precio_unitario: precioFraccionado,
+            subtotal: precioFraccionado,
+            descripcion: `${nombreLimpio} ${sufijo}`,
             es_custom: true
         };
 
         setCartItems(prev => [item, ...prev]);
-        toast.success(`Agregado 1 Kg de ${nombreLimpio}`);
+        toast.success(`Agregado: ${nombreLimpio} ${sufijo}`);
     };
 
     const addImporteDirecto = () => {
