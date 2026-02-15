@@ -21,30 +21,29 @@ const formatDate = (dateString: string) => {
 const ActualizacionesPendientes = () => {
     const [pendientes, setPendientes] = useState<ActualizacionPrecio[]>([])
     const [loading, setLoading] = useState(true)
-
-    // Estado para el Modal de Resolución
     const [selectedItem, setSelectedItem] = useState<ActualizacionPrecio | null>(null)
     const [nuevoPrecioVenta, setNuevoPrecioVenta] = useState<string>('')
     const [margenProyectado, setMargenProyectado] = useState<number>(0)
-
-    // NUEVO: Estado para el input de porcentaje manual
     const [porcentajeManual, setPorcentajeManual] = useState<string>('30')
 
     useEffect(() => {
         fetchData()
     }, [])
 
+    const alertasVisibles = pendientes.filter(item =>
+            Number(item.costo_nuevo) !== Number(item.costo_anterior)
+        );
+
     const fetchData = async () => {
-        try {
-            const response = await actualizacionesAPI.getAll()
-            setPendientes(response.data)
-        } catch (error) {
-            console.error(error)
-            toast.error('Error al cargar datos')
-        } finally {
-            setLoading(false)
+            try {
+                const response = await actualizacionesAPI.getAll()
+                setPendientes(response.data)
+            } catch (error) {
+                toast.error('Error al cargar datos')
+            } finally {
+                setLoading(false)
+            }
         }
-    }
 
     const handleOpenResolver = (item: ActualizacionPrecio) => {
         setSelectedItem(item)
@@ -87,32 +86,20 @@ const ActualizacionesPendientes = () => {
     }
 
     const handleConfirmar = async () => {
-        if (!selectedItem) return;
+            if (!selectedItem) return;
+            try {
+                const precioVentaNum = parseFloat(nuevoPrecioVenta);
+                const nuevoPorcentaje = ((precioVentaNum - selectedItem.costo_nuevo) / selectedItem.costo_nuevo) * 100;
 
-        try {
-            // 1. Calculamos el nuevo porcentaje de ganancia basado en el costo nuevo
-            const precioVentaNum = parseFloat(nuevoPrecioVenta);
-            const costoNuevo = selectedItem.costo_nuevo;
+                await actualizacionesAPI.resolve(selectedItem.id, precioVentaNum, parseFloat(nuevoPorcentaje.toFixed(2)));
 
-            // Fórmula: ((Venta - Costo) / Costo) * 100
-            const nuevoPorcentaje = ((precioVentaNum - costoNuevo) / costoNuevo) * 100;
-
-            // 2. Enviamos AMBOS datos a la API
-            // Nota: Asegúrate de que tu backend/servicio acepte este nuevo parámetro
-            await actualizacionesAPI.resolve(
-                selectedItem.id!,
-                precioVentaNum,
-                parseFloat(nuevoPorcentaje.toFixed(2)) // Enviamos el porcentaje con 2 decimales
-            );
-
-            toast.success(`Precio y ganancia de ${selectedItem.producto_nombre} actualizados!`);
-            setPendientes(prev => prev.filter(p => p.id !== selectedItem.id));
-            setSelectedItem(null);
-        } catch (error) {
-            toast.error("Error al actualizar precio");
-            console.error(error);
+                toast.success(`¡Producto actualizado!`);
+                setPendientes(prev => prev.filter(p => p.id !== selectedItem.id));
+                setSelectedItem(null);
+            } catch (error) {
+                toast.error("Error al actualizar");
+            }
         }
-    }
 
     const handleDescartar = async (id: number) => {
         if(!confirm("¿Descartar esta alerta? El precio de venta no cambiará.")) return;
@@ -138,7 +125,7 @@ const ActualizacionesPendientes = () => {
                 </div>
             </div>
 
-            {pendientes.length === 0 && !loading && (
+            {alertasVisibles.length === 0 && !loading && (
                 <div className="bg-green-50 p-8 rounded-xl text-center border border-green-200">
                     <Check className="h-12 w-12 text-green-500 mx-auto mb-3" />
                     <h3 className="text-xl font-bold text-green-800">¡Todo al día!</h3>
@@ -147,7 +134,7 @@ const ActualizacionesPendientes = () => {
             )}
 
             <div className="grid gap-4">
-                {pendientes.filter(item => item.costo_nuevo !== item.costo_anterior).map((item) => {
+                {alertasVisibles.map((item) => {
                     const diferencia = item.costo_nuevo - item.costo_anterior;
                     const esAumento = diferencia > 0;
                     const esRebaja = diferencia < 0;
