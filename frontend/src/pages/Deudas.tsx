@@ -217,12 +217,19 @@ const Deudas = () => {
                   </button>
                   {expandedDeuda === deuda.id && (
                     <div className="mt-3 bg-gray-50 p-2 rounded border space-y-2">
-                      {deuda.detalles.map((det, i) => (
-                        <div key={i} className="flex justify-between text-sm">
-                          <span>{det.cantidad}x {det.producto_nombre || det.descripcion}</span>
-                          <span className="font-bold">{formatPrice(det.subtotal)}</span>
-                        </div>
-                      ))}
+                      {deuda.detalles.map((det, detIdx) => {
+                          // REPLICAMOS LA LÓGICA DE PRIORIDAD AQUÍ TAMBIÉN
+                          const nombreTicket = det.producto_nombre || det.descripcion || "Producto";
+
+                          return (
+                            <div key={detIdx} className="flex justify-between text-sm">
+                              <span className="text-gray-700">
+                                <span className="font-bold">{det.cantidad}x</span> {nombreTicket}
+                              </span>
+                              <span className="font-medium">{formatPrice(det.subtotal)}</span>
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
