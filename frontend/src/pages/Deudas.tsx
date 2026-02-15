@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { DollarSign, User, Package, Calendar as CalendarIcon, Phone, CheckCircle, Camera, X } from 'lucide-react'
+import { DollarSign, User, Package, Calendar as CalendarIcon, CheckCircle, Camera, X } from 'lucide-react'
 import { deudasAPI } from '../services/api'
 import { Deuda } from '../services/api'
 import toast from 'react-hot-toast'
@@ -196,7 +196,7 @@ const Deudas = () => {
                       {deuda.detalles.map((det, detIdx) => (
                           <div key={detIdx} className="flex justify-between text-sm">
                               <span className="text-gray-700">
-                                  <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion}
+                                  <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion || "Producto"}
                               </span>
                               <span className="font-medium">{formatPrice(det.subtotal)}</span>
                           </div>
@@ -253,7 +253,7 @@ const Deudas = () => {
         </div>
       )}
 
-      {/* TICKET CONSOLIDADO (PARA GENERACIÓN DE IMAGEN) */}
+      {/* TICKET CONSOLIDADO (IMAGEN) */}
       <div
         ref={ticketRef}
         style={{
@@ -281,6 +281,7 @@ const Deudas = () => {
                 {deuda.detalles.map((det, detIdx) => (
                     <div key={detIdx} className="flex justify-between text-sm">
                         <span className="text-gray-700">
+                            {/* CAMBIO CLAVE: Usamos la misma lógica que en Ventas.tsx */}
                             <span className="font-bold">{det.cantidad}x</span> {det.producto_nombre || det.descripcion}
                         </span>
                         <span className="font-medium">{formatPrice(det.subtotal)}</span>
@@ -301,18 +302,11 @@ const Deudas = () => {
               {formatPrice(grupoParaTicket?.total_grupo || 0)}
             </span>
           </div>
-
           <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200 text-center">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-tighter">Alias para transferencia:</p>
             <p className="text-2xl font-black text-blue-800">alimar25</p>
             <p className="text-xs font-semibold text-gray-600 mt-1">Titular: Carlos Alberto Martinez</p>
           </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em]">
-            Gracias por elegir Alimar Petshop
-          </p>
         </div>
       </div>
     </div>
