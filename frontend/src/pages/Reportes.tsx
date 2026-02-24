@@ -665,28 +665,41 @@ const Reportes = () => {
                             </table>
                         </div>
                     </div>
-
-                    {/* Ranking de Reposición */}
                     <div className={cardClass}>
-                        <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center">
                             <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
-                            Ranking de Productos para Reposición
+                            Ventas por Categoría (Reposición)
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {productosVendidos.map((prod, index) => (
-                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div>
-                                        <p className="font-bold text-gray-800 leading-tight">{prod.nombre}</p>
-                                        <p className="text-xs text-gray-500 mt-1">Cód: {prod.codigo || 'S/C'}</p>
-                                    </div>
-                                    <div className="text-right ml-4">
-                                        <p className="text-xl font-extrabold text-orange-600">{prod.cantidad_total}</p>
-                                        <p className="text-[10px] text-gray-400 uppercase font-bold">Unidades</p>
+
+                        <div className="space-y-8">
+                            {/* Agrupamos los productos por categoría en el renderizado */}
+                            {Array.from(new Set(productosVendidos.map(p => p.categoria || 'Sin Categoría'))).map(cat => (
+                                <div key={cat} className="border-l-4 border-orange-500 pl-4">
+                                    <h4 className="text-md font-bold text-gray-700 uppercase tracking-wider mb-3 bg-gray-50 p-2 rounded">
+                                        {cat}
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {productosVendidos
+                                            .filter(p => (p.categoria || 'Sin Categoría') === cat)
+                                            .map((prod, index) => (
+                                                <div key={index} className="flex justify-between items-center p-3 border-b border-gray-100 hover:bg-orange-50 transition-colors">
+                                                    <span className="text-gray-800 font-medium">{prod.nombre}</span>
+                                                    <div className="bg-orange-100 px-3 py-1 rounded-full">
+                                                        <span className="text-orange-700 font-bold">{prod.cantidad_total}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        }
                                     </div>
                                 </div>
                             ))}
+
+                            {productosVendidos.length === 0 && (
+                                <p className="text-center text-gray-500 italic">No hay ventas registradas en este periodo.</p>
+                            )}
                         </div>
                     </div>
+
                 </div>
             )}
 

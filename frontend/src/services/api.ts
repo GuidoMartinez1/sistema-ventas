@@ -221,9 +221,8 @@ export interface ReporteDiario {
 
 export interface ProductoVendido {
     nombre: string;
-    codigo: string;
+    categoria: string; // Cambiamos codigo por categoria
     cantidad_total: number;
-    monto_total: number;
 }
 
 // ----------------------
