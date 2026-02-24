@@ -12,7 +12,7 @@ import {
     FileSpreadsheet
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI, reportesAPI } from '../services/api'
-import { Venta, Compra, Stats, ReporteDiario } from '../services/api'
+import { Venta, Compra, Stats, ReporteDiario, ProductoVendido } from '../services/api'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
@@ -519,7 +519,7 @@ const Reportes = () => {
             {/* --- Resumen --- */}
             {reporteActivo === 'resumen' && stats && (
                 <div className="space-y-6">
-                    {/* Primero: Las tarjetas de resumen en grid */}
+                    {/* Tarjetas de resumen */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className={cardClass}>
                             <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -572,7 +572,8 @@ const Reportes = () => {
                         </div>
                     </div>
 
-                    <div className={`${cardClass} col-span-full h-80`}>
+                    {/* Gráfico de rendimiento */}
+                    <div className={`${cardClass} h-80`}>
                         <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
                             <TrendingUp className="h-5 w-5 mr-2 text-orange-500" />
                             Rendimiento Diario (Ventas vs. Gastos)
@@ -623,7 +624,7 @@ const Reportes = () => {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Segundo: La tabla de Postgres DEBAJO del resumen */}
+                    {/* Tabla histórica de totales */}
                     <div className={cardClass}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold flex items-center">
@@ -664,29 +665,31 @@ const Reportes = () => {
                             </table>
                         </div>
                     </div>
-                </div>
 
-                <div className={cardClass}>
-                                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                                        <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
-                                        Ranking de Productos para Reposición
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {productosVendidos.map((prod, index) => (
-                                            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                                <div>
-                                                    <p className="font-bold text-gray-800">{prod.nombre}</p>
-                                                    <p className="text-xs text-gray-500">Cód: {prod.codigo}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xl font-bold text-orange-600">{prod.cantidad_total}</p>
-                                                    <p className="text-xs text-gray-400 uppercase">Vendidos</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                    {/* Ranking de Reposición */}
+                    <div className={cardClass}>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center">
+                            <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
+                            Ranking de Productos para Reposición
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {productosVendidos.map((prod, index) => (
+                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div>
+                                        <p className="font-bold text-gray-800 leading-tight">{prod.nombre}</p>
+                                        <p className="text-xs text-gray-500 mt-1">Cód: {prod.codigo || 'S/C'}</p>
+                                    </div>
+                                    <div className="text-right ml-4">
+                                        <p className="text-xl font-extrabold text-orange-600">{prod.cantidad_total}</p>
+                                        <p className="text-[10px] text-gray-400 uppercase font-bold">Unidades</p>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             )}
+
         </div>
     )
 }
