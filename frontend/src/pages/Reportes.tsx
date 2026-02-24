@@ -11,7 +11,7 @@ import {
     Factory,
     FileSpreadsheet
 } from 'lucide-react'
-import { ventasAPI, comprasAPI, statsAPI } from '../services/api'
+import { ventasAPI, comprasAPI, statsAPI, reportesAPI } from '../services/api'
 import { Venta, Compra, Stats, ReporteDiario } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
