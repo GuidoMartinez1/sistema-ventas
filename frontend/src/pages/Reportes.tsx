@@ -9,7 +9,9 @@ import {
     Calendar,
     User,
     Factory,
-    FileSpreadsheet
+    FileSpreadsheet,
+    ChevronDown,
+    Search
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI, reportesAPI } from '../services/api'
 import { Venta, Compra, Stats, ReporteDiario, ProductoVendido } from '../services/api'
@@ -42,6 +44,8 @@ const Reportes = () => {
     const [reporteActivo, setReporteActivo] = useState<'ventas' | 'compras' | 'resumen'>('ventas')
     const [datosDiarios, setDatosDiarios] = useState<ReporteDiario[]>([]);
     const [productosVendidos, setProductosVendidos] = useState<ProductoVendido[]>([]);
+    const [busquedaProducto, setBusquedaProducto] = useState('');
+    const [categoriasAbiertas, setCategoriasAbiertas] = useState<string[]>([]);
 
     useEffect(() => {
         fetchData()
@@ -197,7 +201,13 @@ const Reportes = () => {
         return 'bg-green-100 text-green-800'
     }
 
-
+    const toggleCategoria = (categoria: string) => {
+        setCategoriasAbiertas(prev =>
+            prev.includes(categoria)
+                ? prev.filter(c => c !== categoria)
+                : [...prev, categoria]
+        );
+    }
 
 
     if (loading) {
@@ -624,81 +634,93 @@ const Reportes = () => {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Tabla histórica de totales */}
+                    {/* --------------------- */}
                     <div className={cardClass}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold flex items-center">
-                                <FileSpreadsheet className="h-5 w-5 mr-2 text-orange-500" />
-                                Histórico de Totales por Día
-                            </h3>
-                            <button
-                                onClick={() => exportToExcel(datosDiarios, 'balance_diario.xlsx', 'diarios')}
-                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center"
-                            >
-                                <DollarSign className="h-4 w-4 mr-1"/> Exportar Totales
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto border rounded-lg">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left">Fecha</th>
-                                        <th className="px-4 py-3 text-right">Ventas ($)</th>
-                                        <th className="px-4 py-3 text-right">Compras ($)</th>
-                                        <th className="px-4 py-3 text-center">Operaciones</th>
-                                        <th className="px-4 py-3 text-right">Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200 text-sm">
-                                    {datosDiarios.map((dia) => (
-                                        <tr key={dia.fecha} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 font-medium">{new Date(dia.fecha).toLocaleDateString()}</td>
-                                            <td className="px-4 py-3 text-right text-green-600 font-semibold">{formatPrice(dia.total_ventas)}</td>
-                                            <td className="px-4 py-3 text-right text-red-500">{formatPrice(dia.total_compras)}</td>
-                                            <td className="px-4 py-3 text-center text-gray-500">{dia.cantidad_ventas} v / {dia.cantidad_compras} c</td>
-                                            <td className={`px-4 py-3 text-right font-bold ${dia.utilidad_neta >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                                                {formatPrice(dia.utilidad_neta)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div className={cardClass}>
-                        <h3 className="text-lg font-semibold mb-6 flex items-center">
-                            <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
-                            Ventas por Categoría (Reposición)
-                        </h3>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b pb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold flex items-center text-gray-800">
+                                    <ShoppingCart className="h-5 w-5 mr-2 text-orange-500" />
+                                    Reposición por Categoría
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">Hacé clic en una categoría para ver el detalle de unidades vendidas</p>
+                            </div>
 
-                        <div className="space-y-8">
-                            {/* Agrupamos los productos por categoría en el renderizado */}
-                            {Array.from(new Set(productosVendidos.map(p => p.categoria || 'Sin Categoría'))).map(cat => (
-                                <div key={cat} className="border-l-4 border-orange-500 pl-4">
-                                    <h4 className="text-md font-bold text-gray-700 uppercase tracking-wider mb-3 bg-gray-50 p-2 rounded">
-                                        {cat}
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {productosVendidos
-                                            .filter(p => (p.categoria || 'Sin Categoría') === cat)
-                                            .map((prod, index) => (
-                                                <div key={index} className="flex justify-between items-center p-3 border-b border-gray-100 hover:bg-orange-50 transition-colors">
-                                                    <span className="text-gray-800 font-medium">{prod.nombre}</span>
-                                                    <div className="bg-orange-100 px-3 py-1 rounded-full">
-                                                        <span className="text-orange-700 font-bold">{prod.cantidad_total}</span>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
+                            {/* Buscador con ícono */}
+                            <div className="relative w-full md:w-80">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-gray-400" />
                                 </div>
-                            ))}
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nombre de producto..."
+                                    value={busquedaProducto}
+                                    onChange={(e) => setBusquedaProducto(e.target.value)}
+                                    className={`${inputFieldClass} pl-10 h-10`}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            {Array.from(new Set(productosVendidos.map(p => p.categoria || 'Sin Categoría'))).map(cat => {
+                                // Lógica de filtrado
+                                const productosFiltrados = productosVendidos.filter(p =>
+                                    (p.categoria || 'Sin Categoría') === cat &&
+                                    p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
+                                );
+
+                                if (productosFiltrados.length === 0) return null;
+
+                                // Apertura automática: si hay búsqueda, se abre. Si no, usa el estado del clic.
+                                const isOpen = busquedaProducto.length > 0 || categoriasAbiertas.includes(cat);
+
+                                return (
+                                    <div key={cat} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                        <button
+                                            onClick={() => toggleCategoria(cat)}
+                                            className={`w-full flex items-center justify-between p-4 transition-all ${
+                                                isOpen ? 'bg-orange-50 text-orange-900' : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <span className="font-bold uppercase tracking-wide text-xs md:text-sm flex items-center">
+                                                <span className={`w-2 h-2 rounded-full mr-3 ${isOpen ? 'bg-orange-500' : 'bg-gray-300'}`}></span>
+                                                {cat}
+                                                <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-medium">
+                                                    {productosFiltrados.length} items
+                                                </span>
+                                            </span>
+                                            <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {isOpen && (
+                                            <div className="p-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 bg-white animate-in fade-in slide-in-from-top-1 duration-200">
+                                                {productosFiltrados.map((prod, index) => (
+                                                    <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-orange-200 hover:bg-white transition-all group">
+                                                        <span className="text-sm text-gray-600 group-hover:text-gray-900 font-medium truncate pr-2">
+                                                            {prod.nombre}
+                                                        </span>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-orange-600 font-black text-base">
+                                                                {prod.cantidad_total}
+                                                            </span>
+                                                            <span className="text-[9px] text-gray-400 uppercase font-bold leading-none">Unid.</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
 
                             {productosVendidos.length === 0 && (
-                                <p className="text-center text-gray-500 italic">No hay ventas registradas en este periodo.</p>
+                                <div className="text-center py-12">
+                                    <ShoppingCart className="h-12 w-12 text-gray-200 mx-auto mb-3" />
+                                    <p className="text-gray-400 italic">No se encontraron productos en este periodo.</p>
+                                </div>
                             )}
                         </div>
                     </div>
+                    {/* --------------- */}
 
                 </div>
             )}
