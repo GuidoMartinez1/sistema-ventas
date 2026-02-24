@@ -55,40 +55,35 @@ const Reportes = () => {
         try {
             setLoading(true);
 
-            // 1. Saneamos las fechas para que nunca lleguen vacías al backend
+            // 1. Saneamos las fechas: Si están vacías, mandamos un rango amplio
+            // Si el usuario elige un mes, fechaDesde y fechaHasta tendrán esos valores
             const fInicio = fechaDesde || '2000-01-01';
             const fFin = fechaHasta || '2099-12-31';
 
-            // 2. Traemos primero lo que ya funcionaba (Ventas, Compras, Stats)
-            const [ventasResponse, comprasResponse, statsResponse] = await Promise.all([
+            // 2. Llamada en paralelo para velocidad
+            const [ventasRes, comprasRes, statsRes] = await Promise.all([
                 ventasAPI.getAll(),
                 comprasAPI.getAll(),
                 statsAPI.getStats()
             ]);
 
-            setVentas(ventasResponse.data);
-            setCompras(comprasResponse.data);
-            setStats(statsResponse.data);
+            setVentas(ventasRes.data);
+            setCompras(comprasRes.data);
+            setStats(statsRes.data);
 
-            // 3. Traemos el histórico de Postgres por separado para que no rompa el resto
-            try {
-                const diariosResponse = await reportesAPI.getDiarios(fInicio, fFin);
-                setDatosDiarios(diariosResponse.data);
-                const productosRes = await reportesAPI.getProductosVendidos(fInicio, fFin);
-                setProductosVendidos(productosRes.data);
-            } catch (diarioError) {
-                console.error("Error en tabla reportes_diarios:", diarioError);
-                // Solo notificamos este error específico
-                toast.error('No se pudo cargar el historial diario / productos vendidos');
-            }
+            // 3. LLAMADA CLAVE: Pasamos fInicio y fFin al backend
+            const productosRes = await reportesAPI.getProductosVendidos(fInicio, fFin);
+            setProductosVendidos(productosRes.data);
+
+            const diariosRes = await reportesAPI.getDiarios(fInicio, fFin);
+            setDatosDiarios(diariosRes.data);
 
         } catch (error) {
-            console.error("Error crítico en carga principal:", error);
-            toast.error('Error al cargar ventas y compras');
+            toast.error('Error al sincronizar datos por fecha');
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     // Helper: filtra un array por rango de fechas (usa item.fecha)
     const filtrarPorFecha = <T extends { fecha?: string }>(items: T[]) => {

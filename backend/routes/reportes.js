@@ -28,8 +28,9 @@ router.get('/diarios', async (req, res) => {
   }
 })
 
+// backend/routes/reportes.js
 router.get("/productos-vendidos", async (req, res) => {
-  const { desde, hasta } = req.query;
+  const { desde, hasta } = req.query; // Netlify/Frontend envía esto
   try {
     const result = await pool.query(
       `SELECT
@@ -40,14 +41,15 @@ router.get("/productos-vendidos", async (req, res) => {
        JOIN ventas v ON dv.venta_id = v.id
        JOIN productos p ON dv.producto_id = p.id
        LEFT JOIN categorias c ON p.categoria_id = c.id
-       WHERE v.fecha BETWEEN $1 AND $2
+       WHERE v.fecha >= $1 AND v.fecha <= $2  -- FILTRO CRÍTICO
        GROUP BY p.id, p.nombre, c.nombre
-       ORDER BY c.nombre ASC, cantidad_total DESC`,
+       ORDER BY cantidad_total DESC`,
       [desde, hasta]
     );
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener ranking" });
+    console.error(error);
+    res.status(500).json({ error: "Error en el ranking" });
   }
 });
 
