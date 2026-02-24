@@ -357,7 +357,7 @@ export const reportesAPI = {
                 desde: desde || undefined,
                 hasta: hasta || undefined
             }
-        })
+        }),
     getProductosVendidos: (desde: string, hasta: string) =>
             api.get<ProductoVendido[]>('/reportes/productos-vendidos', { params: { desde, hasta } })
 
