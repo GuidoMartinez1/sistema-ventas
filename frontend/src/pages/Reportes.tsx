@@ -8,10 +8,11 @@ import {
     CreditCard,
     Calendar,
     User,
-    Factory
+    Factory,
+    FileSpreadsheet
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI } from '../services/api'
-import { Venta, Compra, Stats } from '../services/api'
+import { Venta, Compra, Stats, ReporteDiario } from '../services/api'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
@@ -38,27 +39,31 @@ const Reportes = () => {
     const [fechaHasta, setFechaHasta] = useState('')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
     const [reporteActivo, setReporteActivo] = useState<'ventas' | 'compras' | 'resumen'>('ventas')
+    const [datosDiarios, setDatosDiarios] = useState<ReporteDiario[]>([]);
 
     useEffect(() => {
         fetchData()
-    }, [])
+    }, [fechaDesde, fechaHasta])
 
     const fetchData = async () => {
-        try {
-            const [ventasResponse, comprasResponse, statsResponse] = await Promise.all([
-                ventasAPI.getAll(),
-                comprasAPI.getAll(),
-                statsAPI.getStats()
-            ])
-            setVentas(ventasResponse.data)
-            setCompras(comprasResponse.data)
-            setStats(statsResponse.data)
-        } catch (error) {
-            toast.error('Error al cargar datos')
-        } finally {
-            setLoading(false)
+            try {
+                setLoading(true) // Opcional: para mostrar el spinner al filtrar
+                const [ventasResponse, comprasResponse, statsResponse, diariosResponse] = await Promise.all([
+                    ventasAPI.getAll(),
+                    comprasAPI.getAll(),
+                    statsAPI.getStats(),
+                    reportesAPI.getDiarios(fechaDesde, fechaHasta) // <--- Nueva llamada
+                ])
+                setVentas(ventasResponse.data)
+                setCompras(comprasResponse.data)
+                setStats(statsResponse.data)
+                setDatosDiarios(diariosResponse.data) // <--- Guardar datos
+            } catch (error) {
+                toast.error('Error al cargar datos')
+            } finally {
+                setLoading(false)
+            }
         }
-    }
 
     // Helper: filtra un array por rango de fechas (usa item.fecha)
     const filtrarPorFecha = <T extends { fecha?: string }>(items: T[]) => {
@@ -99,33 +104,46 @@ const Reportes = () => {
         comprasArr.reduce((total, compra) => total + Number(compra.total || 0), 0)
 
     // Exportar a Excel
-    const exportToExcel = (data: any[], filename: string, type: 'ventas' | 'compras') => {
-        if (!data.length) {
-            toast.error('No hay datos para exportar')
-            return
-        }
-        const exportData =
-            type === 'ventas'
-                ? data.map(v => ({
+    const exportToExcel = (data: any[], filename: string, type: 'ventas' | 'compras' | 'diarios') => {
+            if (!data.length) {
+                toast.error('No hay datos para exportar')
+                return
+            }
+
+            let exportData = [];
+            if (type === 'ventas') {
+                exportData = data.map(v => ({
                     'ID Venta': v.id,
                     Cliente: v.cliente_nombre || 'Sin cliente',
                     'Total ($)': v.total,
                     'Método de Pago': v.metodo_pago,
                     Estado: v.estado,
                     Fecha: new Date(v.fecha || '').toLocaleDateString()
-                }))
-                : data.map(c => ({
+                }));
+            } else if (type === 'compras') {
+                exportData = data.map(c => ({
                     'ID Compra': c.id,
                     Proveedor: c.proveedor_nombre || 'Sin proveedor',
                     'Total ($)': c.total,
                     Estado: c.estado,
                     Fecha: new Date(c.fecha || '').toLocaleDateString()
-                }))
-        const worksheet = XLSX.utils.json_to_sheet(exportData)
-        const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte')
-        XLSX.writeFile(workbook, filename)
-    }
+                }));
+            } else {
+                // Caso para el reporte diario de Postgres
+                exportData = data.map(d => ({
+                    Fecha: new Date(d.fecha).toLocaleDateString(),
+                    'Ventas ($)': d.total_ventas,
+                    'Compras ($)': d.total_compras,
+                    'Cant. Ventas': d.cantidad_ventas,
+                    'Utilidad ($)': d.utilidad_neta
+                }));
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte')
+            XLSX.writeFile(workbook, filename)
+        }
 
     const ventasFiltradas = filtrarVentas()
     const comprasFiltradas = filtrarCompras()
@@ -157,6 +175,8 @@ const Reportes = () => {
         if (estado === 'adeuda') return 'bg-red-100 text-red-800'
         return 'bg-green-100 text-green-800'
     }
+
+
 
 
     if (loading) {
@@ -473,6 +493,48 @@ const Reportes = () => {
                     </div>
                 </div>
             )}
+
+        {/* NUEVA TABLA: Facturación Diaria */}
+                            <div className={`${cardClass} col-span-full mt-6`}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold flex items-center">
+                                        <FileSpreadsheet className="h-5 w-5 mr-2 text-orange-500" />
+                                        Histórico de Totales por Día (Postgres)
+                                    </h3>
+                                    <button
+                                        onClick={() => exportToExcel(datosDiarios, 'balance_diario.xlsx', 'diarios')}
+                                        className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center"
+                                    >
+                                        <DollarSign className="h-4 w-4 mr-1"/> Exportar Totales
+                                    </button>
+                                </div>
+                                <div className="overflow-x-auto border rounded-lg">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left">Fecha</th>
+                                                <th className="px-4 py-3 text-right">Ventas ($)</th>
+                                                <th className="px-4 py-3 text-right">Compras ($)</th>
+                                                <th className="px-4 py-3 text-center">Operaciones</th>
+                                                <th className="px-4 py-3 text-right">Balance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                                            {datosDiarios.map((dia) => (
+                                                <tr key={dia.fecha} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-4 py-3 font-medium">{new Date(dia.fecha).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 text-right text-green-600 font-semibold">{formatPrice(dia.total_ventas)}</td>
+                                                    <td className="px-4 py-3 text-right text-red-500">{formatPrice(dia.total_compras)}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-500">{dia.cantidad_ventas} v / {dia.cantidad_compras} c</td>
+                                                    <td className={`px-4 py-3 text-right font-bold ${dia.utilidad_neta >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                                                        {formatPrice(dia.utilidad_neta)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
 
             {/* --- Resumen --- */}
             {reporteActivo === 'resumen' && stats && (

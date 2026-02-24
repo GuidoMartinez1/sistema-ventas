@@ -210,6 +210,15 @@ export interface HistorialCosto {
     proveedor: string;
 }
 
+export interface ReporteDiario {
+    fecha: string;
+    total_ventas: number;
+    total_compras: number;
+    cantidad_ventas: number;
+    cantidad_compras: number;
+    utilidad_neta: number;
+}
+
 // ----------------------
 // ENDPOINTS
 // ----------------------
@@ -331,6 +340,11 @@ export const actualizacionesAPI = {
 
     // Descartar alerta: Borra la notificación sin cambiar el precio de venta
     delete: (id: number) => api.delete(`/actualizaciones-precios/${id}`),
+}
+
+export const reportesAPI = {
+    getDiarios: (desde?: string, hasta?: string) =>
+        api.get<ReporteDiario[]>('/reportes/diarios', { params: { desde, hasta } })
 }
 
 export default api
