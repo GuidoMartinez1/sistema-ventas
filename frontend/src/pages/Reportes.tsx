@@ -511,49 +511,6 @@ const Reportes = () => {
                 </div>
             )}
 
-        {/* NUEVA TABLA: Facturación Diaria */}
-                            <div className={`${cardClass} col-span-full mt-6`}>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold flex items-center">
-                                        <FileSpreadsheet className="h-5 w-5 mr-2 text-orange-500" />
-                                        Histórico de Totales por Día (Postgres)
-                                    </h3>
-                                    <button
-                                        onClick={() => exportToExcel(datosDiarios, 'balance_diario.xlsx', 'diarios')}
-                                        className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center"
-                                    >
-                                        <DollarSign className="h-4 w-4 mr-1"/> Exportar Totales
-                                    </button>
-                                </div>
-                                <div className="overflow-x-auto border rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left">Fecha</th>
-                                                <th className="px-4 py-3 text-right">Ventas ($)</th>
-                                                <th className="px-4 py-3 text-right">Compras ($)</th>
-                                                <th className="px-4 py-3 text-center">Operaciones</th>
-                                                <th className="px-4 py-3 text-right">Balance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
-                                            {datosDiarios.map((dia) => (
-                                                <tr key={dia.fecha} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-3 font-medium">{new Date(dia.fecha).toLocaleDateString()}</td>
-                                                    <td className="px-4 py-3 text-right text-green-600 font-semibold">{formatPrice(dia.total_ventas)}</td>
-                                                    <td className="px-4 py-3 text-right text-red-500">{formatPrice(dia.total_compras)}</td>
-                                                    <td className="px-4 py-3 text-center text-gray-500">{dia.cantidad_ventas} v / {dia.cantidad_compras} c</td>
-                                                    <td className={`px-4 py-3 text-right font-bold ${dia.utilidad_neta >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                                                        {formatPrice(dia.utilidad_neta)}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-            {/* --- Resumen --- */}
             {/* --- Resumen --- */}
             {reporteActivo === 'resumen' && stats && (
                 <div className="space-y-6">
@@ -615,7 +572,7 @@ const Reportes = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <FileSpreadsheet className="h-5 w-5 mr-2 text-orange-500" />
-                                Histórico de Totales por Día 
+                                Histórico de Totales por Día
                             </h3>
                             <button
                                 onClick={() => exportToExcel(datosDiarios, 'balance_diario.xlsx', 'diarios')}
