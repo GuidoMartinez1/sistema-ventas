@@ -219,6 +219,13 @@ export interface ReporteDiario {
     utilidad_neta: number;
 }
 
+export interface ProductoVendido {
+    nombre: string;
+    codigo: string;
+    cantidad_total: number;
+    monto_total: number;
+}
+
 // ----------------------
 // ENDPOINTS
 // ----------------------
@@ -351,6 +358,9 @@ export const reportesAPI = {
                 hasta: hasta || undefined
             }
         })
+    getProductosVendidos: (desde: string, hasta: string) =>
+            api.get<ProductoVendido[]>('/reportes/productos-vendidos', { params: { desde, hasta } })
+
 }
 
 export default api

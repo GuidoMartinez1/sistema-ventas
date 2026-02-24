@@ -41,6 +41,7 @@ const Reportes = () => {
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
     const [reporteActivo, setReporteActivo] = useState<'ventas' | 'compras' | 'resumen'>('ventas')
     const [datosDiarios, setDatosDiarios] = useState<ReporteDiario[]>([]);
+    const [productosVendidos, setProductosVendidos] = useState<ProductoVendido[]>([]);
 
     useEffect(() => {
         fetchData()
@@ -69,10 +70,12 @@ const Reportes = () => {
             try {
                 const diariosResponse = await reportesAPI.getDiarios(fInicio, fFin);
                 setDatosDiarios(diariosResponse.data);
+                const productosRes = await reportesAPI.getProductosVendidos(fInicio, fFin);
+                setProductosVendidos(productosRes.data);
             } catch (diarioError) {
                 console.error("Error en tabla reportes_diarios:", diarioError);
                 // Solo notificamos este error específico
-                toast.error('No se pudo cargar el historial diario de Postgres');
+                toast.error('No se pudo cargar el historial diario / productos vendidos');
             }
 
         } catch (error) {
@@ -512,6 +515,7 @@ const Reportes = () => {
                 </div>
             )}
 
+
             {/* --- Resumen --- */}
             {reporteActivo === 'resumen' && stats && (
                 <div className="space-y-6">
@@ -661,6 +665,27 @@ const Reportes = () => {
                         </div>
                     </div>
                 </div>
+
+                <div className={cardClass}>
+                                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                        <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
+                                        Ranking de Productos para Reposición
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {productosVendidos.map((prod, index) => (
+                                            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div>
+                                                    <p className="font-bold text-gray-800">{prod.nombre}</p>
+                                                    <p className="text-xs text-gray-500">Cód: {prod.codigo}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xl font-bold text-orange-600">{prod.cantidad_total}</p>
+                                                    <p className="text-xs text-gray-400 uppercase">Vendidos</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
             )}
         </div>
     )
