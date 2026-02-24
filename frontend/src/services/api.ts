@@ -342,9 +342,15 @@ export const actualizacionesAPI = {
     delete: (id: number) => api.delete(`/actualizaciones-precios/${id}`),
 }
 
+// services/api.ts
 export const reportesAPI = {
     getDiarios: (desde?: string, hasta?: string) =>
-        api.get<ReporteDiario[]>('/reportes/diarios', { params: { desde, hasta } })
+        api.get<ReporteDiario[]>('/reportes/diarios', {
+            params: {
+                desde: desde || undefined,
+                hasta: hasta || undefined
+            }
+        })
 }
 
 export default api
