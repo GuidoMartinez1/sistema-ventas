@@ -48,6 +48,9 @@ const Reportes = () => {
     const fetchData = async () => {
             try {
                 setLoading(true) // Opcional: para mostrar el spinner al filtrar
+
+                const fechaInicio = fechaDesde || '2000-01-01';
+                const fechaFin = fechaHasta || '2099-12-31';
                 const [ventasResponse, comprasResponse, statsResponse, diariosResponse] = await Promise.all([
                     ventasAPI.getAll(),
                     comprasAPI.getAll(),
