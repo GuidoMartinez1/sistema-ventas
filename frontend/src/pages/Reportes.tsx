@@ -554,55 +554,101 @@ const Reportes = () => {
                             </div>
 
             {/* --- Resumen --- */}
+            {/* --- Resumen --- */}
             {reporteActivo === 'resumen' && stats && (
-                /* RESPONSIVE: 1 columna en móvil, 2 en md+ */
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className={cardClass}>
-                        <h3 className="text-lg font-semibold mb-4 flex items-center">
-                            <TrendingUp className="h-5 w-5 mr-2" /> Resumen Financiero
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between p-3 bg-green-50 rounded-lg">
-                                <span className="text-green-700 font-medium">Ingresos Totales</span>
-                                <span className="text-green-900 font-bold">{formatPrice(stats.total_ventas_monto)}</span>
+                <div className="space-y-6">
+                    {/* Primero: Las tarjetas de resumen en grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className={cardClass}>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                <TrendingUp className="h-5 w-5 mr-2" /> Resumen Financiero
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between p-3 bg-green-50 rounded-lg">
+                                    <span className="text-green-700 font-medium">Ingresos Totales</span>
+                                    <span className="text-green-900 font-bold">{formatPrice(stats.total_ventas_monto)}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-red-50 rounded-lg">
+                                    <span className="text-red-700 font-medium">Gastos Totales</span>
+                                    <span className="text-red-900 font-bold">{formatPrice(stats.total_compras_monto)}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-blue-50 rounded-lg">
+                                    <span className="text-blue-700 font-medium">Deudas Pendientes</span>
+                                    <span className="text-blue-900 font-bold">{formatPrice(stats.total_deudas_monto)}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-purple-50 rounded-lg">
+                                    <span className="text-purple-700 font-medium">Balance Neto</span>
+                                    <span className={`font-bold ${(stats.total_ventas_monto - stats.total_compras_monto) >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                                        {formatPrice(stats.total_ventas_monto - stats.total_compras_monto)}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex justify-between p-3 bg-red-50 rounded-lg">
-                                <span className="text-red-700 font-medium">Gastos Totales</span>
-                                <span className="text-red-900 font-bold">{formatPrice(stats.total_compras_monto)}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-blue-50 rounded-lg">
-                                <span className="text-blue-700 font-medium">Deudas Pendientes</span>
-                                <span className="text-blue-900 font-bold">{formatPrice(stats.total_deudas_monto)}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-purple-50 rounded-lg">
-                                <span className="text-purple-700 font-medium">Balance Neto</span>
-                                <span className={`font-bold ${(stats.total_ventas_monto - stats.total_compras_monto) >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                  {formatPrice(stats.total_ventas_monto - stats.total_compras_monto)}
-                </span>
+                        </div>
+
+                        <div className={cardClass}>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                <BarChart3 className="h-5 w-5 mr-2" /> Estadísticas Generales
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-gray-700 font-medium">Total Productos</span>
+                                    <span className="text-gray-900 font-bold">{stats.total_productos}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-gray-700 font-medium">Total Clientes</span>
+                                    <span className="text-gray-900 font-bold">{stats.total_clientes}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-gray-700 font-medium">Total Ventas</span>
+                                    <span className="text-gray-900 font-bold">{stats.total_ventas}</span>
+                                </div>
+                                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                                    <span className="text-gray-700 font-medium">Total Compras</span>
+                                    <span className="text-gray-900 font-bold">{stats.total_compras}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Segundo: La tabla de Postgres DEBAJO del resumen */}
                     <div className={cardClass}>
-                        <h3 className="text-lg font-semibold mb-4 flex items-center">
-                            <BarChart3 className="h-5 w-5 mr-2" /> Estadísticas Generales
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-700 font-medium">Total Productos</span>
-                                <span className="text-gray-900 font-bold">{stats.total_productos}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-700 font-medium">Total Clientes</span>
-                                <span className="text-gray-900 font-bold">{stats.total_clientes}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-700 font-medium">Total Ventas</span>
-                                <span className="text-gray-900 font-bold">{stats.total_ventas}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                                <span className="text-gray-700 font-medium">Total Compras</span>
-                                <span className="text-gray-900 font-bold">{stats.total_compras}</span>
-                            </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold flex items-center">
+                                <FileSpreadsheet className="h-5 w-5 mr-2 text-orange-500" />
+                                Histórico de Totales por Día 
+                            </h3>
+                            <button
+                                onClick={() => exportToExcel(datosDiarios, 'balance_diario.xlsx', 'diarios')}
+                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center"
+                            >
+                                <DollarSign className="h-4 w-4 mr-1"/> Exportar Totales
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto border rounded-lg">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left">Fecha</th>
+                                        <th className="px-4 py-3 text-right">Ventas ($)</th>
+                                        <th className="px-4 py-3 text-right">Compras ($)</th>
+                                        <th className="px-4 py-3 text-center">Operaciones</th>
+                                        <th className="px-4 py-3 text-right">Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                                    {datosDiarios.map((dia) => (
+                                        <tr key={dia.fecha} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3 font-medium">{new Date(dia.fecha).toLocaleDateString()}</td>
+                                            <td className="px-4 py-3 text-right text-green-600 font-semibold">{formatPrice(dia.total_ventas)}</td>
+                                            <td className="px-4 py-3 text-right text-red-500">{formatPrice(dia.total_compras)}</td>
+                                            <td className="px-4 py-3 text-center text-gray-500">{dia.cantidad_ventas} v / {dia.cantidad_compras} c</td>
+                                            <td className={`px-4 py-3 text-right font-bold ${dia.utilidad_neta >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                                                {formatPrice(dia.utilidad_neta)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
