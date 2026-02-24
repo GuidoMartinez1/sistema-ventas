@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { ventasAPI, comprasAPI, statsAPI, reportesAPI } from '../services/api'
 import { Venta, Compra, Stats, ReporteDiario } from '../services/api'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
@@ -565,6 +566,57 @@ const Reportes = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className={`${cardClass} col-span-full h-80`}>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
+                            <TrendingUp className="h-5 w-5 mr-2 text-orange-500" />
+                            Rendimiento Diario (Ventas vs. Gastos)
+                        </h3>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={datosDiarios.slice().reverse()}>
+                                <defs>
+                                    <linearGradient id="colorVenta" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                <XAxis
+                                    dataKey="fecha"
+                                    tick={{fontSize: 12}}
+                                    tickFormatter={(str) => new Date(str).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                                />
+                                <YAxis
+                                    tick={{fontSize: 12}}
+                                    tickFormatter={(val) => `$${val.toLocaleString()}`}
+                                />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value) => formatPrice(value as number)}
+                                    labelFormatter={(label) => new Date(label).toLocaleDateString('es-AR', { dateStyle: 'long' })}
+                                />
+                                <Legend verticalAlign="top" align="right" height={36}/>
+                                <Area
+                                    type="monotone"
+                                    dataKey="total_ventas"
+                                    name="Ventas"
+                                    stroke="#10b981"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorVenta)"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="total_compras"
+                                    name="Gastos/Compras"
+                                    stroke="#ef4444"
+                                    strokeWidth={2}
+                                    fill="transparent"
+                                    strokeDasharray="5 5"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
 
                     {/* Segundo: La tabla de Postgres DEBAJO del resumen */}
