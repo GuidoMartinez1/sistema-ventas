@@ -46,27 +46,41 @@ const Reportes = () => {
     }, [fechaDesde, fechaHasta])
 
     const fetchData = async () => {
-            try {
-                setLoading(true) // Opcional: para mostrar el spinner al filtrar
+        try {
+            setLoading(true);
 
-                const fechaInicio = fechaDesde || '2000-01-01';
-                const fechaFin = fechaHasta || '2099-12-31';
-                const [ventasResponse, comprasResponse, statsResponse, diariosResponse] = await Promise.all([
-                    ventasAPI.getAll(),
-                    comprasAPI.getAll(),
-                    statsAPI.getStats(),
-                    reportesAPI.getDiarios(fechaDesde, fechaHasta) // <--- Nueva llamada
-                ])
-                setVentas(ventasResponse.data)
-                setCompras(comprasResponse.data)
-                setStats(statsResponse.data)
-                setDatosDiarios(diariosResponse.data) // <--- Guardar datos
-            } catch (error) {
-                toast.error('Error al cargar datos')
-            } finally {
-                setLoading(false)
+            // 1. Saneamos las fechas para que nunca lleguen vacías al backend
+            const fInicio = fechaDesde || '2000-01-01';
+            const fFin = fechaHasta || '2099-12-31';
+
+            // 2. Traemos primero lo que ya funcionaba (Ventas, Compras, Stats)
+            const [ventasResponse, comprasResponse, statsResponse] = await Promise.all([
+                ventasAPI.getAll(),
+                comprasAPI.getAll(),
+                statsAPI.getStats()
+            ]);
+
+            setVentas(ventasResponse.data);
+            setCompras(comprasResponse.data);
+            setStats(statsResponse.data);
+
+            // 3. Traemos el histórico de Postgres por separado para que no rompa el resto
+            try {
+                const diariosResponse = await reportesAPI.getDiarios(fInicio, fFin);
+                setDatosDiarios(diariosResponse.data);
+            } catch (diarioError) {
+                console.error("Error en tabla reportes_diarios:", diarioError);
+                // Solo notificamos este error específico
+                toast.error('No se pudo cargar el historial diario de Postgres');
             }
+
+        } catch (error) {
+            console.error("Error crítico en carga principal:", error);
+            toast.error('Error al cargar ventas y compras');
+        } finally {
+            setLoading(false);
         }
+    };
 
     // Helper: filtra un array por rango de fechas (usa item.fecha)
     const filtrarPorFecha = <T extends { fecha?: string }>(items: T[]) => {
